@@ -1,0 +1,36 @@
+{
+  "surface": "sidebar",
+  "status": "superseded",
+  "supersededBy": "chat-workspace",
+  "supersededAt": "2026-09-18",
+  "supersededNote": "Historical lateral navigation; current top navigation and project panels are documented in chat-workspace.md and chat-workspace.json.",
+  "mode": "operate",
+  "reference": "codex-clipboard-cd60059d-ac95-4857-bf5c-7f8e6f2b16ab.png",
+  "colors": {
+    "background": "#2a55bc",
+    "text": "#f0f5fe",
+    "muted": "#ffffffdb",
+    "selected": "#ffffff26"
+  },
+  "layout": {
+    "desktopWidth": "232px",
+    "mobileWidth": "260px",
+    "radius": "0",
+    "profilePosition": "top",
+    "brandPosition": "removed"
+  },
+  "rows": {
+    "desktopMinHeight": "32px",
+    "mobileMinHeight": "40px",
+    "radius": "6px",
+    "fontSize": "12px",
+    "iconSize": "15px"
+  },
+  "scope": "existing-navigation-and-profile",
+  "verification": "manual-desktop-and-mobile-isolated-data",
+  "modelStatus": {
+    "indicator": "avatar-dot",
+    "refresh": "automatic",
+    "footer": false
+  }
+}

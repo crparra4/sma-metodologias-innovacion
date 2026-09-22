@@ -1,0 +1,42 @@
+{
+  "surface": "account-menu",
+  "mode": "operate",
+  "target": [
+    "prototipo/frontend/index.html",
+    "prototipo/frontend/src/main.ts",
+    "prototipo/frontend/src/style.css"
+  ],
+  "reference": "codex-clipboard-87c02070-3fdd-4356-835f-8ff16dc7a310.png",
+  "layout": {
+    "position": "below-avatar",
+    "width": "320px",
+    "radius": "12px",
+    "mobile": "fixed-below-topbar",
+    "overflow": "auto"
+  },
+  "colors": {
+    "panel": "#2a55bc",
+    "identity": "#244ba8",
+    "avatar": "#ffffff26",
+    "text": "#f0f5fe"
+  },
+  "identity": "real-name-and-local-username",
+  "actions": [
+    "profile",
+    "account-settings",
+    "theme-status",
+    "quick-guide",
+    "switch-account-via-signout",
+    "signout"
+  ],
+  "darkThemeImplemented": false,
+  "verification": [
+    "build",
+    "detector-clear",
+    "desktop-mobile-inline",
+    "profile-settings-open-cancel",
+    "quick-guide",
+    "Escape-and-focus",
+    "switch-account-shows-login"
+  ]
+}

@@ -1,0 +1,111 @@
+{
+  "schemaVersion": 2,
+  "generatedAt": "2026-09-18T16:16:25Z",
+  "title": "Design System: Hilo · acceso",
+  "extensions": {
+    "shadows": [
+      {
+        "name": "primary-button",
+        "value": "0 2px 3px #00000012",
+        "purpose": "Sombra sutil del botón principal; el contenedor del formulario no tiene sombra."
+      }
+    ],
+    "motion": [],
+    "breakpoints": [
+      {
+        "name": "access-mobile",
+        "value": "480px"
+      }
+    ]
+  },
+  "components": [
+    {
+      "name": "Acción principal",
+      "kind": "button",
+      "refersTo": "button-primary",
+      "description": "Continuar, iniciar sesión o crear cuenta, según el estado del formulario local.",
+      "html": "<button class=\"ds-access-submit\" type=\"button\">Continuar</button>",
+      "css": ".ds-access-submit{font-family:'Segoe UI',system-ui,-apple-system,BlinkMacSystemFont,sans-serif;width:100%;display:flex;align-items:center;justify-content:center;border:0;border-radius:7px;background:#1877d5;color:#fff;font-size:14px;font-weight:600;padding:10px 16px;min-height:40px;box-shadow:0 2px 3px #00000012;cursor:pointer}.ds-access-submit:hover:not(:disabled){background:#1266bb}.ds-access-submit:focus-visible{outline:2px solid #2383e2;outline-offset:3px}.ds-access-submit:disabled{opacity:.48;cursor:not-allowed}"
+    },
+    {
+      "name": "Campo de acceso",
+      "kind": "input",
+      "refersTo": "input",
+      "description": "Campo con etiqueta y ayuda; foco azul y estado de solo lectura para el usuario confirmado.",
+      "html": "<div class=\"ds-access-field\"><label for=\"ds-access-username\">Usuario</label><input id=\"ds-access-username\" type=\"text\" autocomplete=\"username\" placeholder=\"Escribe tu nombre de usuario…\" aria-describedby=\"ds-access-hint\"/><span id=\"ds-access-hint\">Usa el usuario de tu cuenta en esta computadora.</span></div>",
+      "css": ".ds-access-field{font-family:'Segoe UI',system-ui,-apple-system,BlinkMacSystemFont,sans-serif;margin-bottom:18px}.ds-access-field label{display:block;color:#626262;font-weight:500;font-size:12px;margin-bottom:6px}.ds-access-field input{width:100%;height:40px;border:1px solid #c9c9c9;border-radius:7px;padding:0 13px;background:#fff;color:#242424;font-family:inherit;font-size:14px}.ds-access-field input:focus{border-color:#2383e2;outline:2px solid #2383e2;outline-offset:-1px}.ds-access-field input[readonly]{background:#f7f7f7;color:#626262}.ds-access-field input::placeholder{color:#737373}.ds-access-field span{display:block;margin:7px 0 0;font-size:12px;color:#737373;line-height:1.5}"
+    },
+    {
+      "name": "Cambio de modo",
+      "kind": "button",
+      "description": "Botón de texto secundario para alternar acceso y registro.",
+      "html": "<button class=\"ds-access-switch\" type=\"button\">Crear cuenta</button>",
+      "css": ".ds-access-switch{font-family:'Segoe UI',system-ui,-apple-system,BlinkMacSystemFont,sans-serif;border:0;padding:4px 0;background:transparent;color:#626262;font-size:14px;text-decoration:underline;text-underline-offset:3px;cursor:pointer}.ds-access-switch:hover{color:#1877d5}.ds-access-switch:focus-visible{outline:2px solid #2383e2;outline-offset:3px}.ds-access-switch:disabled{opacity:.48;cursor:not-allowed}"
+    }
+  ],
+  "narrative": {
+    "northStar": "Acceso blanco y centrado de la referencia del usuario",
+    "overview": "Esta documentación describe exclusivamente el acceso y registro de Hilo. La imagen de Notion proporcionada por el usuario fija una superficie blanca, una columna compacta sin caja exterior y una jerarquía centrada. Hilo conserva su logo real y su autenticación local por usuario y contraseña.\n\nEl documento complementa el sistema global existente; no extiende esta composición a Inicio, agenda, proyectos o chat. La fuente normativa es el código construido, especialmente `prototipo/frontend/src/style.css` (reglas de acceso), `prototipo/frontend/index.html` (sección de acceso) y `setAuthMode` en `prototipo/frontend/src/main.ts`.",
+    "keyCharacteristics": [
+      "Fondo blanco a altura completa y formulario sin tarjeta exterior.",
+      "Logo real de Hilo centrado y texto en español.",
+      "Azul para la acción principal y el foco; grises para información secundaria.",
+      "Acceso progresivo con usuario primero y contraseña después."
+    ],
+    "rules": [
+      {
+        "name": "The Acción Rule",
+        "body": "El azul destaca la acción principal y el foco; las explicaciones permanecen neutras.",
+        "section": "colors"
+      },
+      {
+        "name": "The Columna Rule",
+        "body": "Conservar una sola columna sin tarjeta exterior en ambos modos de acceso.",
+        "section": "layout"
+      }
+    ],
+    "dos": [
+      "Do conservar el logo real de Hilo, el español y la columna blanca centrada.",
+      "Do mantener usuario y contraseña locales, con avance y retorno entre pasos.",
+      "Do permitir desplazamiento del registro y mantener visible el foco de teclado."
+    ],
+    "donts": [
+      "Don't introducir tarjeta exterior o sombra de contenedor en esta superficie.",
+      "Don't añadir proveedores externos, acceso por correo o enlaces legales sin funcionalidad respaldada.",
+      "Don't trasladar las reglas específicas de acceso al sistema global de proyectos y chat."
+    ]
+  },
+  "futureAccessMethods": {
+    "status": "planned",
+    "reference": "codex-clipboard-1ae10799-7117-47a0-803a-1f0c26077c57.png",
+    "methods": [
+      "google",
+      "chatgpt",
+      "apple",
+      "microsoft",
+      "passkey",
+      "sso"
+    ],
+    "layout": {
+      "columns": 3,
+      "rows": 2,
+      "gap": "10px",
+      "minHeight": "73px",
+      "iconSize": "20px"
+    },
+    "disabled": true,
+    "visibleHint": "Estos accesos estarán disponibles próximamente."
+  },
+  "languages": {
+    "options": [
+      "es",
+      "en"
+    ],
+    "default": "es",
+    "scope": "login-and-registration",
+    "storageKey": "hilo-language",
+    "preservesFormOnChange": true,
+    "control": "native-select",
+    "appContentLanguage": "es"
+  }
+}

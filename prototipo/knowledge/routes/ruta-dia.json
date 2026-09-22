@@ -1,0 +1,202 @@
+{
+  "id": "ruta-dia",
+  "name": "Ruta DIA",
+  "version": "0.1.0",
+  "stages": [
+    {
+      "id": 1,
+      "phase": "Descubrimiento",
+      "name": "Definir un reto",
+      "objective": "Delimitar la problemática u oportunidad sin anticipar soluciones.",
+      "tools": ["arbol-problemas", "cinco-porques", "pestel"]
+    },
+    {
+      "id": 2,
+      "phase": "Descubrimiento",
+      "name": "Entendimiento del reto",
+      "objective": "Profundizar la comprensión inicial y preparar el trabajo de empatía.",
+      "tools": []
+    },
+    {
+      "id": 3,
+      "phase": "Descubrimiento",
+      "name": "Profundización y empatía",
+      "objective": "Comprender al usuario, su experiencia y las hipótesis aún no validadas.",
+      "tools": [
+        "customer-journey",
+        "trabajo-de-campo",
+        "mapa-empatia",
+        "canvas-propuesta-valor",
+        "arquetipo-usuario"
+      ]
+    },
+    {
+      "id": 4,
+      "phase": "Descubrimiento",
+      "name": "Ideación",
+      "objective": "Generar y priorizar alternativas de solución.",
+      "tools": ["scamper", "sit", "seis-sombreros", "moscow", "matriz-priorizacion"]
+    },
+    {
+      "id": 5,
+      "phase": "Descubrimiento",
+      "name": "Alistamiento del experimento",
+      "objective": "Formular hipótesis y criterios observables de validación.",
+      "tools": ["ficha-hipotesis"]
+    },
+    {
+      "id": 6,
+      "phase": "Incubación",
+      "name": "Plan de experimentación",
+      "objective": "Diseñar cómo se ejecutará y medirá el experimento.",
+      "tools": ["lean-canvas"]
+    },
+    {
+      "id": 7,
+      "phase": "Incubación",
+      "name": "Ejecución del experimento",
+      "objective": "Construir y ejecutar el experimento definido.",
+      "tools": []
+    },
+    {
+      "id": 8,
+      "phase": "Incubación",
+      "name": "Medición y análisis",
+      "objective": "Analizar la experiencia, los indicadores y el aprendizaje obtenido.",
+      "tools": []
+    },
+    {
+      "id": 9,
+      "phase": "Aceleración",
+      "name": "Factibilidad y transferencia",
+      "objective": "Evaluar factibilidad y preparar la transferencia de la solución.",
+      "tools": []
+    },
+    {
+      "id": 10,
+      "phase": "Aceleración",
+      "name": "Validación para escalamiento",
+      "objective": "Validar las condiciones necesarias para escalar la solución.",
+      "tools": []
+    }
+  ],
+  "tools": [
+    {
+      "id": "arbol-problemas",
+      "name": "Árbol de problemas",
+      "file": "tools/arbol_problemas.md",
+      "methodology": "transversal",
+      "template_fields": ["problema", "causas", "efecto", "validacion"]
+    },
+    {
+      "id": "cinco-porques",
+      "name": "5 por qués",
+      "file": "tools/cinco_porques.md",
+      "methodology": "transversal",
+      "template_fields": ["porque_1", "porque_2", "porque_3", "porque_4", "porque_5"]
+    },
+    {
+      "id": "pestel",
+      "name": "PESTEL",
+      "file": "tools/Pestel.md",
+      "methodology": "transversal",
+      "template_fields": ["politico", "economico", "social", "tecnologico", "ecologico", "legal"]
+    },
+    {
+      "id": "customer-journey",
+      "name": "Customer Journey Map",
+      "file": "tools/customer_journey.md",
+      "methodology": "design-thinking",
+      "template_fields": []
+    },
+    {
+      "id": "trabajo-de-campo",
+      "name": "Trabajo de campo",
+      "file": "tools/trabajo_de_campo.md",
+      "methodology": "design-thinking",
+      "template_fields": []
+    },
+    {
+      "id": "mapa-empatia",
+      "name": "Mapa de empatía",
+      "file": "tools/mapa_empatia.md",
+      "methodology": "design-thinking",
+      "template_fields": [
+        "piensa_siente",
+        "ve",
+        "oye",
+        "dice_hace",
+        "esfuerzos_1",
+        "esfuerzos_2",
+        "esfuerzos_3",
+        "resultados_1",
+        "resultados_2",
+        "resultados_3"
+      ]
+    },
+    {
+      "id": "canvas-propuesta-valor",
+      "name": "Canvas de propuesta de valor",
+      "file": "tools/canvas_propuesta_valor.md",
+      "methodology": "design-thinking",
+      "template_fields": []
+    },
+    {
+      "id": "arquetipo-usuario",
+      "name": "Arquetipo de usuario",
+      "file": "tools/arquetipo_usuario.md",
+      "methodology": "design-thinking",
+      "template_fields": []
+    },
+    {
+      "id": "scamper",
+      "name": "SCAMPER",
+      "file": "tools/scamper.md",
+      "methodology": "transversal",
+      "template_fields": []
+    },
+    {
+      "id": "sit",
+      "name": "Systematic Inventive Thinking",
+      "file": "tools/sit.md",
+      "methodology": "sit",
+      "template_fields": []
+    },
+    {
+      "id": "seis-sombreros",
+      "name": "6 sombreros para pensar",
+      "file": "tools/seis_sombreros.md",
+      "methodology": "transversal",
+      "template_fields": []
+    },
+    {
+      "id": "moscow",
+      "name": "MoSCoW",
+      "file": "tools/moscow.md",
+      "methodology": "transversal",
+      "template_fields": []
+    },
+    {
+      "id": "matriz-priorizacion",
+      "name": "Matriz de priorización de ideas",
+      "file": "tools/matriz_priorizacion.md",
+      "methodology": "transversal",
+      "template_fields": []
+    },
+    {
+      "id": "ficha-hipotesis",
+      "name": "Ficha de hipótesis",
+      "file": "tools/ficha_hipotesis.md",
+      "methodology": "lean-startup",
+      "template_fields": []
+    },
+    {
+      "id": "lean-canvas",
+      "name": "Lean Canvas",
+      "file": "tools/lean_canvas.md",
+      "methodology": "lean-startup",
+      "template_fields": []
+    }
+  ]
+}
+

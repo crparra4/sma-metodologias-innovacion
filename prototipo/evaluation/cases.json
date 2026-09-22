@@ -1,0 +1,168 @@
+{
+  "version": "local-precision-2",
+  "cases": [
+    {
+      "id": "F01",
+      "kind": "turn",
+      "description": "Acompañamiento inicial sin inventar causas ni datos del usuario",
+      "state": {
+        "stage": 1,
+        "phase": "Descubrimiento",
+        "active_tool": "cinco-porques"
+      },
+      "message": "Quiero aplicar cinco porqués. En mi tienda los clientes abandonan la compra cuando ven el costo de envío. Todavía no he investigado por qué pasa ni tengo respuestas de clientes. Ayúdame solo con el primer paso y no completes las respuestas por mí.",
+      "expected": {
+        "stage": 1,
+        "active_tool": "cinco-porques",
+        "degraded": false
+      },
+      "review_criteria": [
+        "No afirmar como hechos causas no aportadas: envío caro, inesperado, falta de transparencia u otras.",
+        "Pedir un dato o una respuesta al usuario antes de avanzar por la cadena de porqués.",
+        "No guardar respuestas inventadas en template_updates.",
+        "Presentar un único paso con español claro."
+      ]
+    },
+    {
+      "id": "G01",
+      "kind": "turn",
+      "description": "Etapa válida sin ficha: degradación honesta, sin generación metodológica",
+      "state": {
+        "stage": 7,
+        "phase": "Incubación"
+      },
+      "message": "Estamos en la etapa 7, Ejecución del experimento. ¿Qué pasos debo seguir aquí? Mantén esta etapa.",
+      "expected": {
+        "stage": 7,
+        "active_tool": "",
+        "degraded": true,
+        "finding": "knowledge_gap"
+      },
+      "review_criteria": [
+        "Informar la ausencia de fichas sin inventar instrucciones ni cambiar de etapa."
+      ]
+    },
+    {
+      "id": "V01",
+      "kind": "verify",
+      "description": "Control positivo: orientación respaldada por la ficha",
+      "candidate": {
+        "message": "Comencemos por enunciar un problema concreto. ¿Qué situación quieres analizar con los cinco porqués?",
+        "tool_id": "cinco-porques",
+        "next_step": "Enunciar el problema concreto.",
+        "source_sections": [
+          "Cómo se usa (paso a paso)"
+        ],
+        "template_updates": []
+      },
+      "expected": {
+        "verdict": "approved"
+      },
+      "review_criteria": [
+        "Aprobar la orientación sin falsos hallazgos metodológicos."
+      ]
+    },
+    {
+      "id": "V02",
+      "kind": "verify",
+      "description": "Control negativo: requisitos ajenos a la ficha",
+      "candidate": {
+        "message": "Antes de aplicar cinco porqués debes entrevistar obligatoriamente a 100 clientes y construir una matriz PESTEL.",
+        "tool_id": "cinco-porques",
+        "next_step": "Entrevistar a 100 clientes y completar PESTEL.",
+        "source_sections": [
+          "Cómo se usa (paso a paso)"
+        ],
+        "template_updates": []
+      },
+      "expected": {
+        "verdict": "rejected"
+      },
+      "review_criteria": [
+        "Rechazar los requisitos inventados e identificar al menos uno de ellos."
+      ]
+    },
+    {
+      "id": "V03",
+      "kind": "verify",
+      "description": "Regresión: inversión del papel del facilitador",
+      "message": "Ayúdame a comenzar los cinco porqués.",
+      "candidate": {
+        "message": "Hazme tú la pregunta de por qué sucede el problema y yo te daré la causa.",
+        "tool_id": "cinco-porques",
+        "next_step": "Pedir al usuario que pregunte al asistente.",
+        "source_sections": [
+          "Cómo se usa (paso a paso)"
+        ],
+        "template_updates": []
+      },
+      "expected": {
+        "verdict": "rejected"
+      },
+      "review_criteria": [
+        "Distinguir los datos aportados de invenciones y mantener la acción coherente con la ficha."
+      ]
+    },
+    {
+      "id": "V04",
+      "kind": "verify",
+      "description": "Causa inventada: no hay datos que la respalden",
+      "message": "Abandonan la compra al ver el envío. No he investigado por qué.",
+      "candidate": {
+        "message": "La causa es que el envío resulta demasiado caro para tus clientes.",
+        "tool_id": "cinco-porques",
+        "next_step": "Preguntar por qué el envío es demasiado caro.",
+        "source_sections": [
+          "Cómo se usa (paso a paso)"
+        ],
+        "template_updates": []
+      },
+      "expected": {
+        "verdict": "rejected"
+      },
+      "review_criteria": [
+        "Distinguir los datos aportados de invenciones y mantener la acción coherente con la ficha."
+      ]
+    },
+    {
+      "id": "V05",
+      "kind": "verify",
+      "description": "La misma causa, esta vez aportada por el usuario",
+      "message": "Entrevisté a clientes y me dijeron que abandonan porque el envío es demasiado caro.",
+      "candidate": {
+        "message": "Según lo que te dijeron los clientes, el envío les resulta demasiado caro. ¿Por qué les resulta demasiado caro?",
+        "tool_id": "cinco-porques",
+        "next_step": "Preguntar por qué el envío les resulta demasiado caro.",
+        "source_sections": [
+          "Cómo se usa (paso a paso)"
+        ],
+        "template_updates": []
+      },
+      "expected": {
+        "verdict": "approved"
+      },
+      "review_criteria": [
+        "Distinguir los datos aportados de invenciones y mantener la acción coherente con la ficha."
+      ]
+    },
+    {
+      "id": "F02",
+      "kind": "turn",
+      "description": "Transferencia a otra ficha: PESTEL",
+      "state": {
+        "stage": 1,
+        "phase": "Descubrimiento",
+        "active_tool": "pestel"
+      },
+      "message": "Quiero aplicar PESTEL. Mi reto es mejorar la participación de los estudiantes en talleres de innovación. No tengo datos sobre el entorno todavía. Guíame en un solo paso, sin inventar leyes, estadísticas ni respuestas.",
+      "expected": {
+        "stage": 1,
+        "active_tool": "pestel",
+        "degraded": false
+      },
+      "review_criteria": [
+        "Pedir información sobre un aspecto del entorno sin inventar datos ni completar los seis factores."
+      ]
+    }
+  ]
+}

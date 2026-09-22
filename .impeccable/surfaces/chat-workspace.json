@@ -1,0 +1,218 @@
+{
+  "surface": "chat-workspace",
+  "mode": "operate",
+  "updatedAt": "2026-09-18",
+  "supersedes": [
+    "sidebar"
+  ],
+  "sources": [
+    "prototipo/frontend/index.html",
+    "prototipo/frontend/src/style.css:Espacio de proyecto",
+    "prototipo/frontend/src/main.ts"
+  ],
+  "reference": "User-provided Trello screenshot: top navigation and two rectangular panels; Hilo blue preserved",
+  "colors": {
+    "navigation": "#2a55bc",
+    "selected": "#ffffff26",
+    "hover": "#ffffff16",
+    "workspace": "#edf2fb",
+    "panel": "#ffffff",
+    "panelBorder": "#d8e1f0",
+    "assistantTurn": "#f7f9fd"
+  },
+  "navigation": {
+    "position": "top",
+    "desktopHeight": "56px",
+    "mobileHeight": "52px",
+    "mobilePosition": "sticky",
+    "mobileMenu": "dropdown-below-bar",
+    "mobileMenuMaxHeight": "calc(100dvh - 76px)",
+    "recentDropdownWidth": "integrated",
+    "profilePosition": "end",
+    "selection": "aria-current",
+    "mobileExpansion": "aria-expanded",
+    "close": [
+      "outside-pointer",
+      "navigation",
+      "Escape"
+    ],
+    "modelStatus": "avatar-dot-and-automatic-refresh",
+    "launcher": "grid-icon-only",
+    "default": "collapsed-all-viewports",
+    "menuWidth": "320px",
+    "menuRadius": "12px",
+    "mainRowMinHeight": "44px",
+    "desktopMenuMaxHeight": "calc(100dvh - 80px)",
+    "backdrop": false,
+    "escapeRestoresFocus": true,
+    "launcherWidth": "36px",
+    "brand": "Hilo-icon-and-name-beside-launcher",
+    "rightActions": [
+      "account-avatar",
+      "help",
+      "notifications"
+    ],
+    "searchAndCreate": "inside-main-dropdown"
+  },
+  "layout": {
+    "projectHeadingHeight": "inside-chat-min72px",
+    "columns": "minmax(0,1fr) clamp(290px,25vw,360px)",
+    "gap": "20px",
+    "padding": "16px 24px 24px",
+    "panelRadius": "12px",
+    "panelBorderWidth": "1px",
+    "scrolling": "independent-messages-and-inspector",
+    "composer": "inside-chat-at-bottom",
+    "chatHeadingMinHeight": "72px",
+    "notesGap": "14px",
+    "projectHeadingPosition": "chat-panel-heading",
+    "composerBottomPadding": "40px"
+  },
+  "responsive": {
+    "middle": {
+      "range": "701px–1050px",
+      "notesWidth": "285px",
+      "gap": "14px",
+      "padding": "14px 16px 24px"
+    },
+    "mobile": {
+      "maxWidth": "700px",
+      "columns": "minmax(0,1fr)",
+      "notesPosition": "below-chat",
+      "gap": "16px",
+      "padding": "12px 12px 24px",
+      "chatHeight": "calc(100dvh - 96px)",
+      "chatMinHeight": "480px",
+      "chatHeadingMinHeight": "72px",
+      "notesHeight": "auto",
+      "notesMinHeight": "260px",
+      "scrolling": "page-to-reach-notes"
+    }
+  },
+  "verification": {
+    "sourceRead": true,
+    "browserQaReportedBy": "root",
+    "independentReview": "source-only",
+    "build": "passed",
+    "consoleErrors": false,
+    "environment": "localhost:8791 isolated synthetic data",
+    "desktop": {
+      "viewport": "1280×720",
+      "chat": "892×624",
+      "notes": "320×624",
+      "panelTop": 72,
+      "panelBottom": 696
+    },
+    "middle": {
+      "viewportWidth": 760,
+      "documentWidth": 760,
+      "navigationRight": 744
+    },
+    "mobile": {
+      "viewport": "390×844",
+      "checks": [
+        "menu-toggle",
+        "multiline-draft-fits",
+        "send-state",
+        "notes-reachable",
+        "note-form-open-cancel"
+      ]
+    },
+    "modelMessageSent": false,
+    "realDataModified": false,
+    "screenshotPaths": [],
+    "screenshots": "inline inspected by root",
+    "qaServerAndTabClosed": true,
+    "realPageReload": "8787 login visible without white screen",
+    "detector": "padding-transition warning removed",
+    "launcherChecks": [
+      "desktop-and-mobile-inline-screenshots",
+      "navigate-tools-closes-menu",
+      "Escape-closes-and-restores-focus",
+      "layout-detector-clear"
+    ],
+    "headingAndToolbarChecks": [
+      "desktop-and-mobile-inline",
+      "title-and-stage-inside-chat",
+      "oldTopbar-removed",
+      "visible-options-overlay-panels",
+      "agents-toggle",
+      "edit-project-opens-and-cancels",
+      "home-hides-toolbar",
+      "no-horizontal-overflow",
+      "literal-element-ids-present",
+      "detector-clear"
+    ]
+  },
+  "headerUtilities": {
+    "profile": "initials-avatar-opens-account-dropdown",
+    "help": "quick-guide-dropdown",
+    "notifications": "coming-soon-dropdown",
+    "notificationService": false,
+    "close": [
+      "outside-pointer",
+      "Escape"
+    ],
+    "accountMenu": "account-menu.json"
+  },
+  "projectActions": {
+    "position": "fixed-bottom-center-overlay-panels",
+    "bottom": "12px",
+    "background": "#2a55bc",
+    "visible": "project-only",
+    "options": [
+      "Inicio",
+      "Agentes",
+      "Editar cuaderno"
+    ],
+    "buttonMinHeight": "32px",
+    "popover": false,
+    "height": "42px",
+    "fontSize": "12px",
+    "iconSize": "15px",
+    "padding": "4px",
+    "radius": "10px"
+  },
+  "composer": {
+    "areaPadding": "6px 16px 40px",
+    "mobileAreaPadding": "6px 12px 40px",
+    "borderTop": false,
+    "singleLineHeight": "42px",
+    "background": "#f7f9fd",
+    "border": "#e5ebf5",
+    "focusBorder": "#b4c5e5",
+    "focusOutline": false,
+    "fontSize": "13px",
+    "sendSize": "30px",
+    "statusBottomGap": "4px",
+    "noteTopGap": "4px"
+  },
+  "stageProgress": {
+    "position": "left-of-title",
+    "size": "48px",
+    "mobileSize": "44px",
+    "value": "current-stage-position-of-catalog-total",
+    "ring": "#2a55bc",
+    "track": "#e2eafa",
+    "phaseBackground": "#edf2fc",
+    "phaseText": "#244ba8",
+    "stageText": "#426293",
+    "accessibleLabel": "Etapa X de N: stage-name",
+    "completionClaim": false
+  },
+  "sharing": {
+    "position": "right-of-chat-heading",
+    "label": "Compartir",
+    "mobile": "icon-only-accessible-label",
+    "size": "36px",
+    "background": "#edf2fc",
+    "text": "#244ba8",
+    "payload": [
+      "project-name",
+      "phase",
+      "stage"
+    ],
+    "behavior": "native-share-if-available-else-copy-summary",
+    "sharedAccess": false
+  }
+}
