@@ -1,6 +1,6 @@
 # Marcos teóricos de fondo (el "porqué" de las herramientas)
 
-Estos documentos NO son herramientas paso a paso (esas están en `conocimiento/herramientas/`).
+Estos documentos NO son herramientas paso a paso (esas están en `../tools/`).
 Son los **fundamentos teóricos** de las metodologías de la Ruta DIA. Úsalos para EXPLICAR el porqué
 de una herramienta o profundizar en una metodología. NO inventes conceptos: cita de cuál marco sale.
 
@@ -16,5 +16,5 @@ de una herramienta o profundizar en una metodología. NO inventes conceptos: cit
 | `scrum.md` | Scrum (Jeff Sutherland) | Ejecución iterativa: sprints, roles y ceremonias. Aplica al *cómo se organiza el equipo* durante Incubación y Aceleración, no a una etapa concreta. |
 | `how_to_future.md` | Futuros / foresight (Smith & Ashby) | Transversal, útil al definir el reto (etapa 1) y al escalar (etapa 10): pensar en múltiples futuros posibles en vez de uno solo. |
 
-> Ojo: `marcos/sit_manual.md` es el **fundamento** de SIT; `herramientas/sit.md` es la ficha corta de
+> Ojo: `sit_manual.md` es el **fundamento** de SIT; `../tools/sit.md` es la ficha corta de
 > "cómo se usa". No los confundas: para explicar el porqué, el manual; para guiar el paso a paso, la ficha.

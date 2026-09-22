@@ -96,7 +96,7 @@ por qué el control del flujo por sí solo no elimina la variabilidad semántica
 
 ## Limitaciones actuales
 
-El checkpoint predeterminado vive en memoria y dura mientras el proceso interactivo esté abierto.
-Para recuperar conversaciones después de cerrar la aplicación se necesita un almacenamiento
-persistente. La batería sigue siendo una prueba de ingeniería; no sustituye la revisión de las fichas
-ni la evaluación con participantes y una persona experta en Ruta DIA.
+Los checkpoints y cuadernos actuales se guardan en SQLite y se recuperan después de cerrar la
+aplicación. Este documento describe la arquitectura y las pruebas de la implementación inicial;
+la batería sigue siendo una prueba de ingeniería y no sustituye la revisión de las fichas ni la
+evaluación con participantes y una persona experta en Ruta DIA.
