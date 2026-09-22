@@ -520,27 +520,15 @@
 @media(min-width:701px) and (max-width:1050px){#project-workspace{padding-top:14px;padding-bottom:24px}}
 @media(max-width:700px){#project-workspace{padding-top:12px;padding-bottom:24px}#project-workspace .chat-panel{height:calc(100dvh - 96px)}#project-workspace .chat-panel-heading{padding:12px 16px}#project-workspace .chat-panel-heading h1{font-size:15px}}
 /* ---- Tablero del proyecto ----------------------------------------------- */
-/* El chat es la base del tablero. Cada herramienta se activa desde la barra
-   inferior; sin ninguna, el chat ocupa todo el ancho y la conversacion se
-   centra para no dispersarse entre los dos bordes. */
+/* El chat o el árbol ocupan el área principal. Como máximo hay un panel
+   complementario: Post-its o Agentes. */
 #project-workspace[data-board-count="0"]{grid-template-columns:minmax(0,1fr)}
 #project-workspace:not(.board-has-notes) #board-notes-panel,
 #project-workspace:not(.board-has-agents) #board-agents-panel{display:none}
-/* Dos herramientas: tres columnas en escritorio ancho; en anchos medios las dos
-   comparten la columna derecha, una encima de la otra, y el chat conserva su ancho. */
-/* Post-its necesita ~300px utiles para mantener la pared en dos columnas; Agentes
-   se lee bien mas angosto. */
-/* Acotado a escritorio ancho: su especificidad le gana a la regla movil de una
-   columna y, sin el limite, aplastaba el chat en pantallas angostas. */
-@media(min-width:1181px){#project-workspace[data-board-count="2"]{grid-template-columns:minmax(0,1fr) clamp(300px,23vw,360px) clamp(260px,19vw,300px)}}
-@media(min-width:701px) and (max-width:1180px){
-  #project-workspace[data-board-count="2"]{grid-template-columns:minmax(0,1fr) 300px;grid-template-rows:minmax(0,1fr) minmax(0,1fr)}
-  #project-workspace[data-board-count="2"] .chat-panel{grid-row:1 / span 2}
-}
-/* Con una sola herramienta no hay nada que separar: el chat deja de ser tarjeta
-   y ocupa el area completa, sin margen, borde ni esquinas. */
+/* Sin panel complementario, el área principal llena el espacio disponible. */
 #project-workspace[data-board-count="0"]{padding:0;gap:0;background:#fff}
-#project-workspace[data-board-count="0"] .chat-panel{border:0;border-radius:0}
+#project-workspace[data-board-count="0"] .chat-panel,
+#project-workspace[data-board-count="0"] .problem-tree-view{border:0;border-radius:0}
 @media(max-width:700px){#project-workspace[data-board-count="0"] .chat-panel{height:calc(100dvh - 52px)}}
 @media(min-width:1051px){#project-workspace[data-board-count="0"] .messages{
   padding-left:max(clamp(20px,3vw,44px),calc((100% - 1120px) / 2));
@@ -550,6 +538,7 @@
 .project-floating-toolbar .board-tools button{border-left:0}
 .project-floating-toolbar .board-toggle[aria-pressed="true"]{background:#ffffff26;
   box-shadow:inset 0 -2px 0 #fff}
+@media(max-width:700px){.project-floating-toolbar{bottom:max(12px,env(safe-area-inset-bottom))}}
 /* ---- Personas con acceso ------------------------------------------------ */
 /* Circulos junto a Compartir. El primero empuja el grupo a la derecha; los
    siguientes se solapan con un anillo blanco para leerse como un conjunto. */
