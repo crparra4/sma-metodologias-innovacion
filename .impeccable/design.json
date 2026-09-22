@@ -1,0 +1,832 @@
+{
+  "schemaVersion": 2,
+  "generatedAt": "2026-09-18T00:00:00-05:00",
+  "boundedRefresh": "Navigation and project workspace only; see surfaces/chat-workspace.json for source and QA limitations.",
+  "title": "Design System: Hilo",
+  "extensions": {
+    "colorMeta": {
+      "accent": {
+        "role": "primary",
+        "displayName": "Azul de acción",
+        "tonalRamp": [
+          "oklch(15% 0.16 264)",
+          "oklch(26% 0.16 264)",
+          "oklch(38% 0.16 264)",
+          "oklch(49% 0.16 264)",
+          "oklch(61% 0.16 264)",
+          "oklch(72% 0.16 264)",
+          "oklch(84% 0.16 264)",
+          "oklch(95% 0.16 264)"
+        ]
+      },
+      "accent-hover": {
+        "role": "primary",
+        "displayName": "Azul de acción profundo",
+        "tonalRamp": [
+          "oklch(15% 0.16 264)",
+          "oklch(26% 0.16 264)",
+          "oklch(38% 0.16 264)",
+          "oklch(49% 0.16 264)",
+          "oklch(61% 0.16 264)",
+          "oklch(72% 0.16 264)",
+          "oklch(84% 0.16 264)",
+          "oklch(95% 0.16 264)"
+        ]
+      },
+      "text": {
+        "role": "neutral",
+        "displayName": "Texto tinta",
+        "tonalRamp": [
+          "oklch(15% 0.04 260)",
+          "oklch(26% 0.04 260)",
+          "oklch(38% 0.04 260)",
+          "oklch(49% 0.04 260)",
+          "oklch(61% 0.04 260)",
+          "oklch(72% 0.04 260)",
+          "oklch(84% 0.04 260)",
+          "oklch(95% 0.04 260)"
+        ]
+      },
+      "muted": {
+        "role": "neutral",
+        "displayName": "Texto secundario",
+        "tonalRamp": [
+          "oklch(15% 0.03 260)",
+          "oklch(26% 0.03 260)",
+          "oklch(38% 0.03 260)",
+          "oklch(49% 0.03 260)",
+          "oklch(61% 0.03 260)",
+          "oklch(72% 0.03 260)",
+          "oklch(84% 0.03 260)",
+          "oklch(95% 0.03 260)"
+        ]
+      },
+      "evidence-text": {
+        "role": "neutral",
+        "displayName": "Texto de evidencia",
+        "tonalRamp": [
+          "oklch(15% 0.03 260)",
+          "oklch(26% 0.03 260)",
+          "oklch(38% 0.03 260)",
+          "oklch(49% 0.03 260)",
+          "oklch(61% 0.03 260)",
+          "oklch(72% 0.03 260)",
+          "oklch(84% 0.03 260)",
+          "oklch(95% 0.03 260)"
+        ]
+      },
+      "line": {
+        "role": "neutral",
+        "displayName": "Línea suave",
+        "tonalRamp": [
+          "oklch(15% 0.02 260)",
+          "oklch(26% 0.02 260)",
+          "oklch(38% 0.02 260)",
+          "oklch(49% 0.02 260)",
+          "oklch(61% 0.02 260)",
+          "oklch(72% 0.02 260)",
+          "oklch(84% 0.02 260)",
+          "oklch(95% 0.02 260)"
+        ]
+      },
+      "background": {
+        "role": "neutral",
+        "displayName": "Fondo frío",
+        "tonalRamp": [
+          "oklch(15% 0.01 260)",
+          "oklch(26% 0.01 260)",
+          "oklch(38% 0.01 260)",
+          "oklch(49% 0.01 260)",
+          "oklch(61% 0.01 260)",
+          "oklch(72% 0.01 260)",
+          "oklch(84% 0.01 260)",
+          "oklch(95% 0.01 260)"
+        ]
+      },
+      "surface": {
+        "role": "neutral",
+        "displayName": "Superficie blanca",
+        "tonalRamp": [
+          "oklch(15% 0 0)",
+          "oklch(26% 0 0)",
+          "oklch(38% 0 0)",
+          "oklch(49% 0 0)",
+          "oklch(61% 0 0)",
+          "oklch(72% 0 0)",
+          "oklch(84% 0 0)",
+          "oklch(95% 0 0)"
+        ]
+      },
+      "inspector": {
+        "role": "neutral",
+        "displayName": "Inspector blanco",
+        "tonalRamp": [
+          "oklch(15% 0.01 260)",
+          "oklch(26% 0.01 260)",
+          "oklch(38% 0.01 260)",
+          "oklch(49% 0.01 260)",
+          "oklch(61% 0.01 260)",
+          "oklch(72% 0.01 260)",
+          "oklch(84% 0.01 260)",
+          "oklch(95% 0.01 260)"
+        ]
+      },
+      "green": {
+        "role": "semantic",
+        "displayName": "Verde de estado",
+        "tonalRamp": [
+          "oklch(15% 0.08 160)",
+          "oklch(26% 0.08 160)",
+          "oklch(38% 0.08 160)",
+          "oklch(49% 0.08 160)",
+          "oklch(61% 0.08 160)",
+          "oklch(72% 0.08 160)",
+          "oklch(84% 0.08 160)",
+          "oklch(95% 0.08 160)"
+        ]
+      },
+      "red": {
+        "role": "semantic",
+        "displayName": "Rojo de estado",
+        "tonalRamp": [
+          "oklch(15% 0.12 25)",
+          "oklch(26% 0.12 25)",
+          "oklch(38% 0.12 25)",
+          "oklch(49% 0.12 25)",
+          "oklch(61% 0.12 25)",
+          "oklch(72% 0.12 25)",
+          "oklch(84% 0.12 25)",
+          "oklch(95% 0.12 25)"
+        ]
+      },
+      "note-yellow-paper": {
+        "role": "secondary",
+        "displayName": "Papel amarillo",
+        "tonalRamp": [
+          "oklch(15% 0.06 90)",
+          "oklch(26% 0.06 90)",
+          "oklch(38% 0.06 90)",
+          "oklch(49% 0.06 90)",
+          "oklch(61% 0.06 90)",
+          "oklch(72% 0.06 90)",
+          "oklch(84% 0.06 90)",
+          "oklch(95% 0.06 90)"
+        ]
+      },
+      "note-yellow-fold": {
+        "role": "secondary",
+        "displayName": "Pliegue amarillo",
+        "tonalRamp": [
+          "oklch(15% 0.06 90)",
+          "oklch(26% 0.06 90)",
+          "oklch(38% 0.06 90)",
+          "oklch(49% 0.06 90)",
+          "oklch(61% 0.06 90)",
+          "oklch(72% 0.06 90)",
+          "oklch(84% 0.06 90)",
+          "oklch(95% 0.06 90)"
+        ]
+      },
+      "note-yellow-ink": {
+        "role": "secondary",
+        "displayName": "Tinta amarillo",
+        "tonalRamp": [
+          "oklch(15% 0.06 90)",
+          "oklch(26% 0.06 90)",
+          "oklch(38% 0.06 90)",
+          "oklch(49% 0.06 90)",
+          "oklch(61% 0.06 90)",
+          "oklch(72% 0.06 90)",
+          "oklch(84% 0.06 90)",
+          "oklch(95% 0.06 90)"
+        ]
+      },
+      "note-pink-paper": {
+        "role": "secondary",
+        "displayName": "Papel rosa",
+        "tonalRamp": [
+          "oklch(15% 0.06 10)",
+          "oklch(26% 0.06 10)",
+          "oklch(38% 0.06 10)",
+          "oklch(49% 0.06 10)",
+          "oklch(61% 0.06 10)",
+          "oklch(72% 0.06 10)",
+          "oklch(84% 0.06 10)",
+          "oklch(95% 0.06 10)"
+        ]
+      },
+      "note-pink-fold": {
+        "role": "secondary",
+        "displayName": "Pliegue rosa",
+        "tonalRamp": [
+          "oklch(15% 0.06 10)",
+          "oklch(26% 0.06 10)",
+          "oklch(38% 0.06 10)",
+          "oklch(49% 0.06 10)",
+          "oklch(61% 0.06 10)",
+          "oklch(72% 0.06 10)",
+          "oklch(84% 0.06 10)",
+          "oklch(95% 0.06 10)"
+        ]
+      },
+      "note-pink-ink": {
+        "role": "secondary",
+        "displayName": "Tinta rosa",
+        "tonalRamp": [
+          "oklch(15% 0.06 10)",
+          "oklch(26% 0.06 10)",
+          "oklch(38% 0.06 10)",
+          "oklch(49% 0.06 10)",
+          "oklch(61% 0.06 10)",
+          "oklch(72% 0.06 10)",
+          "oklch(84% 0.06 10)",
+          "oklch(95% 0.06 10)"
+        ]
+      },
+      "note-blue-paper": {
+        "role": "secondary",
+        "displayName": "Papel azul",
+        "tonalRamp": [
+          "oklch(15% 0.06 230)",
+          "oklch(26% 0.06 230)",
+          "oklch(38% 0.06 230)",
+          "oklch(49% 0.06 230)",
+          "oklch(61% 0.06 230)",
+          "oklch(72% 0.06 230)",
+          "oklch(84% 0.06 230)",
+          "oklch(95% 0.06 230)"
+        ]
+      },
+      "note-blue-fold": {
+        "role": "secondary",
+        "displayName": "Pliegue azul",
+        "tonalRamp": [
+          "oklch(15% 0.06 230)",
+          "oklch(26% 0.06 230)",
+          "oklch(38% 0.06 230)",
+          "oklch(49% 0.06 230)",
+          "oklch(61% 0.06 230)",
+          "oklch(72% 0.06 230)",
+          "oklch(84% 0.06 230)",
+          "oklch(95% 0.06 230)"
+        ]
+      },
+      "note-blue-ink": {
+        "role": "secondary",
+        "displayName": "Tinta azul",
+        "tonalRamp": [
+          "oklch(15% 0.06 230)",
+          "oklch(26% 0.06 230)",
+          "oklch(38% 0.06 230)",
+          "oklch(49% 0.06 230)",
+          "oklch(61% 0.06 230)",
+          "oklch(72% 0.06 230)",
+          "oklch(84% 0.06 230)",
+          "oklch(95% 0.06 230)"
+        ]
+      },
+      "note-green-paper": {
+        "role": "secondary",
+        "displayName": "Papel verde",
+        "tonalRamp": [
+          "oklch(15% 0.06 135)",
+          "oklch(26% 0.06 135)",
+          "oklch(38% 0.06 135)",
+          "oklch(49% 0.06 135)",
+          "oklch(61% 0.06 135)",
+          "oklch(72% 0.06 135)",
+          "oklch(84% 0.06 135)",
+          "oklch(95% 0.06 135)"
+        ]
+      },
+      "note-green-fold": {
+        "role": "secondary",
+        "displayName": "Pliegue verde",
+        "tonalRamp": [
+          "oklch(15% 0.06 135)",
+          "oklch(26% 0.06 135)",
+          "oklch(38% 0.06 135)",
+          "oklch(49% 0.06 135)",
+          "oklch(61% 0.06 135)",
+          "oklch(72% 0.06 135)",
+          "oklch(84% 0.06 135)",
+          "oklch(95% 0.06 135)"
+        ]
+      },
+      "note-green-ink": {
+        "role": "secondary",
+        "displayName": "Tinta verde",
+        "tonalRamp": [
+          "oklch(15% 0.06 135)",
+          "oklch(26% 0.06 135)",
+          "oklch(38% 0.06 135)",
+          "oklch(49% 0.06 135)",
+          "oklch(61% 0.06 135)",
+          "oklch(72% 0.06 135)",
+          "oklch(84% 0.06 135)",
+          "oklch(95% 0.06 135)"
+        ]
+      },
+      "note-purple-paper": {
+        "role": "secondary",
+        "displayName": "Papel morado",
+        "tonalRamp": [
+          "oklch(15% 0.06 305)",
+          "oklch(26% 0.06 305)",
+          "oklch(38% 0.06 305)",
+          "oklch(49% 0.06 305)",
+          "oklch(61% 0.06 305)",
+          "oklch(72% 0.06 305)",
+          "oklch(84% 0.06 305)",
+          "oklch(95% 0.06 305)"
+        ]
+      },
+      "note-purple-fold": {
+        "role": "secondary",
+        "displayName": "Pliegue morado",
+        "tonalRamp": [
+          "oklch(15% 0.06 305)",
+          "oklch(26% 0.06 305)",
+          "oklch(38% 0.06 305)",
+          "oklch(49% 0.06 305)",
+          "oklch(61% 0.06 305)",
+          "oklch(72% 0.06 305)",
+          "oklch(84% 0.06 305)",
+          "oklch(95% 0.06 305)"
+        ]
+      },
+      "note-purple-ink": {
+        "role": "secondary",
+        "displayName": "Tinta morado",
+        "tonalRamp": [
+          "oklch(15% 0.06 305)",
+          "oklch(26% 0.06 305)",
+          "oklch(38% 0.06 305)",
+          "oklch(49% 0.06 305)",
+          "oklch(61% 0.06 305)",
+          "oklch(72% 0.06 305)",
+          "oklch(84% 0.06 305)",
+          "oklch(95% 0.06 305)"
+        ]
+      },
+      "note-orange-paper": {
+        "role": "secondary",
+        "displayName": "Papel naranja",
+        "tonalRamp": [
+          "oklch(15% 0.06 65)",
+          "oklch(26% 0.06 65)",
+          "oklch(38% 0.06 65)",
+          "oklch(49% 0.06 65)",
+          "oklch(61% 0.06 65)",
+          "oklch(72% 0.06 65)",
+          "oklch(84% 0.06 65)",
+          "oklch(95% 0.06 65)"
+        ]
+      },
+      "note-orange-fold": {
+        "role": "secondary",
+        "displayName": "Pliegue naranja",
+        "tonalRamp": [
+          "oklch(15% 0.06 65)",
+          "oklch(26% 0.06 65)",
+          "oklch(38% 0.06 65)",
+          "oklch(49% 0.06 65)",
+          "oklch(61% 0.06 65)",
+          "oklch(72% 0.06 65)",
+          "oklch(84% 0.06 65)",
+          "oklch(95% 0.06 65)"
+        ]
+      },
+      "note-orange-ink": {
+        "role": "secondary",
+        "displayName": "Tinta naranja",
+        "tonalRamp": [
+          "oklch(15% 0.06 65)",
+          "oklch(26% 0.06 65)",
+          "oklch(38% 0.06 65)",
+          "oklch(49% 0.06 65)",
+          "oklch(61% 0.06 65)",
+          "oklch(72% 0.06 65)",
+          "oklch(84% 0.06 65)",
+          "oklch(95% 0.06 65)"
+        ]
+      },
+      "calendar-today-paper": {
+        "role": "semantic",
+        "displayName": "Verde suave de hoy"
+      },
+      "calendar-task-dot": {
+        "role": "semantic",
+        "displayName": "Ámbar de tareas",
+        "tonalRamp": [
+          "oklch(15% 0.14 65)",
+          "oklch(26% 0.14 65)",
+          "oklch(38% 0.14 65)",
+          "oklch(49% 0.14 65)",
+          "oklch(61% 0.14 65)",
+          "oklch(72% 0.14 65)",
+          "oklch(84% 0.14 65)",
+          "oklch(95% 0.14 65)"
+        ]
+      },
+      "calendar-conversation-dot": {
+        "role": "semantic",
+        "displayName": "Azul de conversaciones",
+        "tonalRamp": [
+          "oklch(15% 0.07 260)",
+          "oklch(26% 0.07 260)",
+          "oklch(38% 0.07 260)",
+          "oklch(49% 0.07 260)",
+          "oklch(61% 0.07 260)",
+          "oklch(72% 0.07 260)",
+          "oklch(84% 0.07 260)",
+          "oklch(95% 0.07 260)"
+        ]
+      }
+    },
+    "typographyMeta": {
+      "body": {
+        "displayName": "Cuerpo",
+        "purpose": "Lectura y base tipográfica."
+      },
+      "conversation": {
+        "displayName": "Conversación",
+        "purpose": "Respuestas metodológicas con interlineado amplio."
+      },
+      "title": {
+        "displayName": "Título funcional",
+        "purpose": "Paneles y nodos."
+      },
+      "control": {
+        "displayName": "Control",
+        "purpose": "Botones y nombres de cuaderno."
+      },
+      "label": {
+        "displayName": "Etiqueta",
+        "purpose": "Secciones y campos de memoria."
+      },
+      "note-title": {
+        "displayName": "Título de nota",
+        "purpose": "Título personal con saltos de línea conservados."
+      },
+      "note-body": {
+        "displayName": "Texto de nota",
+        "purpose": "Lectura vertical; 14px bajo 460px."
+      },
+      "task-title": {
+        "displayName": "Título de tarea",
+        "purpose": "Título seminegrita de las filas de agenda; conserva lectura compacta."
+      }
+    },
+    "shadows": [
+      {
+        "name": "composer-focus",
+        "value": "0 0 0 3px #294eb811",
+        "purpose": "Foco del compositor."
+      },
+      {
+        "name": "folder-rest",
+        "value": "inset 0 2px 5px #253c6012",
+        "purpose": "Profundidad material local de carpetas de Inicio, derivada de la referencia."
+      },
+      {
+        "name": "folder-paper",
+        "value": "0 2px 7px #253c6010",
+        "purpose": "Separación local entre papeles superpuestos."
+      },
+      {
+        "name": "folder-hover",
+        "value": "0 9px 20px #253c6014",
+        "purpose": "Respuesta suave al abrir una carpeta; excepción local a paneles planos."
+      },
+      {
+        "name": "project-dialog",
+        "value": "0 18px 60px #17284126",
+        "purpose": "Separación ambiental del diálogo Nuevo proyecto."
+      },
+      {
+        "name": "note-paper",
+        "value": "2px 6px 9px #26334816",
+        "purpose": "Separación suave del papel en la pila vertical; excepción local."
+      },
+      {
+        "name": "note-dialog",
+        "value": "0 18px 55px #17284440",
+        "purpose": "Separación ambiental del editor modal de notas."
+      }
+    ],
+    "motion": [
+      {
+        "name": "control-state",
+        "value": "background .16s",
+        "purpose": "Hover de controles."
+      },
+      {
+        "name": "graph-state",
+        "value": "fill .18s, stroke .18s",
+        "purpose": "Cambio de estado en nodos."
+      },
+      {
+        "name": "running-pulse",
+        "value": "pulse 1.5s ease-in-out infinite",
+        "purpose": "Indicador de ejecución; opacidad de 1 a .5."
+      },
+      {
+        "name": "reduced-motion",
+        "value": "animation:none;transition:none;scroll-behavior:auto",
+        "purpose": "Respeta prefers-reduced-motion:reduce."
+      },
+      {
+        "name": "folder-state",
+        "value": "transform .2s cubic-bezier(.16,1,.3,1),box-shadow .2s",
+        "purpose": "Hover translateY(-4px), pulsación translateY(-1px); hereda prefers-reduced-motion."
+      },
+      {
+        "name": "toast-enter",
+        "value": "toast-in .28s cubic-bezier(.16,1,.3,1)",
+        "purpose": "Entrada del aviso transitorio; se anula con prefers-reduced-motion."
+      },
+      {
+        "name": "toast-exit",
+        "value": "toast-out .18s ease-in",
+        "purpose": "Salida del aviso transitorio; se anula con prefers-reduced-motion."
+      },
+      {
+        "name": "toast-lifetime",
+        "value": "4.8s default; 7s error",
+        "purpose": "Autocierre pausado durante hover o foco."
+      }
+    ],
+    "breakpoints": [
+      {
+        "name": "wide",
+        "value": "1600px"
+      },
+      {
+        "name": "compact-desktop",
+        "value": "1180px"
+      },
+      {
+        "name": "project-workspace-compact",
+        "value": "1050px"
+      },
+      {
+        "name": "mobile-top-navigation-and-stacked-notes",
+        "value": "700px"
+      },
+      {
+        "name": "single-column-evidence",
+        "value": "460px"
+      },
+      {
+        "name": "single-column-folders",
+        "value": "420px"
+      },
+      {
+        "name": "agenda-compact",
+        "value": "1150px"
+      },
+      {
+        "name": "agenda-stacked",
+        "value": "900px"
+      }
+    ]
+  },
+  "components": [
+    {
+      "name": "Acción principal",
+      "kind": "button",
+      "refersTo": "button-primary",
+      "description": "Crear y confirmar acciones.",
+      "html": "<button class=\"ds-primary\">Crear cuaderno</button>",
+      "css": ".ds-primary{font-family:\"Segoe UI\",system-ui,-apple-system,BlinkMacSystemFont,sans-serif;font-size:13px;font-weight:600;min-height:40px;padding:8px 13px;border-radius:8px;cursor:pointer;transition:background .16s;background:var(--accent,#294eb8);color:white;border:1px solid var(--accent,#294eb8)}.ds-primary:hover{background:#2142a0}.ds-primary:focus-visible{outline:2px solid var(--accent,#294eb8);outline-offset:3px}.ds-primary:disabled{opacity:.48;cursor:not-allowed}"
+    },
+    {
+      "name": "Acción secundaria",
+      "kind": "button",
+      "refersTo": "button-secondary",
+      "description": "Acción de control sobre superficie clara.",
+      "html": "<button class=\"ds-secondary\">Nuevo cuaderno</button>",
+      "css": ".ds-secondary{font-family:\"Segoe UI\",system-ui,-apple-system,BlinkMacSystemFont,sans-serif;font-size:13px;font-weight:600;min-height:40px;padding:8px 13px;border-radius:8px;cursor:pointer;transition:background .16s;background:white;color:#34435a;border:1px solid #cfd6e3}.ds-secondary:hover{background:#f5f7fb}.ds-secondary:focus-visible{outline:2px solid var(--accent,#294eb8);outline-offset:3px}.ds-secondary:disabled{opacity:.48;cursor:not-allowed}"
+    },
+    {
+      "name": "Acción discreta",
+      "kind": "button",
+      "refersTo": "button-quiet",
+      "description": "Cancelar o actuar sin competir con la acción principal.",
+      "html": "<button class=\"ds-quiet\">Cancelar</button>",
+      "css": ".ds-quiet{font-family:\"Segoe UI\",system-ui,-apple-system,BlinkMacSystemFont,sans-serif;font-size:13px;font-weight:600;min-height:40px;padding:8px 13px;border-radius:8px;cursor:pointer;transition:background .16s;background:transparent;color:var(--muted,#5f6d82);border:1px solid transparent}.ds-quiet:hover{background:#f5f7fb}.ds-quiet:focus-visible{outline:2px solid var(--accent,#294eb8);outline-offset:3px}"
+    },
+    {
+      "name": "Campo de cuaderno",
+      "kind": "input",
+      "refersTo": "input",
+      "description": "Entrada breve de datos del cuaderno.",
+      "html": "<label class=\"ds-field\">Nombre del cuaderno<input class=\"ds-input\" placeholder=\"Mi proyecto\" /></label>",
+      "css": ".ds-field{display:block;font-family:\"Segoe UI\",system-ui,-apple-system,BlinkMacSystemFont,sans-serif;font-size:11px;font-weight:600;color:#263348}.ds-input{display:block;width:100%;margin-top:5px;font-family:\"Segoe UI\",system-ui,-apple-system,BlinkMacSystemFont,sans-serif;font-size:12px;color:#34435a;background:white;border:1px solid #cbd4e2;border-radius:6px;padding:9px 8px}.ds-input:focus-visible{outline:2px solid var(--accent,#294eb8);outline-offset:3px}"
+    },
+    {
+      "name": "Cuaderno seleccionado",
+      "kind": "nav",
+      "refersTo": "notebook-selected",
+      "description": "Fila activa de Recientes con nombre truncado, selección translúcida sobre azul y sin vista previa.",
+      "html": "<nav class=\"ds-recent-nav\"><button class=\"ds-notebook\" aria-current=\"page\" title=\"Mi proyecto\"><strong>Mi proyecto</strong></button></nav>",
+      "css": ".ds-recent-nav{background:#2a55bc;padding:8px}.ds-notebook{font-family:\"Segoe UI\",system-ui,-apple-system,BlinkMacSystemFont,sans-serif;text-align:left;width:100%;min-height:36px;border:0;border-radius:6px;padding:7px 8px;background:#ffffff26;color:#fff;box-shadow:none;transition:background .16s;cursor:pointer}.ds-notebook strong{display:block;font-size:12px;font-weight:500;line-height:1.5;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.ds-notebook:hover{background:#ffffff16}.ds-notebook:focus-visible{outline:2px solid #fff;outline-offset:3px}"
+    },
+    {
+      "name": "Veredicto aprobado",
+      "kind": "chip",
+      "refersTo": "verdict-approved",
+      "description": "Resultado informativo de verificación.",
+      "html": "<span class=\"ds-verdict\">Aprobada</span>",
+      "css": ".ds-verdict{display:inline-block;font-family:\"Segoe UI\",system-ui,-apple-system,BlinkMacSystemFont,sans-serif;font-size:11px;line-height:1.5;font-weight:600;padding:3px 7px;border-radius:4px;background:#eaf4ee;color:#246a4f}"
+    },
+    {
+      "name": "Turno del usuario",
+      "kind": "card",
+      "description": "Burbuja azul alineada a la derecha, avatar con iniciales locales y hora guardada; conserva saltos de línea.",
+      "html": "<article class=\"ds-turn\"><div class=\"ds-turn-label\"><span class=\"ds-turn-avatar\" aria-hidden=\"true\">CP</span><span>Tú</span><time>10:30 a. m.</time></div><p>Quiero entender las causas de mi reto.</p></article>",
+      "css": ".ds-turn{font-family:\"Segoe UI\",system-ui,sans-serif;padding:18px 20px;background:#294eb8;border-radius:16px;border-top-right-radius:6px;color:#fff;max-width:620px;width:fit-content;margin-left:auto}.ds-turn-label{display:flex;align-items:center;gap:8px;font-size:12px;font-weight:600;color:#e5ecff;margin-bottom:12px}.ds-turn-label time{margin-left:auto;font-size:10px;font-weight:400}.ds-turn-avatar{display:grid;place-items:center;width:30px;height:30px;background:#ffffff21;border-radius:50%;color:#fff;font-size:10px}.ds-turn p{font-size:14px;line-height:1.75;margin:0;white-space:pre-wrap}"
+    },
+    {
+      "name": "Nodo en ejecución",
+      "kind": "custom",
+      "refersTo": "graph-node",
+      "description": "Nodo SVG con estado explícito.",
+      "html": "<svg class=\"ds-graph\" viewBox=\"0 0 200 70\" role=\"img\" aria-label=\"Metodólogo en ejecución\"><rect x=\"10\" y=\"12\" width=\"180\" height=\"46\" rx=\"9\"/><text x=\"100\" y=\"32\" text-anchor=\"middle\" class=\"ds-title\">Metodólogo</text><text x=\"100\" y=\"47\" text-anchor=\"middle\" class=\"ds-status\">En ejecución</text></svg>",
+      "css": ".ds-graph{width:100%;font-family:\"Segoe UI\",system-ui,-apple-system,BlinkMacSystemFont,sans-serif}.ds-graph rect{fill:#eaf0ff;stroke:var(--accent,#294eb8);stroke-width:1.8;transition:fill .18s,stroke .18s}.ds-title{font-size:13px;font-weight:600;fill:var(--accent,#294eb8)}.ds-status{font-size:10px;fill:var(--accent,#294eb8)}"
+    },
+    {
+      "name": "Carpeta de proyecto",
+      "kind": "custom",
+      "refersTo": "project-folder",
+      "description": "Carpeta de Inicio con paleta personal y etiqueta Último abierto independiente del color. Los datos del ejemplo son ilustrativos.",
+      "html": "<button class=\"ds-folder ds-last-opened\" data-color=\"blue\" aria-label=\"Abrir proyecto Mi emprendimiento\"><span class=\"ds-folder-papers\" aria-hidden=\"true\"><span></span><span></span><span></span></span><span class=\"ds-folder-front\"><span class=\"ds-folder-last\">Último abierto</span><strong class=\"ds-folder-title\">Mi emprendimiento</strong><span class=\"ds-folder-stage\">Descubrimiento</span><span class=\"ds-folder-meta\"><span>3 mensajes</span><span>14 sept 2026</span></span></span></button>",
+      "css": ".ds-folder{position:relative;isolation:isolate;display:block;width:260px;max-width:100%;height:245px;text-align:left;border:0;border-radius:16px;background:linear-gradient(145deg,#e4e8ef,#eff2f7);box-shadow:inset 0 2px 5px #253c6012;padding:0;color:#263348;font-family:\"Segoe UI\",system-ui,-apple-system,BlinkMacSystemFont,sans-serif;cursor:pointer;transition:transform .2s cubic-bezier(.16,1,.3,1),box-shadow .2s}.ds-folder:hover:not(:disabled){transform:translateY(-4px);box-shadow:0 9px 20px #253c6014}.ds-folder:active:not(:disabled){transform:translateY(-1px)}.ds-folder:focus-visible{outline:2px solid var(--accent,#294eb8);outline-offset:3px}.ds-folder:disabled{opacity:.48;cursor:not-allowed}.ds-folder-papers{position:absolute;inset:14px 14px 25px;overflow:hidden;pointer-events:none}.ds-folder-papers>span{position:absolute;inset:8px 4px 0;background:#fff;border-radius:9px;box-shadow:0 2px 7px #253c6010}.ds-folder-papers>span:first-child{transform:rotate(-5deg);background:#f4f6fa}.ds-folder-papers>span:nth-child(2){transform:rotate(4deg);inset:14px 3px 0;background:#f9fafc}.ds-folder-papers>span:last-child{inset:21px 0 0}.ds-folder-front{position:absolute;inset:43px 0 0;display:flex;flex-direction:column;border-radius:0 0 16px 16px;background:linear-gradient(160deg,#f7f9fc,#e8ecf2);clip-path:polygon(0 0,43% 0,55% 22px,100% 22px,100% 100%,0 100%);padding:48px 22px 21px}.ds-folder-title{display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;overflow-wrap:anywhere;font-size:17px;line-height:1.4;font-weight:600;letter-spacing:-.01em;margin-bottom:7px}.ds-folder-stage{display:block;color:#58677c;font-size:12px;line-height:1.5;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.ds-folder-meta{display:flex;justify-content:space-between;align-items:flex-end;gap:12px;margin-top:auto;padding-top:16px;font-size:11px;line-height:1.5;color:#58677c}.ds-folder-last{position:absolute;top:28px;left:22px;font-size:10px;line-height:1.5;color:#edf4ff}.ds-last-opened{background:#8db4f4}.ds-last-opened .ds-folder-front{background:linear-gradient(160deg,#3664b5,#294eb8);color:#fff}.ds-last-opened .ds-folder-stage,.ds-last-opened .ds-folder-meta{color:#edf4ff}@media(prefers-reduced-motion:reduce){.ds-folder{transition:none}}\n[data-color=\"blue\"]{--folder-back:#8db4f4;--folder-light:#3664b5;--folder-deep:#294eb8;--folder-ink:#fff;--folder-secondary:#edf4ff}\n[data-color=\"yellow\"]{--folder-back:#f4d77f;--folder-light:#fae9a6;--folder-deep:#edc95a;--folder-ink:#55431b;--folder-secondary:#66501c}\n[data-color=\"green\"]{--folder-back:#9ac5ac;--folder-light:#347459;--folder-deep:#245d46;--folder-ink:#fff;--folder-secondary:#ecf7ef}\n[data-color=\"orange\"]{--folder-back:#efb685;--folder-light:#f9d0a4;--folder-deep:#f0af74;--folder-ink:#573017;--folder-secondary:#633b25}\n[data-color=\"purple\"]{--folder-back:#bba7df;--folder-light:#7256a6;--folder-deep:#5a3e91;--folder-ink:#fff;--folder-secondary:#f5efff}\n[data-color=\"gray\"]{--folder-back:#e4e8ef;--folder-light:#f1f4f8;--folder-deep:#e2e7ef;--folder-ink:#263348;--folder-secondary:#58677c}\n.ds-folder,.ds-folder.ds-last-opened{background:var(--folder-back,#e4e8ef);color:var(--folder-ink,#263348)}.ds-folder-front,.ds-last-opened .ds-folder-front{background:linear-gradient(160deg,var(--folder-light,#f7f9fc),var(--folder-deep,#e8ecf2));color:var(--folder-ink,#263348)}.ds-folder-stage,.ds-folder-meta,.ds-folder-last,.ds-last-opened .ds-folder-stage,.ds-last-opened .ds-folder-meta{color:var(--folder-secondary,#58677c)}"
+    },
+    {
+      "name": "Formulario de contexto del cuaderno",
+      "kind": "custom",
+      "refersTo": "project-field",
+      "description": "Creación y edición con contexto declarado, vista previa y seis colores personales; muestra estática del diálogo, sin actualización dinámica del nombre o etapa. La zona desplazable reserva 6px para el contorno de foco; la validación muestra errores debajo del campo y enfoca la primera entrada incompleta.",
+      "html": "<section class=\"ds-project-dialog\" aria-labelledby=\"ds-new-project-title\">\n    <form id=\"ds-notebook-form\" class=\"ds-notebook-form\">\n      <h2 id=\"ds-new-project-title\">Nuevo cuaderno</h2><p id=\"ds-project-form-description\">Cuéntanos qué quieres explorar. El nombre y el reto son obligatorios.</p>\n      <p id=\"ds-project-form-error\" class=\"ds-project-form-error\" role=\"alert\" hidden></p>\n      <div class=\"ds-dialog-grid\">\n        <div class=\"ds-dialog-fields\">\n          <label for=\"ds-notebook-name\">Nombre del proyecto <span class=\"ds-required-label\">Obligatorio</span></label>\n          <input id=\"ds-notebook-name\" required maxlength=\"120\" placeholder=\"Ej. Movilidad en el campus\" autocomplete=\"off\" />\n          <label for=\"ds-context-question\">Reto o pregunta de negocio <span class=\"ds-required-label\" id=\"ds-question-required\">Obligatorio</span></label>\n          <p class=\"ds-field-hint\" id=\"ds-question-hint\">¿Qué quieres entender o mejorar, y para quién?</p>\n          <textarea id=\"ds-context-question\" required maxlength=\"1500\" rows=\"3\" placeholder=\"Ej. ¿Cómo podemos reducir las llegadas tarde de los estudiantes?\" aria-describedby=\"ds-question-hint\"></textarea>\n          <div class=\"ds-context-field-grid\">\n            <div><label for=\"ds-context-environment\">Entorno <span class=\"ds-optional-label\">Opcional</span></label><p class=\"ds-field-hint\">¿Por qué es relevante? Describe el contexto.</p><textarea id=\"ds-context-environment\" maxlength=\"1500\" rows=\"3\"></textarea></div>\n            <div><label for=\"ds-context-objective\">Objetivo del proyecto <span class=\"ds-optional-label\">Opcional</span></label><p class=\"ds-field-hint\">¿Con qué propósito o estrategia se relaciona?</p><textarea id=\"ds-context-objective\" maxlength=\"1500\" rows=\"3\"></textarea></div>\n          </div>\n          <details class=\"ds-more-project-details\" id=\"ds-more-project-details\"><summary>Más detalles <span>Opcional</span></summary>\n            <div class=\"ds-context-field-grid\">\n              <div><label for=\"ds-context-hypothesis\">Hipótesis o supuestos</label><p class=\"ds-field-hint\">Una explicación por contrastar, no un resultado confirmado.</p><textarea id=\"ds-context-hypothesis\" maxlength=\"1500\" rows=\"3\" placeholder=\"Si hacemos A, esperamos B…\"></textarea></div>\n              <div><label for=\"ds-context-acceptance_criteria\">Criterio de aceptación</label><p class=\"ds-field-hint\">¿Qué resultado sería suficiente para avanzar?</p><textarea id=\"ds-context-acceptance_criteria\" maxlength=\"1500\" rows=\"3\"></textarea></div>\n            </div>\n            <label for=\"ds-context-ambition\">Ambición 10X</label><p class=\"ds-field-hint\">¿Qué impacto mayor te gustaría alcanzar, si corresponde?</p><textarea id=\"ds-context-ambition\" maxlength=\"1500\" rows=\"2\"></textarea>\n            <label for=\"ds-initial-stage\">Etapa inicial</label><select id=\"ds-initial-stage\"><option>Definir un reto</option></select>\n          </details>\n        </div>\n        <aside class=\"ds-creation-preview\">\n          <p class=\"ds-preview-heading\">Tu cuaderno</p>\n          <div class=\"ds-project-folder ds-folder-preview\" id=\"ds-folder-preview\" data-color=\"blue\" role=\"img\" aria-label=\"Vista previa del cuaderno azul\"><span class=\"ds-folder-papers\" aria-hidden=\"true\"><span></span><span></span><span></span></span><span class=\"ds-folder-front\"><strong class=\"ds-folder-title\" id=\"ds-preview-name\">Tu nuevo cuaderno</strong><span class=\"ds-folder-stage\" id=\"ds-preview-stage\">Definir un reto</span></span></div>\n          <fieldset class=\"ds-color-picker\"><legend>Color del cuaderno</legend>\n            <label class=\"ds-color-choice\"><input type=\"radio\" name=\"ds-notebook-color\" value=\"blue\" checked /><span class=\"ds-color-swatch\" data-color=\"blue\"></span>Azul</label>\n            <label class=\"ds-color-choice\"><input type=\"radio\" name=\"ds-notebook-color\" value=\"yellow\" /><span class=\"ds-color-swatch\" data-color=\"yellow\"></span>Amarillo</label>\n            <label class=\"ds-color-choice\"><input type=\"radio\" name=\"ds-notebook-color\" value=\"green\" /><span class=\"ds-color-swatch\" data-color=\"green\"></span>Verde</label>\n            <label class=\"ds-color-choice\"><input type=\"radio\" name=\"ds-notebook-color\" value=\"orange\" /><span class=\"ds-color-swatch\" data-color=\"orange\"></span>Naranja</label>\n            <label class=\"ds-color-choice\"><input type=\"radio\" name=\"ds-notebook-color\" value=\"purple\" /><span class=\"ds-color-swatch\" data-color=\"purple\"></span>Morado</label>\n            <label class=\"ds-color-choice\"><input type=\"radio\" name=\"ds-notebook-color\" value=\"gray\" /><span class=\"ds-color-swatch\" data-color=\"gray\"></span>Gris</label>\n          </fieldset><p class=\"ds-field-hint\">Puedes cambiar el color y completar el contexto después.</p>\n        </aside>\n      </div>\n      <div class=\"ds-form-actions\"><button class=\"ds-button ds-quiet\" id=\"ds-cancel-notebook\" type=\"button\">Cancelar</button><button class=\"ds-button ds-primary\" id=\"ds-save-project\" type=\"button\">Crear cuaderno</button></div>\n    </form>\n  </section>",
+      "css": ".ds-notebook-form label{display:block;font-size:11px;font-weight:600;margin:9px 0 5px}.ds-notebook-form input,.ds-notebook-form select{width:100%;border:1px solid #cbd4e2;background:white;border-radius:6px;padding:9px 8px;font-size:12px;color:#34435a;min-width:0}.ds-form-actions{display:flex;gap:5px;margin-top:12px}\n.ds-button{display:inline-flex;gap:9px;align-items:center;justify-content:center;min-height:40px;border:1px solid #cfd6e3;background:white;color:#34435a;border-radius:8px;padding:8px 13px;font-size:13px;font-weight:600;transition:background .16s}.ds-button:hover:not(:disabled){background:#f5f7fb}.ds-button.ds-primary{background:var(--accent);border-color:var(--accent);color:white}.ds-button.ds-primary:hover{background:#2142a0}.ds-button.ds-quiet{border-color:transparent;background:transparent;color:var(--muted)}.ds-button.ds-danger{background:#a53c3c;color:white;border-color:#a53c3c}.ds-button{font-size:10px;min-height:33px;padding:5px 8px}.ds-button{flex-shrink:0}.ds-button{min-height:42px}.ds-button{font-size:12px}.ds-button{padding:8px;font-size:11px}\n.ds-project-folder{position:relative;isolation:isolate;display:block;width:100%;height:245px;text-align:left;border:0;border-radius:16px;background:linear-gradient(145deg,#e4e8ef,#eff2f7);box-shadow:inset 0 2px 5px #253c6012;padding:0;color:#263348;transition:transform .2s cubic-bezier(.16,1,.3,1),box-shadow .2s}.ds-project-folder:hover:not(:disabled){transform:translateY(-4px);box-shadow:0 9px 20px #253c6014}.ds-project-folder:active:not(:disabled){transform:translateY(-1px)}.ds-folder-papers{position:absolute;inset:14px 14px 25px;overflow:hidden;pointer-events:none}.ds-folder-papers>span{position:absolute;inset:8px 4px 0;background:#fff;border-radius:9px;box-shadow:0 2px 7px #253c6010}.ds-folder-papers>span:first-child{transform:rotate(-5deg);background:#f4f6fa}.ds-folder-papers>span:nth-child(2){transform:rotate(4deg);inset:14px 3px 0;background:#f9fafc}.ds-folder-papers>span:last-child{inset:21px 0 0;background:#fff}.ds-folder-front{position:absolute;inset:43px 0 0;display:flex;flex-direction:column;border-radius:0 0 16px 16px;background:linear-gradient(160deg,#f7f9fc,#e8ecf2);clip-path:polygon(0 0,43% 0,55% 22px,100% 22px,100% 100%,0 100%);padding:48px 22px 21px}.ds-folder-title{display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;overflow-wrap:anywhere;font-size:17px;line-height:1.4;font-weight:600;letter-spacing:-.01em;margin-bottom:7px}.ds-folder-stage{display:block;color:#58677c;font-size:12px;line-height:1.5;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.ds-folder-meta{display:flex;justify-content:space-between;align-items:flex-end;gap:12px;margin-top:auto;padding-top:16px;font-size:11px;line-height:1.5;color:#58677c}.ds-folder-date{text-align:right}.ds-project-folder.ds-last-opened{background:#8db4f4}.ds-last-opened .ds-folder-front{background:linear-gradient(160deg,#3664b5,#294eb8);color:#fff}.ds-last-opened .ds-folder-stage,.ds-last-opened .ds-folder-meta{color:#edf4ff}\n.ds-project-dialog{width:min(440px,calc(100% - 32px));padding:28px;border:1px solid var(--line);border-radius:12px;background:#fff;color:#263348;box-shadow:0 18px 60px #17284126}.ds-project-dialog::backdrop{background:#17284170}.ds-project-dialog .ds-notebook-form{padding:0;margin:0}.ds-project-dialog h2{font-size:21px;font-weight:600;margin:0 0 8px}.ds-project-dialog .ds-notebook-form>p{font-size:13px;color:var(--muted);line-height:1.7;margin:0 0 22px}.ds-project-dialog .ds-notebook-form label{font-size:12px;margin:18px 0 7px}.ds-project-dialog .ds-notebook-form input,.ds-project-dialog .ds-notebook-form select{font-size:14px;padding:11px 10px}.ds-project-dialog .ds-form-actions{justify-content:flex-end;margin-top:26px}.ds-project-dialog .ds-notebook-form>.ds-project-form-error{color:var(--red);margin-bottom:14px}\n[data-color=\"blue\"]{--folder-back:#8db4f4;--folder-light:#3664b5;--folder-deep:#294eb8;--folder-ink:#fff;--folder-secondary:#edf4ff}\n[data-color=\"yellow\"]{--folder-back:#f4d77f;--folder-light:#fae9a6;--folder-deep:#edc95a;--folder-ink:#55431b;--folder-secondary:#66501c}\n[data-color=\"green\"]{--folder-back:#9ac5ac;--folder-light:#347459;--folder-deep:#245d46;--folder-ink:#fff;--folder-secondary:#ecf7ef}\n[data-color=\"orange\"]{--folder-back:#efb685;--folder-light:#f9d0a4;--folder-deep:#f0af74;--folder-ink:#573017;--folder-secondary:#633b25}\n[data-color=\"purple\"]{--folder-back:#bba7df;--folder-light:#7256a6;--folder-deep:#5a3e91;--folder-ink:#fff;--folder-secondary:#f5efff}\n[data-color=\"gray\"]{--folder-back:#e4e8ef;--folder-light:#f1f4f8;--folder-deep:#e2e7ef;--folder-ink:#263348;--folder-secondary:#58677c}\n.ds-project-folder,.ds-project-folder.ds-last-opened{background:var(--folder-back,#e4e8ef);color:var(--folder-ink,#263348)}.ds-folder-front,.ds-last-opened .ds-folder-front{background:linear-gradient(160deg,var(--folder-light,#f7f9fc),var(--folder-deep,#e8ecf2));color:var(--folder-ink,#263348)}.ds-folder-stage,.ds-folder-meta,.ds-last-opened .ds-folder-stage,.ds-last-opened .ds-folder-meta,.ds-folder-last{color:var(--folder-secondary,#58677c)}\n.ds-project-dialog{width:min(920px,calc(100% - 32px));max-height:calc(100dvh - 32px);overflow:hidden}.ds-project-dialog .ds-notebook-form{display:flex;flex-direction:column;max-height:calc(100dvh - 90px)}.ds-project-dialog h2,.ds-project-dialog .ds-notebook-form>p,.ds-project-dialog .ds-form-actions{flex-shrink:0}.ds-dialog-grid{display:grid;grid-template-columns:minmax(0,1fr) 250px;gap:32px;overflow:auto;min-height:0;padding-right:4px}.ds-dialog-fields{min-width:0;padding-bottom:6px}.ds-project-dialog .ds-notebook-form label{margin-top:16px}.ds-project-dialog .ds-dialog-fields>label:first-child{margin-top:0}.ds-project-dialog .ds-notebook-form textarea{display:block;width:100%;min-width:0;border:1px solid #cbd4e2;border-radius:6px;padding:11px 10px;font-size:13px;line-height:1.7;color:#34435a;background:#fcfdff;resize:vertical;min-height:80px;max-height:280px}.ds-project-dialog .ds-notebook-form textarea::placeholder{color:#627087}.ds-required-label,.ds-optional-label{font-size:10px;font-weight:400;color:#627087;margin-left:5px}.ds-field-hint{font-size:11px;line-height:1.7;color:#627087;margin:0 0 7px}.ds-context-field-grid{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:18px}.ds-context-field-grid .ds-field-hint{min-height:38px}.ds-more-project-details{margin-top:22px;border-top:1px solid var(--line);padding-top:15px}.ds-more-project-details summary{font-size:12px;font-weight:600;color:#445b7a;cursor:pointer}.ds-more-project-details summary span{font-weight:400;font-size:10px;color:#627087;margin-left:5px}.ds-more-project-details[open] summary{margin-bottom:10px}.ds-creation-preview{min-width:0;padding-left:2px}.ds-preview-heading{font-size:12px;font-weight:600;color:#536781;margin:0 0 12px}.ds-folder-preview{height:195px;cursor:default}.ds-folder-preview .ds-folder-front{padding-top:44px}.ds-folder-preview:hover:not(:disabled),.ds-folder-preview:active:not(:disabled){transform:none;box-shadow:inset 0 2px 5px #253c6012}.ds-folder-preview .ds-folder-title{font-size:16px}.ds-color-picker{display:grid;grid-template-columns:1fr 1fr;gap:8px;border:0;padding:0;margin:24px 0 12px;min-width:0}.ds-color-picker legend{font-size:12px;font-weight:600;margin-bottom:10px;color:#43536c}.ds-project-dialog .ds-notebook-form .ds-color-choice{display:flex;align-items:center;gap:7px;margin:0;border:1px solid #d8dfea;border-radius:8px;padding:9px 7px;min-height:42px;font-size:11px;font-weight:400;cursor:pointer}.ds-color-choice:has(input:checked){border-color:var(--accent);background:#f0f4fe}.ds-project-dialog .ds-notebook-form .ds-color-choice input{margin:0;padding:0;width:14px;height:14px;accent-color:var(--accent);flex-shrink:0}.ds-color-swatch{display:block;width:12px;height:12px;border-radius:3px;background:var(--folder-deep);flex-shrink:0}.ds-project-dialog .ds-form-actions{margin-top:22px;padding-top:18px;border-top:1px solid var(--line)}\n@media(max-width:700px){.ds-project-dialog{padding:22px;width:calc(100% - 24px);max-height:calc(100dvh - 24px)}.ds-project-dialog .ds-notebook-form{max-height:calc(100dvh - 68px)}.ds-dialog-grid{grid-template-columns:1fr;gap:24px;padding-right:6px}.ds-context-field-grid{grid-template-columns:1fr;gap:0}.ds-context-field-grid .ds-field-hint{min-height:0}.ds-creation-preview{padding-top:20px;border-top:1px solid var(--line);padding-bottom:4px}.ds-folder-preview{max-width:280px;margin-bottom:20px;height:185px}.ds-color-picker{grid-template-columns:repeat(3,minmax(0,1fr));margin-top:0}.ds-color-choice{justify-content:flex-start}.ds-topbar-actions{gap:0}.ds-topbar-actions .ds-local-badge{display:none}.ds-topbar-actions>.ds-button{padding:8px;font-size:11px}.ds-project-dialog .ds-form-actions{margin-top:16px;padding-top:14px}.ds-context-section{margin-bottom:0}}\n@media(max-width:700px){.ds-creation-preview{display:contents}.ds-creation-preview>.ds-preview-heading{display:none}.ds-color-picker{order:-1;margin-bottom:2px}.ds-dialog-fields{order:0}.ds-folder-preview{order:1}.ds-creation-preview>.ds-field-hint{order:2}.ds-project-dialog .ds-color-choice{font-size:10px}}\n.ds-project-dialog .ds-notebook-form .ds-color-choice{font-size:12px}\n@media(max-width:700px){.ds-color-picker{grid-template-columns:repeat(2,minmax(0,1fr))}}\n.ds-project-dialog{box-sizing:border-box;font-family:\"Segoe UI\",system-ui,-apple-system,BlinkMacSystemFont,sans-serif;font-size:14px;line-height:1.5;--accent:#294eb8;--muted:#5f6d82;--line:#e1e6ef;--red:#a53c3c}.ds-notebook-form input,.ds-notebook-form textarea,.ds-notebook-form select{box-sizing:border-box;font-family:inherit}.ds-project-form-error[hidden]{display:none}.ds-notebook-form button:focus-visible,.ds-notebook-form input:focus-visible,.ds-notebook-form textarea:focus-visible,.ds-notebook-form select:focus-visible,.ds-notebook-form summary:focus-visible{outline:2px solid var(--accent);outline-offset:3px}.ds-notebook-form button{cursor:pointer}.ds-notebook-form button:disabled{opacity:.48;cursor:not-allowed}@media(prefers-reduced-motion:reduce){.ds-project-dialog button{transition:none}}"
+    },
+    {
+      "name": "Selector de color del cuaderno",
+      "kind": "custom",
+      "description": "Preferencia personal entre seis colores; selección mediante radio, borde y fondo, sin significado metodológico.",
+      "html": "<fieldset class=\"ds-color-picker\"><legend>Color del cuaderno</legend>\n            <label class=\"ds-color-choice\"><input type=\"radio\" name=\"ds-notebook-color\" value=\"blue\" checked /><span class=\"ds-color-swatch\" data-color=\"blue\"></span>Azul</label>\n            <label class=\"ds-color-choice\"><input type=\"radio\" name=\"ds-notebook-color\" value=\"yellow\" /><span class=\"ds-color-swatch\" data-color=\"yellow\"></span>Amarillo</label>\n            <label class=\"ds-color-choice\"><input type=\"radio\" name=\"ds-notebook-color\" value=\"green\" /><span class=\"ds-color-swatch\" data-color=\"green\"></span>Verde</label>\n            <label class=\"ds-color-choice\"><input type=\"radio\" name=\"ds-notebook-color\" value=\"orange\" /><span class=\"ds-color-swatch\" data-color=\"orange\"></span>Naranja</label>\n            <label class=\"ds-color-choice\"><input type=\"radio\" name=\"ds-notebook-color\" value=\"purple\" /><span class=\"ds-color-swatch\" data-color=\"purple\"></span>Morado</label>\n            <label class=\"ds-color-choice\"><input type=\"radio\" name=\"ds-notebook-color\" value=\"gray\" /><span class=\"ds-color-swatch\" data-color=\"gray\"></span>Gris</label>\n          </fieldset>",
+      "css": ".ds-color-picker{display:grid;grid-template-columns:1fr 1fr;gap:8px;border:0;padding:0;margin:24px 0 12px;min-width:0}.ds-color-picker legend{font-size:12px;font-weight:600;margin-bottom:10px;color:#43536c}.ds-color-choice{display:flex;align-items:center;gap:7px;margin:0;border:1px solid #d8dfea;border-radius:8px;padding:9px 7px;min-height:42px;font-size:11px;font-weight:400;cursor:pointer}.ds-color-choice:has(input:checked){border-color:var(--accent);background:#f0f4fe}.ds-color-choice input{margin:0;padding:0;width:14px;height:14px;accent-color:var(--accent);flex-shrink:0}.ds-color-swatch{display:block;width:12px;height:12px;border-radius:3px;background:var(--folder-deep);flex-shrink:0}\n.ds-color-choice{font-size:12px}\n@media(max-width:700px){.ds-color-picker{grid-template-columns:repeat(2,minmax(0,1fr))}}\n[data-color=\"blue\"]{--folder-back:#8db4f4;--folder-light:#3664b5;--folder-deep:#294eb8;--folder-ink:#fff;--folder-secondary:#edf4ff}\n[data-color=\"yellow\"]{--folder-back:#f4d77f;--folder-light:#fae9a6;--folder-deep:#edc95a;--folder-ink:#55431b;--folder-secondary:#66501c}\n[data-color=\"green\"]{--folder-back:#9ac5ac;--folder-light:#347459;--folder-deep:#245d46;--folder-ink:#fff;--folder-secondary:#ecf7ef}\n[data-color=\"orange\"]{--folder-back:#efb685;--folder-light:#f9d0a4;--folder-deep:#f0af74;--folder-ink:#573017;--folder-secondary:#633b25}\n[data-color=\"purple\"]{--folder-back:#bba7df;--folder-light:#7256a6;--folder-deep:#5a3e91;--folder-ink:#fff;--folder-secondary:#f5efff}\n[data-color=\"gray\"]{--folder-back:#e4e8ef;--folder-light:#f1f4f8;--folder-deep:#e2e7ef;--folder-ink:#263348;--folder-secondary:#58677c}\n.ds-color-picker{font-family:\"Segoe UI\",system-ui,sans-serif;--accent:#294eb8}.ds-color-choice:hover{background:#f5f7fb}.ds-color-choice input:focus-visible{outline:2px solid var(--accent);outline-offset:3px}.ds-color-choice input{accent-color:var(--accent)}"
+    },
+    {
+      "name": "Post-it personal",
+      "kind": "card",
+      "refersTo": "postit-blue",
+      "description": "Nota personal de papel de color; categoría textual, origen desplegable y edición accesible.",
+      "html": "<article class=\"ds-postit ds-note-palette\" data-note-color=\"blue\"><div class=\"ds-note-top\"><span class=\"ds-note-category\">Pregunta</span><button class=\"ds-note-edit\" type=\"button\" aria-label=\"Editar post-it: Una pregunta para retomar\"><svg viewBox=\"0 0 24 24\" aria-hidden=\"true\"><path d=\"m16 3 5 5M4 15 15 4l5 5L9 20l-6 1z\"/></svg></button></div><h3>Una pregunta para retomar</h3><p class=\"ds-note-body\">¿Qué parte del proceso genera más dudas?</p><details class=\"ds-note-original\"><summary>Guardado del chat</summary><blockquote>Fragmento de ejemplo para esta muestra del sistema.</blockquote></details><div class=\"ds-note-footer\"><span>14 de sept</span></div></article>",
+      "css": ".ds-note-palette[data-note-color=\"yellow\"]{--note-paper:#f7e594;--note-fold:#dec976;--note-ink:#4c3c16;}.ds-note-palette[data-note-color=\"pink\"]{--note-paper:#f3bac5;--note-fold:#da97a5;--note-ink:#542630;}.ds-note-palette[data-note-color=\"blue\"]{--note-paper:#b5ddf2;--note-fold:#90bfd9;--note-ink:#21465b;}.ds-note-palette[data-note-color=\"green\"]{--note-paper:#c8e3ba;--note-fold:#a4c692;--note-ink:#314c27;}.ds-note-palette[data-note-color=\"purple\"]{--note-paper:#ddcaef;--note-fold:#bfa6d8;--note-ink:#49315f;}.ds-note-palette[data-note-color=\"orange\"]{--note-paper:#f7cea6;--note-fold:#ddac7f;--note-ink:#593619;}.ds-postit{font-family:\"Segoe UI\",system-ui,-apple-system,BlinkMacSystemFont,sans-serif;position:relative;background:var(--note-paper);color:var(--note-ink);padding:16px 20px 12px;border-radius:3px 3px 20px 3px;box-shadow:2px 6px 9px #26334816;overflow-wrap:anywhere}.ds-postit::after{content:\"\";position:absolute;bottom:0;right:0;width:19px;height:19px;background:var(--note-fold);clip-path:polygon(0 0,100% 0,0 100%);pointer-events:none}.ds-note-top,.ds-note-footer{display:flex;justify-content:space-between;align-items:center;gap:10px}.ds-note-category{font-size:11px;font-weight:600}.ds-note-edit{display:grid;place-items:center;width:32px;height:32px;border:0;border-radius:8px;background:transparent;color:inherit;cursor:pointer}.ds-note-edit svg{width:15px;height:15px;fill:none;stroke:currentColor;stroke-width:1.6;stroke-linecap:round;stroke-linejoin:round}.ds-note-edit:hover{background:#ffffff50}.ds-note-edit:focus-visible{outline:2px solid var(--accent,#294eb8);outline-offset:3px;}.ds-postit h3{font-size:16px;font-weight:650;line-height:1.4;margin:10px 0 12px;white-space:pre-wrap}.ds-note-body{font-size:13px;line-height:1.75;white-space:pre-wrap;margin:0 0 18px}.ds-note-original{font-size:11px;margin:0 0 10px}.ds-note-original summary{cursor:pointer;line-height:1.6}.ds-note-original summary:focus-visible{outline:2px solid var(--accent,#294eb8);outline-offset:3px;}.ds-note-original blockquote{margin:10px 0;white-space:pre-wrap;font-size:12px;line-height:1.7;max-height:180px;overflow:auto}.ds-note-footer{font-size:10px;padding-right:6px}@media(max-width:460px){.ds-note-body{font-size:14px}}"
+    },
+    {
+      "name": "Editor de post-it",
+      "kind": "custom",
+      "refersTo": "note-editor-field",
+      "description": "Editor con papel elegido, campos nativos, radios de color y acciones fuera del desplazamiento; muestra estática sin lógica de guardado.",
+      "html": "<section class=\"ds-note-editor ds-note-palette\" data-note-color=\"green\" role=\"dialog\" aria-labelledby=\"ds-note-editor-title\"><form><h2 id=\"ds-note-editor-title\">Nuevo post-it</h2><p class=\"ds-note-description\">Guarda una idea, una pregunta o algo que quieras retomar.</p><div class=\"ds-note-scroll\"><label for=\"ds-note-title\">Título</label><input id=\"ds-note-title\" placeholder=\"Una idea para retomar\" required /><label for=\"ds-note-text\">Texto</label><textarea id=\"ds-note-text\" rows=\"4\" placeholder=\"Anota lo que quieres destacar…\" required></textarea><label for=\"ds-note-category\">Categoría</label><select id=\"ds-note-category\"><option>Idea</option><option>Prototipo</option><option>Observación</option><option>Pregunta</option><option>Decisión</option><option>Otro</option></select><fieldset class=\"ds-note-colors\"><legend>Color del post-it</legend><label><input type=\"radio\" name=\"ds-note-color\" value=\"yellow\"  /><span class=\"ds-note-palette\" data-note-color=\"yellow\"></span>Amarillo</label><label><input type=\"radio\" name=\"ds-note-color\" value=\"pink\"  /><span class=\"ds-note-palette\" data-note-color=\"pink\"></span>Rosa</label><label><input type=\"radio\" name=\"ds-note-color\" value=\"blue\"  /><span class=\"ds-note-palette\" data-note-color=\"blue\"></span>Azul</label><label><input type=\"radio\" name=\"ds-note-color\" value=\"green\" checked /><span class=\"ds-note-palette\" data-note-color=\"green\"></span>Verde</label><label><input type=\"radio\" name=\"ds-note-color\" value=\"purple\"  /><span class=\"ds-note-palette\" data-note-color=\"purple\"></span>Morado</label><label><input type=\"radio\" name=\"ds-note-color\" value=\"orange\"  /><span class=\"ds-note-palette\" data-note-color=\"orange\"></span>Naranja</label></fieldset></div><div class=\"ds-note-actions\"><button class=\"ds-note-cancel\" type=\"button\">Cancelar</button><button class=\"ds-note-save\" type=\"button\">Guardar post-it</button></div></form></section>",
+      "css": ".ds-note-palette[data-note-color=\"yellow\"]{--note-paper:#f7e594;--note-fold:#dec976;--note-ink:#4c3c16;}.ds-note-palette[data-note-color=\"pink\"]{--note-paper:#f3bac5;--note-fold:#da97a5;--note-ink:#542630;}.ds-note-palette[data-note-color=\"blue\"]{--note-paper:#b5ddf2;--note-fold:#90bfd9;--note-ink:#21465b;}.ds-note-palette[data-note-color=\"green\"]{--note-paper:#c8e3ba;--note-fold:#a4c692;--note-ink:#314c27;}.ds-note-palette[data-note-color=\"purple\"]{--note-paper:#ddcaef;--note-fold:#bfa6d8;--note-ink:#49315f;}.ds-note-palette[data-note-color=\"orange\"]{--note-paper:#f7cea6;--note-fold:#ddac7f;--note-ink:#593619;}.ds-note-editor{font-family:\"Segoe UI\",system-ui,-apple-system,BlinkMacSystemFont,sans-serif;border:0;border-radius:12px;padding:28px;max-width:510px;max-height:calc(100dvh - 28px);color:var(--note-ink);background:var(--note-paper);box-shadow:0 18px 55px #17284440;overflow:hidden}.ds-note-editor form{display:flex;flex-direction:column;max-height:calc(100dvh - 84px)}.ds-note-editor h2{font-size:22px;font-weight:600;margin:0 0 6px;flex-shrink:0}.ds-note-description{font-size:12px;line-height:1.6;margin:0 0 16px;flex-shrink:0}.ds-note-scroll{overflow:auto;min-height:0;padding:6px}.ds-note-editor label{display:block;font-size:12px;font-weight:600;margin:12px 0 6px}.ds-note-editor input:not([type=\"radio\"]),.ds-note-editor textarea,.ds-note-editor select{width:100%;box-sizing:border-box;border:1px solid #00000033;background:#ffffffb8;color:#263348;border-radius:6px;padding:10px;font-family:inherit;font-size:13px}.ds-note-editor textarea{resize:vertical;min-height:120px;max-height:320px;line-height:1.7}.ds-note-editor input::placeholder,.ds-note-editor textarea::placeholder{color:#5c6b7e}.ds-note-editor input:focus-visible,.ds-note-editor textarea:focus-visible,.ds-note-editor select:focus-visible,.ds-note-editor button:focus-visible{outline:2px solid var(--accent,#294eb8);outline-offset:3px;}.ds-note-editor [aria-invalid=\"true\"]{border-color:#a53c3c}.ds-note-error{font-size:12px;line-height:1.6;color:#8d2525;background:#fff7f5;padding:10px;margin:0 0 10px}.ds-note-colors{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:7px;margin:20px 0 14px;border:0;padding:0;min-width:0}.ds-note-colors legend{font-size:12px;font-weight:600;margin-bottom:10px}.ds-note-colors label{display:flex;align-items:center;gap:5px;background:#ffffff80;border:1px solid #00000020;border-radius:6px;margin:0;padding:9px 6px;min-height:40px;font-size:11px;color:#263348;font-weight:400;cursor:pointer}.ds-note-colors label:has(input:checked){border-color:var(--accent,#294eb8);background:#fff}.ds-note-colors label:hover{background:#ffffffb8}.ds-note-colors input{margin:0;accent-color:var(--accent,#294eb8);width:13px;height:13px;flex-shrink:0}.ds-note-colors span{width:11px;height:11px;border-radius:2px;background:var(--note-paper);flex-shrink:0}.ds-note-actions{flex-shrink:0;margin-top:16px;padding-top:16px;border-top:1px solid #00000024;display:flex;justify-content:flex-end;gap:8px}.ds-note-actions button{font:600 13px \"Segoe UI\",system-ui,sans-serif;border-radius:8px;padding:8px 13px;min-height:40px;cursor:pointer;transition:background .16s}.ds-note-save{background:var(--accent,#294eb8);color:#fff;border:1px solid var(--accent,#294eb8)}.ds-note-save:hover{background:#2142a0}.ds-note-cancel{color:var(--note-ink);background:transparent;border:1px solid transparent}.ds-note-cancel:hover{background:#f5f7fb}.ds-note-actions button:disabled{opacity:.48;cursor:not-allowed}@media(max-width:460px){.ds-note-editor{padding:20px}.ds-note-editor form{max-height:calc(100dvh - 68px)}.ds-note-colors{grid-template-columns:repeat(2,minmax(0,1fr))}.ds-note-editor h2{font-size:20px}}@media(prefers-reduced-motion:reduce){.ds-note-actions button{transition:none}}"
+    },
+    {
+      "name": "Flujo bajo demanda",
+      "kind": "custom",
+      "refersTo": "flow-disclosure",
+      "description": "Acceso desplegable al recorrido secundario; cerrado por defecto.",
+      "html": "<details class=\"ds-flow\"><summary><svg viewBox=\"0 0 24 24\" aria-hidden=\"true\"><circle cx=\"5\" cy=\"4\" r=\"2\"/><circle cx=\"19\" cy=\"20\" r=\"2\"/><path d=\"M5 6v8a6 6 0 0 0 6 6h6M19 18V10a6 6 0 0 0-6-6H7\"/></svg>Ver flujo de agentes</summary><div class=\"ds-flow-content\"><h2>Recorrido de agentes</h2><p>El recorrido se ilumina mientras conversas.</p></div></details>",
+      "css": ".ds-flow{font-family:\"Segoe UI\",system-ui,-apple-system,BlinkMacSystemFont,sans-serif;color:#40536f}.ds-flow>summary{display:flex;align-items:center;gap:8px;list-style:none;border:1px solid #cfd6e3;border-radius:7px;min-height:40px;justify-content:center;font-size:12px;cursor:pointer}.ds-flow>summary::-webkit-details-marker{display:none}.ds-flow>summary svg{width:18px;height:18px;fill:none;stroke:currentColor;stroke-width:1.6;stroke-linecap:round;stroke-linejoin:round}.ds-flow>summary:hover{background:#f5f7fb}.ds-flow>summary:focus-visible{outline:2px solid var(--accent,#294eb8);outline-offset:3px;}.ds-flow[open]>summary{background:#edf2fc;color:var(--accent,#294eb8)}.ds-flow-content h2{font-size:13px;font-weight:600;margin-top:22px}.ds-flow-content p{font-size:11px;line-height:1.7;color:#627087}"
+    },
+    {
+      "name": "Calendario de Inicio",
+      "kind": "custom",
+      "refersTo": "calendar-day",
+      "description": "Calendario lavanda posterior a Herramientas; hoy verde suave y selección blanca, con fecha, tareas y conversaciones reales.",
+      "html": "<section class=\"ds-agenda\"><div class=\"ds-agenda-calendar ds-calendar-lavender\"><div class=\"ds-calendar-month\"><div class=\"ds-calendar-nav\"><strong>Septiembre de 2026</strong></div><div class=\"ds-calendar\"><span class=\"ds-cal-head\">lun</span><span class=\"ds-cal-head\">mar</span><span class=\"ds-cal-head\">mié</span><span class=\"ds-cal-head\">jue</span><span class=\"ds-cal-head\">vie</span><span class=\"ds-cal-head\">sáb</span><span class=\"ds-cal-head\">dom</span><button class=\"ds-cal-day ds-today\" aria-label=\"14 de septiembre de 2026: 1 tarea, 0 mensajes\" aria-pressed=\"false\"><span>14</span><span class=\"ds-cal-dots\" aria-hidden=\"true\"><i class=\"ds-cal-task-dot\"></i></span></button><button class=\"ds-cal-day ds-picked\" aria-label=\"15 de septiembre de 2026: 0 tareas, 1 mensaje\" aria-pressed=\"true\"><span>15</span><span class=\"ds-cal-dots\" aria-hidden=\"true\"><i class=\"ds-cal-activity-dot\"></i></span></button></div></div><div class=\"ds-calendar-key\"><span><i class=\"ds-key-dot ds-task-dot\"></i>Tareas</span><span><i class=\"ds-key-dot ds-activity-dot\"></i>Conversaciones</span><span><i class=\"ds-key-today\"></i>Hoy</span></div></div></section>",
+      "css": "\r\n\r\n.ds-calendar-nav{display:flex;align-items:center;gap:4px}\r\n.ds-calendar-nav strong{min-width:140px;text-align:center;font-size:13px;font-weight:600}\r\n.ds-cal-back .ds-icon{transform:rotate(180deg)}\r\n.ds-calendar{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:6px;max-width:434px}\r\n.ds-cal-head{padding-bottom:4px;text-align:center;font-size:10px;font-weight:600;color:var(--muted)}\r\n.ds-cal-blank{height:38px}\r\n.ds-cal-day{height:38px;display:grid;place-items:center;border:1px solid transparent;border-radius:9px;\r\n  background:#fff;color:#3d4b62;font-size:12px;transition:border-color .16s,background .16s}\r\n.ds-cal-day:disabled{opacity:1;cursor:default;background:transparent;color:#667287}\r\n.ds-cal-day.ds-active{background:#e8eefb;color:#23489f;font-weight:600}\r\n.ds-cal-day.ds-active:hover{border-color:#7f9fe0}\r\n.ds-cal-day.ds-today{border-color:#b7c6e4;font-weight:600}\r\n.ds-cal-day.ds-picked{background:var(--accent);border-color:var(--accent);color:#fff}\r\n.ds-calendar-detail{margin:14px 0 0;min-height:20px;font-size:12px;line-height:1.7;color:var(--muted)}.ds-agenda .ds-calendar-nav{justify-content:space-between;padding:0 0 17px;gap:10px}.ds-agenda .ds-calendar-nav strong{font-size:16px;min-width:0;color:#34435a}.ds-agenda .ds-calendar{max-width:none;gap:6px}.ds-agenda .ds-cal-head{font-size:10px;color:#5f6d82;padding:0 0 12px;font-weight:600}.ds-agenda .ds-cal-day{position:relative;height:44px;border:0;background:transparent;border-radius:50%;font-size:12px;color:#34435a}.ds-agenda .ds-cal-day>span:first-child{display:grid;place-items:center;width:34px;height:34px;border-radius:50%;margin:auto}.ds-agenda .ds-cal-day:hover>span:first-child{background:#eef2fa}.ds-agenda .ds-cal-day.ds-today>span:first-child{background:#f7ce8a;color:#563815;font-weight:700}.ds-agenda .ds-cal-day.ds-picked>span:first-child{background:#294eb8;color:#fff}.ds-agenda .ds-cal-day.ds-active{background:transparent;color:#34435a}.ds-agenda .ds-cal-blank{height:44px}.ds-cal-dots{position:absolute;bottom:0;left:0;right:0;display:flex;justify-content:center;gap:4px;height:5px}.ds-cal-dots i,.ds-key-dot{display:block;width:5px;height:5px;border-radius:50%;background:#617da9}.ds-cal-dots .ds-cal-task-dot,.ds-task-dot{background:#c8771a}.ds-cal-task-dot[data-tone=\"overdue\"]{background:#b6444c}.ds-cal-task-dot[data-tone=\"near\"]{background:#4263b2}.ds-cal-task-dot[data-tone=\"later\"],.ds-cal-task-dot[data-tone=\"done\"]{background:#527d5c}.ds-calendar-key{display:flex;gap:16px;flex-wrap:wrap;margin-top:20px;font-size:10px;color:#5c6b80}.ds-calendar-key>span{display:flex;align-items:center;gap:6px}.ds-key-today{width:10px;height:10px;border-radius:50%;background:#f7ce8a}.ds-agenda .ds-calendar-detail{font-size:11px;line-height:1.8;margin-top:15px;min-height:40px}.ds-calendar-key{gap:10px}.ds-cal-day,.ds-task-tabs button{transition:none}\n.ds-cal-dots .ds-cal-task-dot[data-tone]{background:#c8771a}.ds-agenda{font-family:\"Segoe UI\",system-ui,sans-serif;--accent:#294eb8;--muted:#5f6d82}.ds-agenda button:focus-visible{outline:2px solid var(--accent);outline-offset:3px}\n\n.ds-agenda .ds-calendar-lavender{--calendar-paper:#ece8f8;--calendar-month:#6f6199;--calendar-ink:#42365f;--calendar-today:#d9ee9b;padding:24px;background:var(--calendar-paper);border-radius:16px}\n.ds-calendar-lavender h3{color:var(--calendar-ink);font-size:22px;font-weight:600;letter-spacing:-.025em}\n.ds-calendar-lavender .ds-agenda-caption{color:#655880;margin-bottom:20px}\n.ds-calendar-lavender .ds-agenda-today{background:#fff;border:0;color:#514373;min-height:36px;border-radius:10px;padding:7px 14px}\n.ds-calendar-lavender .ds-agenda-today:hover{background:#ded7ef}\n.ds-calendar-month{background:var(--calendar-month);border-radius:14px;padding:18px 12px 16px}\n.ds-agenda .ds-calendar-lavender .ds-calendar-nav{padding:0 2px 20px;gap:8px}\n.ds-agenda .ds-calendar-lavender .ds-calendar-nav strong{font-size:15px;color:#fff;text-align:left;flex:1;order:-1}\n.ds-calendar-lavender .ds-calendar-nav .ds-icon-button{width:30px;height:30px;color:#fff;background:#ffffff17;border-radius:50%}\n.ds-calendar-lavender .ds-calendar-nav .ds-icon-button:hover{background:#ffffff30}\n.ds-agenda .ds-calendar-lavender .ds-cal-head{color:#f1edff;font-size:11px;padding-bottom:7px}\n.ds-agenda .ds-calendar-lavender .ds-calendar{gap:4px}\n.ds-agenda .ds-calendar-lavender .ds-cal-day{height:42px;color:#fff;font-size:12px}\n.ds-agenda .ds-calendar-lavender .ds-cal-day.ds-active{color:#fff}\n.ds-agenda .ds-calendar-lavender .ds-cal-blank{height:42px}\n.ds-agenda .ds-calendar-lavender .ds-cal-day>span:first-child{width:32px;height:32px}\n.ds-agenda .ds-calendar-lavender .ds-cal-day:hover>span:first-child{background:#ffffff25}\n.ds-agenda .ds-calendar-lavender .ds-cal-day.ds-today>span:first-child{background:var(--calendar-today);color:#354422;box-shadow:0 3px 8px #30274824}\n.ds-agenda .ds-calendar-lavender .ds-cal-day.ds-picked>span:first-child{background:#fff;color:#4d3e74;font-weight:700}\n.ds-calendar-lavender .ds-cal-dots .ds-cal-task-dot[data-tone]{background:#ffd08a}\n.ds-calendar-lavender .ds-cal-dots .ds-cal-activity-dot{background:#dbeaff}\n.ds-calendar-lavender .ds-calendar-key{color:#655880;gap:12px;font-size:11px;margin-top:18px}\n.ds-calendar-lavender .ds-key-today{background:var(--calendar-today);border:1px solid #7b9252}\n.ds-agenda .ds-calendar-lavender .ds-calendar-detail{background:#fff;color:#655880;padding:14px 16px;border-radius:12px;min-height:0;line-height:1.7;font-size:12px;margin-top:16px}\n.ds-calendar-lavender button:focus-visible{outline:2px solid #fff;outline-offset:2px}\n.ds-calendar-lavender .ds-agenda-today:focus-visible{outline-color:#514373}\n.ds-agenda-tasks{padding-top:12px}\n@media(max-width:1150px){.ds-agenda .ds-calendar-lavender{padding:20px}.ds-calendar-month{padding:16px 10px}.ds-agenda .ds-calendar-lavender .ds-calendar-nav strong{font-size:14px}}\n@media(max-width:900px){.ds-agenda .ds-calendar-lavender{max-width:440px}.ds-agenda-tasks{padding-top:26px}}\n@media(max-width:420px){.ds-agenda .ds-calendar-lavender{padding:18px 14px}.ds-agenda .ds-calendar-lavender .ds-cal-day{height:40px}.ds-agenda .ds-calendar-lavender .ds-cal-blank{height:40px}.ds-calendar-lavender .ds-calendar-key{gap:10px;font-size:10px}}\n"
+    },
+    {
+      "name": "Tarea de agenda",
+      "kind": "custom",
+      "refersTo": "task-deadline-soon",
+      "description": "Fila compacta neutra en panel blanco: control circular violeta accesible, título/fecha, prioridad y estado explícito.",
+      "html": "<section class=\"ds-agenda\"><div class=\"ds-agenda-lavender\"><article class=\"ds-task-row\" data-tone=\"near\"><label class=\"ds-task-toggle\"><input type=\"checkbox\" aria-label=\"Completar tarea: Revisar prototipo\"><span class=\"ds-task-mark\" aria-hidden=\"true\"><svg class=\"ds-icon\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.8\"><path d=\"M4 3h16v12l-6 6H4zM14 21v-6h6\"/></svg></span></label><div class=\"ds-task-content\"><h4>Revisar prototipo</h4><p class=\"ds-task-meta\"><time datetime=\"2026-09-16T17:00:00-05:00\">16 sept, 5:00 p. m.</time><span class=\"ds-task-deadline\">En 2 días</span></p></div><span class=\"ds-task-priority\" data-priority=\"medium\">Prioridad media</span><span class=\"ds-task-state\">Pendiente</span><button class=\"ds-icon-button\" aria-label=\"Editar tarea: Revisar prototipo\"><svg class=\"ds-icon\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.8\"><path d=\"m14 5 5 5M4 20l1-6L16 3l5 5L10 19z\"/></svg></button></article></div></section>",
+      "css": ".ds-task-row{display:grid;grid-template-columns:18px minmax(0,1fr) 30px;gap:12px;padding:18px 0;border-bottom:1px solid var(--line)}.ds-task-row>input{width:16px;height:16px;margin:3px 0 0;accent-color:#294eb8;cursor:pointer}.ds-task-row .ds-icon-button{width:30px;height:30px;color:#5f6d82}.ds-task-row .ds-icon{width:15px;height:15px}.ds-task-content{min-width:0;overflow-wrap:anywhere}.ds-task-content h4{font-size:14px;line-height:1.5;margin:0 0 8px;font-weight:600;color:#34435a}.ds-task-meta{display:flex;gap:9px;align-items:center;flex-wrap:wrap;margin:0 0 9px;font-size:11px;color:#5f6d82}.ds-task-deadline{font-weight:600;padding:3px 7px;border-radius:4px;background:#eef4ee;color:#406849}.ds-task-row[data-tone=\"overdue\"] .ds-task-deadline{background:#fce8e8;color:#96313e}.ds-task-row[data-tone=\"soon\"] .ds-task-deadline{background:#fff0d9;color:#825019}.ds-task-row[data-tone=\"near\"] .ds-task-deadline{background:#eaf0ff;color:#34539a}.ds-task-priority{font-size:10px;padding:3px 7px;background:#f2f3f7;color:#5c6b80;border-radius:4px;display:inline-block}.ds-task-priority[data-priority=\"high\"]{background:#fae9ed;color:#94374c}.ds-task-priority[data-priority=\"medium\"]{background:#fbefdc;color:#7e5523}.ds-task-priority[data-priority=\"low\"]{background:#eaf2e8;color:#486d3d}.ds-task-project{font-size:10px;color:#5f6d82;display:inline-block;margin-left:8px}.ds-task-row.ds-completed h4{text-decoration:line-through;color:#66758a}.ds-task-row{font-family:\"Segoe UI\",system-ui,sans-serif;--accent:#294eb8;--line:#e1e6ef}.ds-icon-button{display:grid;place-items:center;background:transparent;border:0;border-radius:6px;cursor:pointer}.ds-icon-button:hover{background:#e6ebf3;color:var(--accent)}.ds-icon{fill:none;stroke:currentColor;stroke-width:1.7;stroke-linecap:round;stroke-linejoin:round}.ds-task-row input:focus-visible,.ds-task-row button:focus-visible{outline:2px solid var(--accent);outline-offset:3px}\n\n.ds-agenda .ds-agenda-lavender{--agenda-paper:#ece8f8;--agenda-accent:#6f6199;--agenda-ink:#42365f;--agenda-muted:#655880;background:var(--agenda-paper);border:0;border-radius:16px;padding:24px;min-height:520px}\n.ds-agenda-lavender h3{font-size:22px;font-weight:600;letter-spacing:-.025em;color:var(--agenda-ink)}\n.ds-agenda-lavender .ds-agenda-caption{color:var(--agenda-muted);margin-bottom:20px}\n.ds-agenda-lavender .ds-button.ds-primary{background:var(--agenda-accent);border-color:var(--agenda-accent);color:#fff;border-radius:10px;min-height:36px}\n.ds-agenda-lavender .ds-button.ds-primary:hover{background:#594b80;border-color:#594b80}\n.ds-agenda-lavender .ds-task-tabs{display:flex;gap:6px;padding:5px;background:#fff;border:0;border-radius:12px}\n.ds-agenda-lavender .ds-task-tabs button{flex:1;min-width:0;min-height:36px;color:var(--agenda-muted);border-radius:9px;font-size:12px}\n.ds-agenda-lavender .ds-task-tabs button:hover{background:#f1edf9}\n.ds-agenda-lavender .ds-task-tabs button[aria-pressed=\"true\"]{background:var(--agenda-accent);color:#fff;font-weight:600}\n.ds-agenda-lavender .ds-task-status{color:var(--agenda-muted);font-size:12px;margin:16px 2px 12px}\n.ds-agenda-lavender .ds-task-list{display:grid;gap:10px}\n.ds-agenda-lavender .ds-task-row{background:#fff;border:0;border-radius:12px;grid-template-columns:20px minmax(0,1fr) 34px;gap:12px;padding:16px}\n.ds-agenda-lavender .ds-task-row>input{width:18px;height:18px;accent-color:var(--agenda-accent)}\n.ds-agenda-lavender .ds-task-content h4{color:var(--agenda-ink);font-size:15px;line-height:1.5}\n.ds-agenda-lavender .ds-task-meta{color:var(--agenda-muted);font-size:12px}\n.ds-agenda-lavender .ds-task-project{color:var(--agenda-muted);font-size:11px}\n.ds-agenda-lavender .ds-task-row .ds-icon-button{width:34px;height:34px;color:var(--agenda-muted);background:#f4f0fb;border-radius:9px}\n.ds-agenda-lavender .ds-task-row .ds-icon-button:hover{background:#e9e2f5}\n.ds-agenda-lavender .ds-task-row.ds-completed{background:#f7f5fc}\n.ds-agenda-lavender .ds-task-row.ds-completed h4{color:var(--agenda-muted)}\n.ds-agenda-lavender .ds-tasks-empty{background:#fff;padding:28px 24px;border-radius:12px;min-height:230px;display:flex;flex-direction:column;justify-content:center}\n.ds-agenda-lavender .ds-tasks-empty h4{font-size:20px;color:var(--agenda-ink);line-height:1.4;margin-bottom:12px}\n.ds-agenda-lavender .ds-tasks-empty p{color:var(--agenda-muted);font-size:13px;line-height:1.8}\n.ds-agenda-lavender .ds-task-color-key{color:var(--agenda-muted);font-size:11px;line-height:1.8;margin:18px 2px 0}\n.ds-agenda-lavender .ds-task-form{background:#fff;border:0;border-radius:12px;padding:20px 16px 16px;margin-top:18px}\n.ds-agenda-lavender .ds-task-form h4,.ds-agenda-lavender .ds-task-form label{color:var(--agenda-ink)}\n.ds-agenda-lavender .ds-task-form input,.ds-agenda-lavender .ds-task-form select{border-color:#cec5df;color:var(--agenda-ink);border-radius:8px;font-size:13px;min-height:40px}\n.ds-agenda-lavender .ds-task-form input::placeholder{color:var(--agenda-muted)}\n.ds-agenda-lavender .ds-task-form .ds-button.ds-quiet{color:var(--agenda-muted)}\n.ds-agenda-lavender :is(button,input,select):focus-visible{outline:2px solid #514373;outline-offset:3px}\n.ds-agenda-lavender :is(button,input,select):disabled{opacity:.6}\n@media(max-width:1150px){.ds-agenda .ds-agenda-lavender{padding:20px}.ds-agenda-lavender .ds-task-row{gap:10px;padding:14px}.ds-agenda-lavender .ds-home-block-head{gap:12px}}\n@media(max-width:900px){.ds-agenda .ds-agenda-lavender{min-height:0;padding:24px}}\n@media(max-width:420px){.ds-agenda .ds-agenda-lavender{padding:18px 14px}.ds-agenda-lavender h3{font-size:21px}.ds-agenda-lavender .ds-task-row{grid-template-columns:18px minmax(0,1fr) 30px;gap:9px;padding:14px 12px}.ds-agenda-lavender .ds-task-row .ds-icon-button{width:30px;height:30px}.ds-agenda-lavender .ds-task-form{padding:16px 10px}.ds-agenda-lavender .ds-task-form-row{gap:10px}.ds-agenda-lavender .ds-tasks-empty{padding:24px 18px;min-height:200px}}\n\n\n.ds-agenda .ds-agenda-lavender{background:#fff;min-height:0;padding:24px;border-radius:16px}\n.ds-agenda-lavender .ds-task-tabs{background:#f5f4f9;padding:4px;border-radius:10px}\n.ds-agenda-lavender .ds-task-status{font-size:11px;margin:14px 0 12px}\n.ds-agenda-lavender .ds-task-list{gap:8px}\n.ds-agenda-lavender .ds-task-row{grid-template-columns:36px minmax(0,1fr) 70px 90px 26px;align-items:center;gap:10px;padding:14px 12px;background:#f5f4f8;border-radius:12px}\n.ds-task-toggle{position:relative;display:block;width:36px;height:36px;cursor:pointer}\n.ds-task-toggle input{position:absolute;inset:0;width:100%;height:100%;margin:0;opacity:0;cursor:pointer}\n.ds-task-mark{display:grid;place-items:center;width:36px;height:36px;background:#fff;border:1px solid #e5dff2;border-radius:50%;color:#6545ce;pointer-events:none}\n.ds-agenda-lavender .ds-task-mark .ds-icon{width:18px;height:18px}\n.ds-task-toggle input:focus-visible+.ds-task-mark{outline:2px solid #6545ce;outline-offset:3px}\n.ds-task-toggle input:hover+.ds-task-mark{background:#ebe5fa}\n.ds-task-toggle input:disabled+.ds-task-mark{opacity:.5}\n.ds-agenda-lavender .ds-task-content h4{font-size:14px;font-weight:650;color:#302d3e;margin:0 0 4px;line-height:1.4}\n.ds-agenda-lavender .ds-task-meta{font-size:10px;gap:7px;line-height:1.5;margin:0;color:#625b74}\n.ds-agenda-lavender .ds-task-deadline{padding:1px 4px;font-size:10px;font-weight:500}\n.ds-agenda-lavender .ds-task-project{margin:4px 0 0;font-size:10px;color:#625b74;display:block}\n.ds-agenda-lavender .ds-task-priority{margin:0;padding:4px 6px;text-align:center;font-size:10px;line-height:1.5;justify-self:center}\n.ds-task-state{font-size:10px;font-weight:650;line-height:1.4;border-radius:16px;padding:5px 10px;background:#ffbf21;color:#604006;text-align:center;justify-self:end;white-space:nowrap}\n.ds-completed .ds-task-state{background:#267b18;color:#fff}\n.ds-task-row[data-tone=\"overdue\"] .ds-task-state{background:#fbe2e7;color:#913243}\n.ds-agenda-lavender .ds-task-row.ds-completed{background:#f5f4f8}\n.ds-agenda-lavender .ds-task-row.ds-completed h4{text-decoration:none;color:#625b74}\n.ds-agenda-lavender .ds-task-row .ds-icon-button{width:26px;height:30px;background:transparent;color:#6b6280;border-radius:7px}\n.ds-agenda-lavender .ds-task-row .ds-icon-button:hover{background:#e9e3f4}\n.ds-agenda-lavender .ds-tasks-empty{background:#f5f4f8;min-height:150px;padding:24px}\n.ds-agenda-lavender .ds-task-form{background:#f5f4f8}\n.ds-agenda-lavender .ds-task-color-key{font-size:10px;color:#655880}\n@media(max-width:1200px){.ds-agenda-lavender .ds-task-row{grid-template-columns:36px minmax(0,1fr) 26px;gap:8px 10px}.ds-task-toggle{grid-column:1;grid-row:1}.ds-agenda-lavender .ds-task-content{grid-column:2;grid-row:1}.ds-agenda-lavender .ds-task-row .ds-icon-button{grid-column:3;grid-row:1}.ds-agenda-lavender .ds-task-priority{grid-column:2;grid-row:2;justify-self:start}.ds-agenda-lavender .ds-task-state{grid-column:2/4;grid-row:2;justify-self:end}}\n@media(max-width:420px){.ds-agenda .ds-agenda-lavender{padding:18px 14px}.ds-agenda-lavender .ds-task-row{padding:12px 10px}.ds-agenda-lavender .ds-task-content h4{font-size:13px}.ds-agenda-lavender .ds-task-state{font-size:10px}.ds-agenda-lavender .ds-task-priority{font-size:10px}}\n.ds-agenda-lavender .ds-task-row.ds-completed .ds-task-deadline{display:none}\n"
+    },
+    {
+      "name": "Formulario de tarea",
+      "kind": "custom",
+      "refersTo": "input",
+      "description": "Formulario inline real con fecha/hora, importancia y proyecto; muestra estática sin lógica de guardado. Presentación blanca sobre panel lavanda, controles violetas y estados semánticos preservados.",
+      "html": "<section class=\"ds-agenda\"><div class=\"ds-agenda-lavender\"><form class=\"ds-task-form\" id=\"ds-task-form\" novalidate>\r\n              <h4 id=\"ds-task-form-title\">Nueva tarea</h4><p id=\"ds-task-error\" class=\"ds-task-error\" role=\"alert\" hidden></p>\r\n              <label for=\"ds-task-title\">¿Qué tienes pendiente?</label><input id=\"ds-task-title\" maxlength=\"200\" required placeholder=\"Ej. Revisar el prototipo\" />\r\n              <div class=\"ds-task-form-row\"><div><label for=\"ds-task-date\">Fecha</label><input id=\"ds-task-date\" type=\"date\" required /></div><div><label for=\"ds-task-time\">Hora</label><input id=\"ds-task-time\" type=\"time\" required /></div></div>\r\n              <div class=\"ds-task-form-row\"><div><label for=\"ds-task-priority\">Importancia</label><select id=\"ds-task-priority\"><option value=\"high\">Alta</option><option value=\"medium\" selected>Media</option><option value=\"low\">Baja</option></select></div><div><label for=\"ds-task-project\">Proyecto</label><select id=\"ds-task-project\"><option value=\"\">Sin proyecto</option></select></div></div>\r\n              <div class=\"ds-form-actions\"><button class=\"ds-button ds-quiet\" id=\"ds-cancel-task\" type=\"button\">Cancelar</button><button class=\"ds-button ds-primary\" id=\"ds-save-task\" type=\"submit\">Guardar tarea</button></div>\r\n            </form></div></section>",
+      "css": ".ds-task-form{border-top:1px solid var(--line);margin-top:24px;padding:18px 6px 6px;scroll-margin:20px}.ds-task-form h4{margin:0 0 12px;font-size:16px}.ds-task-form label{display:block;font-size:11px;font-weight:600;color:#42536c;margin:12px 0 6px}.ds-task-form input,.ds-task-form select{display:block;width:100%;min-width:0;border:1px solid #cbd4e2;border-radius:6px;padding:9px;background:#fff;color:#34435a;font-size:12px;min-height:38px}.ds-task-form input::placeholder{color:#617087}.ds-task-form-row{display:grid;grid-template-columns:1fr 1fr;gap:14px}.ds-task-form-row>div{min-width:0}.ds-task-form .ds-form-actions{display:flex;gap:8px;justify-content:flex-end;margin-top:20px}.ds-task-form .ds-button{font-size:12px;min-height:36px}.ds-task-error{font-size:12px;color:#96313e;line-height:1.7;margin:10px 0}.ds-task-form{font-family:\"Segoe UI\",system-ui,sans-serif;--accent:#294eb8;--line:#e1e6ef}.ds-task-form input,.ds-task-form select{box-sizing:border-box}.ds-task-form .ds-button{display:inline-flex;align-items:center;justify-content:center;border:1px solid #cfd6e3;background:white;color:#34435a;border-radius:8px;padding:8px 13px;font-weight:600;cursor:pointer;transition:background .16s}.ds-task-form .ds-button:hover{background:#f5f7fb}.ds-task-form .ds-button.ds-primary{background:var(--accent);border-color:var(--accent);color:white}.ds-task-form .ds-button.ds-primary:hover{background:#2142a0}.ds-task-form .ds-button.ds-quiet{border-color:transparent;background:transparent;color:#5f6d82}.ds-task-form input:focus-visible,.ds-task-form select:focus-visible,.ds-task-form button:focus-visible{outline:2px solid var(--accent);outline-offset:3px}.ds-task-form button:disabled,.ds-task-form input:disabled,.ds-task-form select:disabled{opacity:.48;cursor:not-allowed}.ds-task-form [hidden]{display:none}@media(prefers-reduced-motion:reduce){.ds-task-form .ds-button{transition:none}}\n\n.ds-agenda .ds-agenda-lavender{--agenda-paper:#ece8f8;--agenda-accent:#6f6199;--agenda-ink:#42365f;--agenda-muted:#655880;background:var(--agenda-paper);border:0;border-radius:16px;padding:24px;min-height:520px}\n.ds-agenda-lavender h3{font-size:22px;font-weight:600;letter-spacing:-.025em;color:var(--agenda-ink)}\n.ds-agenda-lavender .ds-agenda-caption{color:var(--agenda-muted);margin-bottom:20px}\n.ds-agenda-lavender .ds-button.ds-primary{background:var(--agenda-accent);border-color:var(--agenda-accent);color:#fff;border-radius:10px;min-height:36px}\n.ds-agenda-lavender .ds-button.ds-primary:hover{background:#594b80;border-color:#594b80}\n.ds-agenda-lavender .ds-task-tabs{display:flex;gap:6px;padding:5px;background:#fff;border:0;border-radius:12px}\n.ds-agenda-lavender .ds-task-tabs button{flex:1;min-width:0;min-height:36px;color:var(--agenda-muted);border-radius:9px;font-size:12px}\n.ds-agenda-lavender .ds-task-tabs button:hover{background:#f1edf9}\n.ds-agenda-lavender .ds-task-tabs button[aria-pressed=\"true\"]{background:var(--agenda-accent);color:#fff;font-weight:600}\n.ds-agenda-lavender .ds-task-status{color:var(--agenda-muted);font-size:12px;margin:16px 2px 12px}\n.ds-agenda-lavender .ds-task-list{display:grid;gap:10px}\n.ds-agenda-lavender .ds-task-row{background:#fff;border:0;border-radius:12px;grid-template-columns:20px minmax(0,1fr) 34px;gap:12px;padding:16px}\n.ds-agenda-lavender .ds-task-row>input{width:18px;height:18px;accent-color:var(--agenda-accent)}\n.ds-agenda-lavender .ds-task-content h4{color:var(--agenda-ink);font-size:15px;line-height:1.5}\n.ds-agenda-lavender .ds-task-meta{color:var(--agenda-muted);font-size:12px}\n.ds-agenda-lavender .ds-task-project{color:var(--agenda-muted);font-size:11px}\n.ds-agenda-lavender .ds-task-row .ds-icon-button{width:34px;height:34px;color:var(--agenda-muted);background:#f4f0fb;border-radius:9px}\n.ds-agenda-lavender .ds-task-row .ds-icon-button:hover{background:#e9e2f5}\n.ds-agenda-lavender .ds-task-row.ds-completed{background:#f7f5fc}\n.ds-agenda-lavender .ds-task-row.ds-completed h4{color:var(--agenda-muted)}\n.ds-agenda-lavender .ds-tasks-empty{background:#fff;padding:28px 24px;border-radius:12px;min-height:230px;display:flex;flex-direction:column;justify-content:center}\n.ds-agenda-lavender .ds-tasks-empty h4{font-size:20px;color:var(--agenda-ink);line-height:1.4;margin-bottom:12px}\n.ds-agenda-lavender .ds-tasks-empty p{color:var(--agenda-muted);font-size:13px;line-height:1.8}\n.ds-agenda-lavender .ds-task-color-key{color:var(--agenda-muted);font-size:11px;line-height:1.8;margin:18px 2px 0}\n.ds-agenda-lavender .ds-task-form{background:#fff;border:0;border-radius:12px;padding:20px 16px 16px;margin-top:18px}\n.ds-agenda-lavender .ds-task-form h4,.ds-agenda-lavender .ds-task-form label{color:var(--agenda-ink)}\n.ds-agenda-lavender .ds-task-form input,.ds-agenda-lavender .ds-task-form select{border-color:#cec5df;color:var(--agenda-ink);border-radius:8px;font-size:13px;min-height:40px}\n.ds-agenda-lavender .ds-task-form input::placeholder{color:var(--agenda-muted)}\n.ds-agenda-lavender .ds-task-form .ds-button.ds-quiet{color:var(--agenda-muted)}\n.ds-agenda-lavender :is(button,input,select):focus-visible{outline:2px solid #514373;outline-offset:3px}\n.ds-agenda-lavender :is(button,input,select):disabled{opacity:.6}\n@media(max-width:1150px){.ds-agenda .ds-agenda-lavender{padding:20px}.ds-agenda-lavender .ds-task-row{gap:10px;padding:14px}.ds-agenda-lavender .ds-home-block-head{gap:12px}}\n@media(max-width:900px){.ds-agenda .ds-agenda-lavender{min-height:0;padding:24px}}\n@media(max-width:420px){.ds-agenda .ds-agenda-lavender{padding:18px 14px}.ds-agenda-lavender h3{font-size:21px}.ds-agenda-lavender .ds-task-row{grid-template-columns:18px minmax(0,1fr) 30px;gap:9px;padding:14px 12px}.ds-agenda-lavender .ds-task-row .ds-icon-button{width:30px;height:30px}.ds-agenda-lavender .ds-task-form{padding:16px 10px}.ds-agenda-lavender .ds-task-form-row{gap:10px}.ds-agenda-lavender .ds-tasks-empty{padding:24px 18px;min-height:200px}}\n"
+    },
+    {
+      "name": "Bandeja de notificaciones",
+      "kind": "custom",
+      "refersTo": "task-deadline-overdue",
+      "description": "Bandeja real de la agenda: Vencidas, Para hoy y Próximos días; chips con texto y color, seis entradas por grupo, estado vacío y salida al calendario. El badge suma solo vencidas y hoy.",
+      "html": "<section class=\"ds-notif-panel\" aria-label=\"Notificaciones\"><header class=\"ds-notif-head\"><div><h2>Notificaciones</h2><p>2 avisos requieren tu atención · 1 próximo.</p></div><span class=\"ds-notif-total\">3 avisos</span></header><div class=\"ds-notif-list\"><section class=\"ds-notif-group\" data-tone=\"overdue\"><div class=\"ds-notif-group-head\"><h3>Vencidas</h3><span>1</span></div><button class=\"ds-notif-item\"><span class=\"ds-notif-kind\"><svg viewBox=\"0 0 24 24\" aria-hidden=\"true\"><path d=\"M4 3h16v12l-6 6H4zM14 21v-6h6\"/></svg></span><span class=\"ds-notif-copy\"><span><strong>Revisar el prototipo</strong><b>Vencida</b></span><small>17 sept · 5:00 p. m. · Proyecto de grado</small></span></button></section><section class=\"ds-notif-group\" data-tone=\"today\"><div class=\"ds-notif-group-head\"><h3>Para hoy</h3><span>1</span></div><button class=\"ds-notif-item\"><span class=\"ds-notif-kind\"><svg viewBox=\"0 0 24 24\" aria-hidden=\"true\"><path d=\"M18 8a6 6 0 0 0-12 0c0 7-3 7-3 9h18c0-2-3-2-3-9M10 21h4\"/></svg></span><span class=\"ds-notif-copy\"><span><strong>Preparar reunión</strong><b>Hoy</b></span><small>3:30 p. m. · Personal</small></span></button></section><section class=\"ds-notif-group\" data-tone=\"soon\"><div class=\"ds-notif-group-head\"><h3>Próximos días</h3><span>1</span></div><button class=\"ds-notif-item\"><span class=\"ds-notif-kind\"><svg viewBox=\"0 0 24 24\" aria-hidden=\"true\"><path d=\"M5 4h14v16H5zM8 2v4M16 2v4M5 9h14\"/></svg></span><span class=\"ds-notif-copy\"><span><strong>Entregar avance</strong><b>Próxima</b></span><small>20 sept · 9:00 a. m. · Proyecto de grado</small></span></button></section></div><button class=\"ds-notif-open\"><svg viewBox=\"0 0 24 24\" aria-hidden=\"true\"><path d=\"M5 4h14v16H5zM8 2v4M16 2v4M5 9h14\"/></svg>Ver calendario completo<span>→</span></button></section>",
+      "css": ".ds-notif-panel{font-family:\"Segoe UI\",system-ui,sans-serif;width:min(390px,calc(100vw - 24px));overflow:hidden;border-radius:12px;background:#fff;color:#263348;box-shadow:0 18px 48px #1728442e,0 3px 12px #17284417}.ds-notif-head{display:flex;align-items:flex-start;justify-content:space-between;gap:14px;padding:20px 20px 16px;border-bottom:1px solid #e8edf5}.ds-notif-head h2{margin:0 0 3px;font-size:17px}.ds-notif-head p{margin:0;color:#68758a;font-size:11.5px}.ds-notif-total{padding:4px 8px;border-radius:999px;background:#edf2fc;color:#294eb8;font-size:10.5px;font-weight:700}.ds-notif-list{display:flex;flex-direction:column;gap:16px;max-height:470px;overflow:auto;padding:14px 12px 16px}.ds-notif-group{display:flex;flex-direction:column;gap:3px}.ds-notif-group-head{display:flex;align-items:center;gap:7px;padding:0 6px 4px}.ds-notif-group-head h3{margin:0;color:#5f6d82;font-size:11px;letter-spacing:.045em;text-transform:uppercase}.ds-notif-group-head span,.ds-notif-copy b{padding:3px 7px;border-radius:999px;background:#e9f1ff;color:#355ba9;font-size:9.5px}.ds-notif-group[data-tone=\"overdue\"] :is(.ds-notif-group-head span,.ds-notif-copy b){background:#fde9e6;color:#b4433b}.ds-notif-group[data-tone=\"today\"] :is(.ds-notif-group-head span,.ds-notif-copy b){background:#fff0d9;color:#8b571d}.ds-notif-item{display:flex;align-items:flex-start;gap:11px;width:100%;padding:10px 9px;border:0;border-radius:10px;background:transparent;color:#263348;text-align:left;cursor:pointer}.ds-notif-item:hover{background:#f4f7fc}.ds-notif-item:focus-visible,.ds-notif-open:focus-visible{outline:2px solid #294eb8;outline-offset:-2px}.ds-notif-kind{display:grid;place-items:center;flex:0 0 34px;width:34px;height:34px;border-radius:10px;background:#edf2fc;color:#294eb8}.ds-notif-kind svg,.ds-notif-open svg{width:16px;height:16px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}.ds-notif-copy{display:flex;flex:1;flex-direction:column;gap:5px;min-width:0}.ds-notif-copy>span{display:flex;align-items:flex-start;gap:8px}.ds-notif-copy strong{flex:1;font-size:12.5px;line-height:1.35}.ds-notif-copy b{flex-shrink:0}.ds-notif-copy small{color:#68758a;font-size:10.5px}.ds-notif-open{display:flex;align-items:center;gap:8px;width:100%;min-height:48px;padding:0 20px;border:0;border-top:1px solid #e8edf5;background:#f9fbfe;color:#23489f;font-size:12px;font-weight:650;cursor:pointer}.ds-notif-open:hover{background:#f0f4fb}.ds-notif-open span{margin-left:auto}"
+    },
+    {
+      "name": "Toast de Hilo",
+      "kind": "custom",
+      "refersTo": "button-quiet",
+      "description": "Aviso transitorio con tonos info/success/warning/error, icono, título, texto y cierre 44×44. Máximo tres; autocierre a 4.8s o 7s para error, pausado por hover o foco; en móvil se apila abajo.",
+      "html": "<article class=\"ds-toast\" data-tone=\"success\" role=\"status\"><span class=\"ds-toast-mark\"><svg viewBox=\"0 0 24 24\" aria-hidden=\"true\"><path d=\"m5 12 4 4L19 6\"/></svg></span><div class=\"ds-toast-copy\"><strong>Tarea guardada</strong><p>“Entregar avance” quedó guardada en tu agenda.</p></div><button class=\"ds-toast-close\" aria-label=\"Cerrar aviso: Tarea guardada\"><svg viewBox=\"0 0 24 24\" aria-hidden=\"true\"><path d=\"m6 6 12 12M18 6 6 18\"/></svg></button></article>",
+      "css": ".ds-toast{--ds-toast-paper:#eef3ff;--ds-toast-ink:#294eb8;font-family:\"Segoe UI\",system-ui,sans-serif;display:grid;grid-template-columns:38px minmax(0,1fr) 44px;align-items:start;gap:8px;width:min(360px,calc(100vw - 32px));padding:11px 7px 11px 11px;border-radius:12px;background:var(--ds-toast-paper);color:#263348;box-shadow:0 12px 30px #17284424,0 2px 8px #17284412;animation:ds-toast-in .28s cubic-bezier(.16,1,.3,1) both}.ds-toast[data-tone=\"success\"]{--ds-toast-paper:#e5f7ef;--ds-toast-ink:#13805c}.ds-toast[data-tone=\"warning\"]{--ds-toast-paper:#fff1df;--ds-toast-ink:#d46b18}.ds-toast[data-tone=\"error\"]{--ds-toast-paper:#fdebea;--ds-toast-ink:#c2463d}.ds-toast-mark{display:grid;place-items:center;width:38px;height:38px;border-radius:10px;background:#ffffffa6;color:var(--ds-toast-ink)}.ds-toast svg{width:20px;height:20px;fill:none;stroke:currentColor;stroke-width:1.9;stroke-linecap:round;stroke-linejoin:round}.ds-toast-copy{min-width:0;padding-top:1px}.ds-toast-copy strong{display:block;font-size:13px;line-height:1.4}.ds-toast-copy p{margin:2px 0 0;color:#59677c;font-size:11.5px;line-height:1.45}.ds-toast-close{display:grid;place-items:center;width:44px;height:44px;margin:-3px 0 -3px;padding:0;border:0;border-radius:9px;background:transparent;color:#7b8798;cursor:pointer}.ds-toast-close svg{width:16px;height:16px}.ds-toast-close:hover{background:#ffffff99;color:#34435a}.ds-toast-close:focus-visible{outline:2px solid var(--ds-toast-ink);outline-offset:-2px}@keyframes ds-toast-in{from{opacity:0;transform:translateY(-8px) scale(.98)}to{opacity:1;transform:none}}@media(max-width:700px){.ds-toast{grid-template-columns:36px minmax(0,1fr) 44px;width:calc(100vw - 24px)}}@media(prefers-reduced-motion:reduce){.ds-toast{animation:none}}"
+    }
+  ],
+  "narrative": {
+    "northStar": "El cuaderno de evidencia local",
+    "overview": "Nombre descriptivo derivado del artefacto implementado, sin atribuir una elección de marca al usuario. La interfaz utiliza superficies claras, azul funcional, texto de sistema y diagramas precisos para conversar y observar verificaciones metodológicas. Su densidad responde a una herramienta operativa de evaluación local.\n\nEl sistema permite contextualizar el proyecto antes de conversar, leer mensajes extensos y consultar estados, memoria y fuentes mediante jerarquía tipográfica y separadores discretos. El contexto declarado conserva una identidad visual separada de la evidencia verificada. La distribución actual expresa la primera superficie de prueba; las decisiones reutilizables son la claridad del contenido, los estados explícitos y la contención visual de los controles.\n\nLas anotaciones personales añaden papel de color a este cuaderno operativo. Su pila conserva la lectura vertical y el editor toma el color del papel elegido; la evidencia metodológica y el contexto declarado mantienen sus propios tratamientos. El pliegue y la sombra pertenecen a la nota, como los papeles superpuestos pertenecen a la carpeta. Inicio agrupa títulos y contenido con espacios compactos: 16px tras encabezado, 12px alrededor del contador y secciones 24px/18px, con reducción móvil. Alcance limitado a home-view. Inicio usa márgenes laterales de 28–76px (20px móvil), cuatro columnas de proyectos desde 1280px y herramientas alineadas. El calendario ampliado ocupa aproximadamente 47.5% y la agenda 52.5%; las fechas tienen celdas de 52px en escritorio. El chat emplea burbujas azules a la derecha para el usuario y blancas a la izquierda para Hilo, con avatares discretos, hora real guardada, acciones agrupadas y compositor blanco de hasta 820px. Conserva los estados semánticos y las funciones del cuaderno.",
+    "keyCharacteristics": [
+      "Superficies claras con separación tonal y bordes finos.",
+      "Azul para acción, selección y ejecución.",
+      "Tipografía de sistema en cuerpo y controles.",
+      "Estados descritos con texto además del color.",
+      "Papel de color para anotaciones personales, con tinta oscura y pliegue pequeño."
+    ],
+    "rules": [
+      {
+        "name": "The Papel personal Rule",
+        "body": "El color de una nota expresa preferencia personal; no indica aprobación, progreso ni categoría metodológica.",
+        "section": "colors"
+      },
+      {
+        "name": "The Dos lecturas de tarea Rule",
+        "body": "Mostrar plazo junto a fecha y hora, e importancia con su propia etiqueta; ningún color sustituye esos datos ni confunde ambas funciones.",
+        "section": "colors"
+      },
+      {
+        "name": "The Estado explícito Rule",
+        "body": "Acompañar cada color de estado con una etiqueta, descripción o leyenda legible.",
+        "section": "colors"
+      },
+      {
+        "name": "The Lectura antes de ornamento Rule",
+        "body": "Mantener el texto metodológico como contenido principal y usar peso seminegrita para identificar controles y secciones.",
+        "section": "typography"
+      },
+      {
+        "name": "The Profundidad funcional Rule",
+        "body": "Usar sombra o halo para selección y foco; mantener planos los paneles de lectura.",
+        "section": "elevation"
+      },
+      {
+        "name": "The Atención real Rule",
+        "body": "El badge representa únicamente vencidas y pendientes de hoy; no usar los próximos días para inflar urgencia.",
+        "section": "components"
+      }
+    ],
+    "dos": [
+      "Do conservar la familia de sistema en cuerpo y controles.",
+      "Do acompañar los colores de estado con texto y mantener el foco visible.",
+      "Do resolver jerarquía con espaciado, peso, tono y bordes finos.",
+      "Do respetar prefers-reduced-motion en transiciones e indicadores.",
+      "Do emparejar cada papel de nota con su tinta oscura y conservar categoría y origen como texto legible.",
+      "Do mantener la pila vertical y reservar margen interior para mostrar completo el foco en los editores.",
+      "Do mantener texto e icono junto al color de avisos, y objetivos de al menos (44×44px) en campana y cierres."
+    ],
+    "donts": [
+      "Don't tratar los colores de error y finalización como decoración de marca.",
+      "Don't convertir medidas particulares de la primera pantalla en requisitos para todas las superficies.",
+      "Don't representar progreso o evidencia sin datos de ejecución que los respalden.",
+      "Don't usar el color del papel como veredicto ni presentar una anotación personal como memoria verificada."
+    ]
+  },
+  "navigationLauncher": {
+    "source": "surfaces/chat-workspace.json",
+    "button": "grid-icon-only",
+    "icon": "four-square-grid",
+    "default": "collapsed-all-viewports",
+    "panel": "blue-dropdown-below-button",
+    "menuWidth": "320px",
+    "profilePosition": "end",
+    "backdrop": false,
+    "accessibleLabel": "Mostrar menú",
+    "brand": "Hilo-icon-and-name-beside-launcher",
+    "rightActions": [
+      "account-avatar",
+      "help",
+      "notifications"
+    ],
+    "searchAndCreate": "inside-main-dropdown",
+    "accountMenu": "surfaces/account-menu.json"
+  },
+  "projectWorkspaceHeader": {
+    "titleAndStage": "inside-chat-panel-heading",
+    "minHeight": "72px",
+    "separateTopbar": false,
+    "titleMaxLines": 2,
+    "projectActions": "fixed-bottom-center-visible-options-overlay-panels",
+    "composerBottomPadding": "40px"
+  }
+}

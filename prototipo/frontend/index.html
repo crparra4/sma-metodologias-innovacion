@@ -1,0 +1,436 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="theme-color" content="#f3f5f9" />
+  <title>Hilo · Cuaderno de proyectos</title>
+  <link rel="icon" type="image/png" href="/hilo-mark.png" />
+</head>
+<body>
+  <!-- THESIS: Un espacio de proyecto con conversación y anotaciones en paneles separados.
+  OWN-WORLD: Azul Hilo, fondo azul claro y superficies blancas con bordes definidos.
+  STORY: Navegar desde arriba, conversar en el panel amplio y guardar ideas en Post-its.
+  FIRST VIEWPORT: Barra azul superior, título y etapa dentro del chat y dos rectángulos: chat amplio a la izquierda, notas estrechas a la derecha.
+  FORM: Distribución operativa fijada por la referencia del usuario; navegación superior y dos paneles contiguos.
+  FINISH: Verificar navegación, escritura y Post-its en escritorio y móvil; documentar la superficie. -->
+  <svg class="icon-defs" aria-hidden="true" xmlns="http://www.w3.org/2000/svg">
+    <symbol id="i-plus" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></symbol>
+    <symbol id="i-book" viewBox="0 0 24 24"><path d="M4 19V5a2 2 0 0 1 2-2h14v18H6a2 2 0 0 1 0-4h14"/></symbol>
+    <symbol id="i-send" viewBox="0 0 24 24"><path d="m5 12 7-7 7 7M12 5v15"/></symbol>
+    <symbol id="i-expand" viewBox="0 0 24 24"><path d="M8 4H4v4M4 4l6 6M16 20h4v-4M20 20l-6-6"/></symbol>
+    <symbol id="i-collapse" viewBox="0 0 24 24"><path d="M4 10h6V4M10 10 4 4M20 14h-6v6M14 14l6 6"/></symbol>
+    <symbol id="i-menu" viewBox="0 0 24 24"><path d="M4 6h16M4 12h16M4 18h16"/></symbol>
+    <symbol id="i-refresh" viewBox="0 0 24 24"><path d="M20 7v5h-5M4 17v-5h5M6 7a7 7 0 0 1 12-2l2 2M4 17l2 2a7 7 0 0 0 12-2"/></symbol>
+    <symbol id="i-share" viewBox="0 0 24 24"><path d="M12 16V3m-4 4 4-4 4 4M5 12v8h14v-8"/></symbol>
+    <symbol id="i-copy" viewBox="0 0 24 24"><rect x="8" y="8" width="12" height="13" rx="2"/><path d="M16 8V5a2 2 0 0 0-2-2H5a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h3"/></symbol>
+    <symbol id="i-trash" viewBox="0 0 24 24"><path d="M3 6h18M9 6V3h6v3M5 6l1 15h12l1-15M10 10v7M14 10v7"/></symbol>
+    <symbol id="i-check" viewBox="0 0 24 24"><path d="m5 12 4 4L19 6"/></symbol>
+    <symbol id="i-arrow" viewBox="0 0 24 24"><path d="M5 12h14m-5-5 5 5-5 5"/></symbol>
+    <symbol id="i-route" viewBox="0 0 24 24"><circle cx="6" cy="5" r="2"/><circle cx="18" cy="19" r="2"/><path d="M6 7v6a3 3 0 0 0 3 3h6a3 3 0 0 0 3-3V9a3 3 0 0 0-3-3h-3"/></symbol>
+    <symbol id="i-more" viewBox="0 0 24 24"><circle cx="12" cy="5" r="1.3"/><circle cx="12" cy="12" r="1.3"/><circle cx="12" cy="19" r="1.3"/></symbol>
+    <symbol id="i-home" viewBox="0 0 24 24"><path d="m3 10 9-7 9 7M5 9v12h5v-7h4v7h5V9"/></symbol>
+    <symbol id="i-search" viewBox="0 0 24 24"><circle cx="10.5" cy="10.5" r="6.5"/><path d="m16 16 5 5"/></symbol>
+    <symbol id="i-calendar" viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 10h18M8 3v4M16 3v4"/></symbol>
+    <symbol id="i-task" viewBox="0 0 24 24"><rect x="4" y="4" width="16" height="16" rx="3"/><path d="m8.5 12 2.5 2.5 4.5-5"/></symbol>
+    <symbol id="i-bell" viewBox="0 0 24 24"><path d="M18 8a6 6 0 0 0-12 0c0 7-3 7-3 9h18c0-2-3-2-3-9M10 21h4"/></symbol>
+    <symbol id="i-info" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 11v6M12 7h.01"/></symbol>
+    <symbol id="i-warning" viewBox="0 0 24 24"><path d="M10.3 4.2 2.5 18a2 2 0 0 0 1.7 3h15.6a2 2 0 0 0 1.7-3L13.7 4.2a2 2 0 0 0-3.4 0Z"/><path d="M12 9v4M12 17h.01"/></symbol>
+    <symbol id="i-error" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="m8 8 8 8M16 8l-8 8"/></symbol>
+    <symbol id="i-close" viewBox="0 0 24 24"><path d="m6 6 12 12M18 6 6 18"/></symbol>
+    <symbol id="i-meeting" viewBox="0 0 24 24"><circle cx="9" cy="8" r="3"/><path d="M3 20c0-3.3 2.7-6 6-6s6 2.7 6 6"/><circle cx="17" cy="9" r="2.5"/><path d="M16 14.2c2.8.3 5 2.6 5 5.8"/></symbol>
+    <symbol id="i-chevron" viewBox="0 0 24 24"><path d="m15 6-6 6 6 6"/></symbol>
+    <symbol id="i-quote" viewBox="0 0 24 24"><path d="M7 7h4v4c0 3-1.5 5-4 6M15 7h4v4c0 3-1.5 5-4 6"/></symbol>
+    <symbol id="i-note" viewBox="0 0 24 24"><path d="M4 3h16v12l-6 6H4zM14 21v-6h6"/></symbol>
+    <symbol id="i-edit" viewBox="0 0 24 24"><path d="m14 5 5 5M4 20l1-6L16 3l5 5L10 19z"/></symbol>
+    <symbol id="i-person" viewBox="0 0 24 24"><circle cx="12" cy="7" r="4"/><path d="M5 21v-3a7 7 0 0 1 14 0v3"/></symbol>
+    <symbol id="i-settings" viewBox="0 0 24 24"><path d="m10 3-1 3-3 1-3 3 2 2-1 3 3 3 3-1 2 2 3-1 1-3 3-1 1-3-2-2 1-3-3-2-3 1z"/><circle cx="12" cy="12" r="3"/></symbol>
+    <symbol id="i-theme" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 3v18"/></symbol>
+    <symbol id="i-switch-account" viewBox="0 0 24 24"><circle cx="9" cy="7" r="3"/><path d="M3 21v-3a6 6 0 0 1 9-5M16 4h5l-2-2M21 4l-2 2M21 20h-5l2 2M16 20l2-2"/></symbol>
+    <symbol id="i-logout" viewBox="0 0 24 24"><path d="M9 4H4v16h5M10 12h11m-4-4 4 4-4 4"/></symbol>
+    <symbol id="m-ficha" viewBox="0 0 64 64">
+      <linearGradient id="ge" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#8ea6d6"/><stop offset="1" stop-color="#435d94"/></linearGradient>
+      <ellipse cx="32" cy="58" rx="16" ry="3.4" fill="#2b3f66" opacity=".18"/>
+      <rect x="13" y="8" width="38" height="46" rx="8" fill="url(#ge)"/>
+      <path d="M22 22h20M22 31h20M22 40h12" stroke="#fff" stroke-width="2.6" stroke-linecap="round" opacity=".55"/>
+    </symbol>
+  </svg>
+  <section class="auth-view" id="auth-view" aria-labelledby="auth-title" hidden>
+    <div class="auth-card">
+      <div class="auth-brand"><img src="/hilo-mark.png" alt="Hilo" width="40" height="40" /></div>
+      <h1 id="auth-title">Tu espacio para las ideas.</h1>
+      <p class="auth-intro" id="auth-intro">Inicia sesión en tu cuenta de Hilo</p>
+      <form id="auth-form" novalidate>
+        <div class="auth-field" id="auth-name-field" hidden><label for="auth-name" data-auth-text="name">Tu nombre</label><input id="auth-name" data-auth-placeholder="namePlaceholder" type="text" maxlength="60" autocomplete="name" placeholder="Como quieres aparecer en el chat" /></div>
+        <div class="auth-field"><label for="auth-username" data-auth-text="username">Usuario</label><input id="auth-username" data-auth-placeholder="usernamePlaceholder" type="text" minlength="3" maxlength="40" autocomplete="username" autocapitalize="none" spellcheck="false" placeholder="Escribe tu nombre de usuario…" aria-describedby="auth-username-hint" required /><span class="auth-hint" id="auth-username-hint" data-auth-text="usernameHint">Usa el usuario de tu cuenta en esta computadora.</span></div>
+        <div class="auth-field" id="auth-password-field" hidden><label for="auth-password" data-auth-text="password">Contraseña</label><input id="auth-password" data-auth-placeholder="passwordPlaceholder" type="password" minlength="10" maxlength="128" autocomplete="current-password" placeholder="Escribe tu contraseña…" required /><span class="auth-hint" id="auth-password-hint" data-auth-text="passwordHint" hidden>Usa al menos 10 caracteres.</span></div>
+        <div class="auth-field" id="auth-confirm-field" hidden><label for="auth-confirm" data-auth-text="confirmPassword">Confirma tu contraseña</label><input id="auth-confirm" type="password" maxlength="128" autocomplete="new-password" /></div>
+        <p class="auth-error" id="auth-error" role="alert" hidden></p>
+        <button class="auth-submit" id="auth-submit" type="submit">Continuar</button>
+        <button class="auth-back" id="auth-back" data-auth-text="back" type="button" hidden>Cambiar usuario</button>
+      </form>
+      <div class="auth-alternatives" aria-label="Otros métodos de acceso" aria-describedby="auth-providers-hint">
+        <p class="auth-divider" data-auth-text="divider">o continúa con</p>
+        <div class="auth-providers">
+          <button class="auth-provider" type="button" data-provider="google" disabled aria-label="Google, próximamente" title="Google · Próximamente">
+            <svg class="auth-provider-icon" aria-hidden="true" viewBox="0 0 24 24"><path fill="#4285f4" d="M21.6 12.23c0-.71-.06-1.39-.18-2.05H12v3.88h5.38a4.6 4.6 0 0 1-1.99 3.02v2.51h3.23c1.89-1.74 2.98-4.31 2.98-7.36Z"/><path fill="#34a853" d="M12 22c2.7 0 4.96-.9 6.62-2.41l-3.23-2.51c-.9.6-2.05.96-3.39.96-2.6 0-4.81-1.76-5.6-4.13H3.06v2.59A10 10 0 0 0 12 22Z"/><path fill="#fbbc05" d="M6.4 13.91A6 6 0 0 1 6.09 12c0-.66.11-1.3.31-1.91V7.5H3.06A10 10 0 0 0 2 12c0 1.61.38 3.13 1.06 4.5l3.34-2.59Z"/><path fill="#ea4335" d="M12 5.96c1.47 0 2.79.5 3.83 1.5l2.87-2.87A9.61 9.61 0 0 0 12 2a10 10 0 0 0-8.94 5.5l3.34 2.59c.79-2.37 3-4.13 5.6-4.13Z"/></svg>
+            <span>Google</span>
+          </button>
+          <button class="auth-provider" type="button" data-provider="chatgpt" disabled aria-label="ChatGPT, próximamente" title="ChatGPT · Próximamente"><img class="auth-provider-icon" src="/auth/chatgpt.svg" alt="" width="20" height="20" /><span>ChatGPT</span></button>
+          <button class="auth-provider" type="button" data-provider="apple" disabled aria-label="Apple, próximamente" title="Apple · Próximamente"><img class="auth-provider-icon" src="/auth/apple.svg" alt="" width="20" height="20" /><span>Apple</span></button>
+          <button class="auth-provider" type="button" data-provider="microsoft" disabled aria-label="Microsoft, próximamente" title="Microsoft · Próximamente"><svg class="auth-provider-icon" aria-hidden="true" viewBox="0 0 24 24"><path fill="#f25022" d="M2 2h9.5v9.5H2z"/><path fill="#7fba00" d="M12.5 2H22v9.5h-9.5z"/><path fill="#00a4ef" d="M2 12.5h9.5V22H2z"/><path fill="#ffb900" d="M12.5 12.5H22V22h-9.5z"/></svg><span>Microsoft</span></button>
+          <button class="auth-provider" type="button" data-provider="passkey" disabled aria-label="Passkey, próximamente" title="Passkey · Próximamente"><svg class="auth-provider-icon" aria-hidden="true" viewBox="0 0 24 24" fill="currentColor"><circle cx="9" cy="6" r="4"/><path d="M1 19v-2a8 8 0 0 1 12-6.9 5 5 0 0 0-1 6.9v2Z"/><path d="M18 10a4 4 0 0 0-2 7.46V23h3v-2h2v-2h-2v-1.54A4 4 0 0 0 18 10Zm0 2a1 1 0 1 1 0 2 1 1 0 0 1 0-2Z"/></svg><span>Passkey</span></button>
+          <button class="auth-provider" type="button" data-provider="sso" disabled aria-label="SSO, próximamente" title="SSO · Próximamente"><svg class="auth-provider-icon icon" aria-hidden="true" viewBox="0 0 24 24"><path d="M3 21V4a1 1 0 0 1 1-1h9a1 1 0 0 1 1 1v17M14 8h6a1 1 0 0 1 1 1v12M1 21h22M7 7h3M7 11h3M7 15h3M17 12h1M17 16h1M8 21v-3h2v3"/></svg><span>SSO</span></button>
+        </div>
+        <p class="auth-providers-hint" id="auth-providers-hint" data-auth-text="providersHint">Estos accesos estarán disponibles próximamente.</p>
+      </div>
+      <div class="auth-switch">
+        <p id="auth-register-prompt"><span data-auth-text="newUser">¿Es tu primera vez?</span> <button type="button" id="auth-register-tab" data-auth-text="register">Crear cuenta</button></p>
+        <p id="auth-login-prompt" hidden><span data-auth-text="existingUser">¿Ya tienes una cuenta?</span> <button type="button" id="auth-login-tab" data-auth-text="login">Iniciar sesión</button></p>
+      </div>
+      <p class="auth-note" id="auth-note">Tus datos permanecen en esta computadora.</p>
+    </div>
+    <div class="auth-footer"><svg class="icon" aria-hidden="true" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><ellipse cx="12" cy="12" rx="4" ry="9"/><path d="M3 12h18"/></svg><label class="sr-only" for="auth-language" data-auth-text="language">Idioma</label><select id="auth-language" aria-label="Idioma"><option value="es" lang="es">Español</option><option value="en" lang="en">English</option></select><span>· Hilo / Ruta DIA</span></div>
+  </section>
+  <div id="app" hidden>
+    <header class="sidebar" id="sidebar" aria-label="Navegación de Hilo">
+      <div class="sidebar-header">
+        <button class="icon-button menu-toggle" id="menu-toggle" type="button" aria-label="Mostrar menú" aria-controls="main-navigation" aria-expanded="false"><svg class="icon" aria-hidden="true" viewBox="0 0 24 24"><rect x="4" y="4" width="6" height="6" rx="1.5"/><rect x="14" y="4" width="6" height="6" rx="1.5"/><rect x="4" y="14" width="6" height="6" rx="1.5"/><rect x="14" y="14" width="6" height="6" rx="1.5"/></svg></button>
+        <div class="navigation-brand" aria-label="Hilo"><img src="/hilo-mark.png" alt="" width="28" height="28" /><strong>Hilo</strong></div>
+        <div class="header-utilities">
+        <button class="profile" id="profile" type="button" aria-expanded="false" aria-controls="account-menu">
+          <span class="avatar-wrap"><span class="avatar" id="profile-initials" aria-hidden="true">CP</span><span class="status-dot" id="model-dot"></span></span>
+          <span class="profile-text sr-only"><strong id="profile-name">Tu cuenta</strong></span>
+        </button>
+        <section class="account-menu" id="account-menu" aria-label="Tu cuenta" hidden>
+          <div class="account-menu-identity"><span class="account-menu-avatar" id="account-menu-initials" aria-hidden="true"></span><div><strong id="account-menu-name">Tu cuenta</strong><span id="account-menu-username"></span></div></div>
+          <div class="account-menu-actions">
+            <button id="account-open-profile" type="button"><svg class="icon" aria-hidden="true"><use href="#i-person"/></svg>Perfil</button>
+            <button id="account-open-settings" type="button"><svg class="icon" aria-hidden="true"><use href="#i-settings"/></svg>Configuración de la cuenta</button>
+            <details class="account-theme" id="account-theme"><summary><svg class="icon" aria-hidden="true"><use href="#i-theme"/></svg>Tema<svg class="icon account-menu-chevron" aria-hidden="true" viewBox="0 0 24 24"><path d="m9 5 7 7-7 7"/></svg></summary><div class="account-theme-options"><p>Claro · Tema actual</p><p>Oscuro · Próximamente</p></div></details>
+            <button id="account-quick-guide" type="button"><svg class="icon" aria-hidden="true"><use href="#i-expand"/></svg>Abrir la guía de inicio rápido</button>
+          </div>
+          <div class="account-menu-session"><button id="account-switch" type="button"><svg class="icon" aria-hidden="true"><use href="#i-switch-account"/></svg>Cambiar de cuenta</button><button id="account-logout" type="button"><svg class="icon" aria-hidden="true"><use href="#i-logout"/></svg>Finalizar la sesión</button></div>
+          <p class="account-menu-error" id="account-menu-error" role="alert" hidden></p>
+        </section>
+        <details class="header-utility" id="header-help">
+          <summary aria-label="Ayuda" title="Ayuda"><svg class="icon" aria-hidden="true" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M9.5 9a2.5 2.5 0 0 1 5 .5c0 1.8-2.5 2-2.5 4M12 17h.01"/></svg></summary>
+          <section class="header-utility-panel" aria-labelledby="header-help-title"><h2 id="header-help-title">Ayuda</h2><p>Abre el menú de cuadrícula para entrar a tus proyectos y fichas metodológicas.</p><p>En un proyecto, escribe tu reto en el chat y guarda las ideas que quieras retomar en Post-its.</p></section>
+        </details>
+        <details class="header-utility" id="header-notifications">
+          <summary id="notif-summary" aria-label="Notificaciones" title="Notificaciones"><svg class="icon" aria-hidden="true" viewBox="0 0 24 24"><path d="M18 8a6 6 0 0 0-12 0c0 7-3 7-3 9h18c0-2-3-2-3-9M10 21h4"/></svg><span class="notif-badge" id="notif-badge" aria-hidden="true" hidden>0</span></summary>
+          <section class="header-utility-panel notif-panel" aria-labelledby="header-notifications-title">
+            <div class="notif-panel-head"><div><h2 id="header-notifications-title">Notificaciones</h2><p id="notif-panel-summary">Tu agenda está al día.</p></div><span class="notif-total" id="notif-total" hidden></span></div>
+            <section class="invitation-notifications" id="invitation-notifications" hidden aria-labelledby="invitation-notifications-title"><div class="notif-group-head"><h3 id="invitation-notifications-title">Invitaciones a proyectos</h3><span class="notif-group-count" id="invitation-count"></span></div><div id="invitation-list"></div></section>
+            <div class="notif-list" id="notif-list"></div>
+            <button class="notif-open" id="notif-open-calendar" type="button"><svg class="icon" aria-hidden="true"><use href="#i-calendar"/></svg>Ver calendario completo<svg class="icon notif-open-arrow" aria-hidden="true"><use href="#i-arrow"/></svg></button>
+          </section>
+        </details>
+        </div>
+      </div>
+      <div class="menu-scroll" id="main-navigation" hidden>
+        <nav class="menu-group" aria-labelledby="g-navegacion">
+          <h2 class="sr-only" id="g-navegacion">Navegación</h2>
+          <button class="menu-item" id="go-home" aria-current="page"><svg class="icon" aria-hidden="true"><use href="#i-home"/></svg>Inicio</button>
+        </nav>
+        <nav class="menu-group" aria-labelledby="g-herramientas">
+          <h2 class="sr-only" id="g-herramientas">Espacio de trabajo</h2>
+          <button class="menu-item" id="sidebar-projects" type="button"><svg class="icon" aria-hidden="true"><use href="#i-book"/></svg>Proyectos<span class="menu-count" id="sidebar-project-count">0</span></button>
+          <button class="menu-item" id="go-calendar" type="button" aria-current="false"><svg class="icon" aria-hidden="true"><use href="#i-calendar"/></svg>Calendario<span class="menu-count menu-alert" id="calendar-alert-count" hidden>0</span></button>
+          <button class="menu-item" id="go-tools" aria-current="false"><svg class="icon" aria-hidden="true"><use href="#i-route"/></svg>Fichas metodológicas<span class="menu-count" id="tools-count">0</span></button>
+        <button class="menu-item" id="sidebar-search" type="button" aria-label="Buscar proyectos" title="Buscar proyectos"><svg class="icon" aria-hidden="true"><use href="#i-search"/></svg>Buscar proyectos</button>
+        <button class="menu-item" id="new-notebook" type="button" aria-label="Nuevo proyecto" title="Nuevo proyecto"><svg class="icon" aria-hidden="true"><use href="#i-edit"/></svg>Nuevo proyecto</button>
+        </nav>
+        <nav class="menu-group" id="recent-group" aria-labelledby="g-recientes">
+          <h2 class="sr-only" id="g-recientes">Tus proyectos</h2>
+          <details class="recent-menu" id="recent-menu"><summary>Recientes<svg class="icon" aria-hidden="true" viewBox="0 0 24 24"><path d="m8 10 4 4 4-4"/></svg></summary><div class="recent-menu-list">
+          <div class="notebook-list" id="notebook-list"></div>
+          <button class="menu-more" id="see-all-projects" hidden>Ver todos los proyectos</button>
+          </div></details>
+        </nav>
+      </div>
+    </header>
+    <section class="toast-region" id="toast-region" aria-live="polite" aria-label="Avisos de Hilo"></section>
+    <button class="sidebar-backdrop" id="sidebar-backdrop" aria-label="Cerrar menú" hidden></button>
+    <main class="main">
+      <div class="global-error" id="global-error" role="alert" hidden></div>
+      <section class="home-view" id="home-view" aria-label="Todos tus proyectos">
+        <div class="home-heading"><div><h2>Tus proyectos</h2><p>Abre un proyecto para continuar donde lo dejaste.</p></div><button class="button primary" id="home-new-project"><svg class="icon"><use href="#i-plus"/></svg>Nuevo proyecto</button></div>
+        <div class="project-toolbar"><div class="project-search"><svg class="icon" aria-hidden="true"><use href="#i-search"/></svg><label class="sr-only" for="project-search">Buscar proyectos</label><input id="project-search" type="search" placeholder="Buscar proyectos…" autocomplete="off" /></div><div class="project-order"><label for="project-order">Ordenar por</label><select id="project-order"><option value="recent">Más recientes</option><option value="name">Nombre</option></select></div></div>
+        <p class="project-count" id="project-count" role="status">Cargando proyectos…</p>
+        <div class="project-grid" id="project-grid"></div>
+        <div class="home-empty" id="home-empty" hidden><h3 id="home-empty-title">Tu primer proyecto empieza aquí.</h3><p id="home-empty-description">Crea un proyecto para organizar tus conversaciones, fuentes y avances.</p><button class="button primary" id="empty-new-project">Crear mi primer proyecto</button></div>
+        <section class="home-block" id="home-tools" aria-labelledby="home-tools-title">
+          <div class="home-block-head">
+            <h3 id="home-tools-title">Herramientas</h3>
+            <button class="home-block-tag" id="home-tools-link" type="button">Ver más<svg class="icon" aria-hidden="true"><use href="#i-arrow"/></svg></button>
+          </div>
+          <p class="home-block-note">Las cuatro fichas que pueden guardar datos verificados en tu cuaderno. Las quince están en la biblioteca.</p>
+          <div class="tool-tiles" id="home-tool-chips"></div>
+        </section>
+        <section class="home-block agenda" id="home-calendar" aria-labelledby="home-calendar-title">
+          <div class="agenda-calendar calendar-lavender">
+          <div class="home-block-head">
+            <h3 id="home-calendar-title">Calendario</h3>
+            <button class="agenda-today" id="cal-today" type="button">Hoy</button>
+          </div>
+          <p class="agenda-caption">Un poco de orden para tus próximas ideas.</p>
+            <div class="calendar-month">
+            <div class="calendar-nav">
+              <button class="icon-button cal-back" id="cal-prev" type="button" aria-label="Mes anterior"><svg class="icon"><use href="#i-arrow"/></svg></button>
+              <strong id="cal-month"></strong>
+              <button class="icon-button" id="cal-next" type="button" aria-label="Mes siguiente"><svg class="icon"><use href="#i-arrow"/></svg></button>
+            </div>
+          <div class="calendar" id="calendar"></div>
+            </div>
+          <div class="calendar-key"><span><i class="key-dot task-dot"></i>Tareas</span><span><i class="key-dot activity-dot"></i>Conversaciones</span><span><i class="key-today"></i>Hoy</span></div>
+          <p class="calendar-detail" id="cal-detail" role="status"></p>
+          </div>
+          <div class="agenda-tasks agenda-lavender">
+            <div class="home-block-head"><h3 id="tasks-heading">Tu agenda</h3><button class="button primary" id="new-task" type="button"><svg class="icon"><use href="#i-plus"/></svg>Nueva tarea</button></div>
+            <p class="agenda-caption">Lo de hoy y lo que viene, a tu ritmo.</p>
+            <div class="task-tabs" role="group" aria-label="Filtrar tareas"><button type="button" data-task-filter="today" aria-pressed="false">Hoy</button><button type="button" data-task-filter="upcoming" aria-pressed="true">Próximas</button><button type="button" data-task-filter="all" aria-pressed="false">Todas</button></div>
+            <p class="task-status" id="task-status" role="status"></p>
+            <div class="task-list" id="task-list"></div>
+            <form class="task-form" id="task-form" hidden novalidate>
+              <h4 id="task-form-title">Nueva tarea</h4><p id="task-error" class="task-error" role="alert" hidden></p>
+              <label for="task-title">¿Qué tienes pendiente?</label><input id="task-title" maxlength="200" required placeholder="Ej. Revisar el prototipo" />
+              <div class="task-form-row"><div><label for="task-date">Fecha</label><input id="task-date" type="date" required /></div><div><label for="task-time">Hora</label><input id="task-time" type="time" required /></div></div>
+              <div class="task-form-row"><div><label for="task-priority">Importancia</label><select id="task-priority"><option value="high">Alta</option><option value="medium" selected>Media</option><option value="low">Baja</option></select></div><div><label for="task-project">Proyecto</label><select id="task-project"><option value="">Sin proyecto</option></select></div></div>
+              <div class="form-actions"><button class="button quiet" id="cancel-task" type="button">Cancelar</button><button class="button primary" id="save-task" type="submit">Guardar tarea</button></div>
+            </form>
+            <p class="task-color-key">La importancia indica prioridad. El plazo indica cuánto falta.</p>
+          </div>
+        </section>
+        <p class="home-storage"><svg class="icon" aria-hidden="true"><use href="#i-book"/></svg>Las conversaciones y los avances de cada proyecto se guardan en tu computadora.</p>
+      </section>
+      <section class="calendar-view" id="calendar-view" hidden aria-labelledby="calv-title">
+        <div class="calv-main">
+          <header class="calv-toolbar">
+            <h1 class="calv-title" id="calv-title">Calendario</h1>
+            <button class="button quiet calv-today" id="calv-today" type="button">Hoy</button>
+            <div class="calv-nav"><button class="icon-button" id="calv-prev" type="button" aria-label="Periodo anterior"><svg class="icon"><use href="#i-chevron"/></svg></button><button class="icon-button calv-next" id="calv-next" type="button" aria-label="Periodo siguiente"><svg class="icon"><use href="#i-chevron"/></svg></button></div>
+            <h2 class="calv-range" id="calv-range" aria-live="polite"></h2>
+            <div class="calv-switch" role="group" aria-label="Vista del calendario"><button type="button" data-calv-mode="month" aria-pressed="true">Mes</button><button type="button" data-calv-mode="week" aria-pressed="false">Semana</button></div>
+            <button class="button primary calv-new" id="calv-new-entry" type="button"><svg class="icon"><use href="#i-plus"/></svg>Nueva entrada</button>
+          </header>
+          <div class="calv-grid" id="calv-grid"></div>
+        </div>
+        <aside class="calv-side" aria-labelledby="calv-day-title">
+          <div class="calv-day-head"><p class="calv-weekday" id="calv-weekday"></p><h2 id="calv-day-title"></h2></div>
+          <div class="calv-day-list" id="calv-day-list" aria-live="polite"></div>
+          <section class="calv-filters" aria-labelledby="calv-filters-title">
+            <h3 id="calv-filters-title">Mostrar</h3>
+            <div class="calv-kind-filters" id="calv-kind-filters" role="group" aria-label="Tipos de entrada"></div>
+            <div class="calv-project-filters" id="calv-project-filters" role="group" aria-label="Proyectos"></div>
+          </section>
+        </aside>
+      </section>
+      <section class="tools-view" id="tools-view" hidden aria-label="Fichas metodológicas">
+        <div class="home-heading"><div><h2>Fichas metodológicas</h2><p>Las fuentes que Hilo puede citar. El asistente trabaja con una sola ficha por respuesta.</p></div></div>
+        <p class="project-count" id="tools-summary" role="status">Cargando fichas…</p>
+        <div class="tools-grid" id="tools-grid"></div>
+      </section>
+      <section class="problem-tree-view" id="problem-tree-view" hidden aria-labelledby="problem-tree-title">
+        <header class="problem-tree-head">
+          <div><button class="problem-tree-back" id="problem-tree-back" type="button">← Volver al proyecto</button><h1 id="problem-tree-title">Árbol de problemas</h1><p id="problem-tree-subtitle">Conecta lo que ocurre con sus posibles causas y consecuencias.</p></div>
+          <div class="problem-tree-head-actions"><span class="problem-tree-save-state" id="problem-tree-save-state" role="status"></span><button class="button quiet" id="problem-tree-reload" type="button">Recargar</button><button class="button quiet" id="problem-tree-ask" type="button">Revisar con Hilo</button><button class="button primary" id="problem-tree-save" type="button">Guardar árbol</button></div>
+        </header>
+        <p class="problem-tree-error" id="problem-tree-error" role="alert" hidden></p>
+        <div class="problem-tree-surface">
+          <section class="problem-tree-lane effects" aria-labelledby="problem-tree-effects-title">
+            <div class="problem-tree-lane-head"><div><h2 id="problem-tree-effects-title">Efectos</h2><p>¿Qué sucede como consecuencia?</p></div><button class="problem-tree-add" id="problem-tree-add-effect" type="button">+ Añadir efecto</button></div>
+            <div class="problem-tree-list" id="problem-tree-effects"></div>
+          </section>
+          <div class="problem-tree-connector" aria-hidden="true"><span></span></div>
+          <section class="problem-tree-core" aria-labelledby="problem-tree-core-title">
+            <div class="problem-tree-core-heading"><h2 id="problem-tree-core-title">Problema central</h2><span>Tronco</span></div>
+            <label for="problem-tree-problem">Escríbelo como una situación concreta, sin adelantar la solución.</label>
+            <textarea id="problem-tree-problem" rows="2" maxlength="500" placeholder="Ej. Los estudiantes esperan demasiado para recibir orientación"></textarea>
+            <label for="problem-tree-problem-source">Origen de esta definición <span>opcional</span></label>
+            <input id="problem-tree-problem-source" maxlength="500" placeholder="Ej. Entrevistas con estudiantes, 12 de septiembre" />
+          </section>
+          <div class="problem-tree-connector" aria-hidden="true"><span></span></div>
+          <section class="problem-tree-lane causes" aria-labelledby="problem-tree-causes-title">
+            <div class="problem-tree-lane-head"><div><h2 id="problem-tree-causes-title">Causas</h2><p>¿Qué podría estar originando el problema?</p></div><button class="problem-tree-add" id="problem-tree-add-cause" type="button">+ Añadir causa</button></div>
+            <div class="problem-tree-list" id="problem-tree-causes"></div>
+          </section>
+        </div>
+        <footer class="problem-tree-foot"><p><strong>Fuente registrada</strong> significa que puedes rastrear de dónde salió una afirmación. Hilo no la considera verificada automáticamente.</p><p>Arrastra tarjetas para cambiar el orden o usa los botones de cada tarjeta.</p></footer>
+      </section>
+      <div class="workspace" id="project-workspace" hidden>
+        <section class="chat-panel" aria-labelledby="project-name">
+          <header class="chat-panel-heading"><div class="project-heading" id="project-heading"><div class="project-progress" id="project-progress" role="img" aria-label="Progreso de etapas" hidden><svg viewBox="0 0 48 48" aria-hidden="true"><circle class="progress-track" cx="24" cy="24" r="20"/><circle class="progress-fill" id="project-progress-fill" cx="24" cy="24" r="20" pathLength="100" stroke-dasharray="100" stroke-dashoffset="100"/></svg><span id="project-progress-label" aria-hidden="true"></span></div><div class="project-heading-text"><h1 id="project-name">Inicio</h1><div class="project-stage" id="project-stage"><span id="project-phase"></span><span id="project-current-stage"></span><span id="project-access-label"></span></div></div></div><ul class="project-members" id="project-members" aria-label="Personas con acceso" hidden></ul><button class="project-share" id="share-project" type="button" aria-label="Administrar acceso al proyecto" title="Compartir este proyecto con otra cuenta local"><svg class="icon" aria-hidden="true"><use href="#i-share"/></svg><span id="share-project-label">Compartir</span></button><span class="sr-only" id="share-project-status" role="status"></span></header>
+          <div class="messages" id="messages" role="log" aria-live="polite" aria-relevant="additions"></div>
+          <div class="composer-area">
+            <div class="run-status" id="run-status" role="status"><span>Una pregunta a la vez, con respaldo metodológico.</span><span id="run-time"></span></div>
+            <form class="composer" id="chat-form">
+              <label class="sr-only" for="message">Mensaje para Hilo</label>
+              <div class="composer-body">
+                <textarea id="message" rows="1" maxlength="6000" placeholder="Cuéntame tu reto o pregunta qué sigue…" required></textarea>
+                <button class="expand-button" id="expand-message" type="button" aria-label="Ampliar el espacio para escribir" aria-expanded="false" aria-controls="message" hidden><svg class="icon" aria-hidden="true"><use href="#i-expand"/></svg></button>
+              </div>
+              <button class="send-button" id="send" type="submit" aria-label="Enviar mensaje"><svg class="icon"><use href="#i-send"/></svg></button>
+            </form>
+            <div class="composer-note"><span>Enter para enviar · Mayús + Enter para nueva línea</span><span>Qwen puede equivocarse. Revisa la evidencia.</span></div>
+          </div>
+        </section>
+        <aside class="inspector notes-board" id="board-notes-panel" aria-label="Post-its del proyecto">
+          <section class="notes-section" aria-labelledby="notes-heading">
+            <div class="notes-head"><h2 id="notes-heading">Post-its <span class="notes-count" id="notes-count">0</span></h2><button class="button primary notes-new" id="new-note" type="button"><svg class="icon"><use href="#i-plus"/></svg>Nueva nota</button></div>
+            <div class="notes-capture"><button class="selection-save" id="save-selection" type="button" disabled><svg class="icon"><use href="#i-note"/></svg>Guardar selección del chat</button><p class="selection-hint" id="selection-hint">Selecciona un fragmento del chat o escribe una nota.</p></div>
+            <div class="notes-wall" id="notes-stack"></div>
+          </section>
+        </aside>
+        <aside class="inspector agents-board" id="board-agents-panel" aria-label="Agentes del proyecto">
+          <section class="agents-flow" aria-labelledby="flow-heading">
+            <div class="panel-heading"><h2 id="flow-heading">Recorrido de agentes</h2><span class="small-badge">LangGraph</span></div>
+            <p class="panel-description" id="flow-description">El recorrido se ilumina mientras conversas.</p>
+            <svg id="graph" class="graph" viewBox="0 0 340 400" role="img" aria-label="Grafo de Hilo: Orquestador, Metodólogo, Verificador y un reintento ante rechazo"></svg>
+            <div class="graph-legend"><span><i class="legend-dot active"></i>En ejecución</span><span><i class="legend-dot done"></i>Completado</span></div>
+            <details class="trace-details"><summary>Ver eventos del turno <span id="trace-count">0</span></summary><ol id="trace-list" class="trace-list"><li class="empty-trace">Los eventos aparecerán al enviar un mensaje.</li></ol></details>
+          </section>
+          <section class="agents-memory" aria-labelledby="memory-heading">
+            <h2 id="memory-heading">Memoria verificada</h2>
+            <p class="panel-description" id="memory-caption">Datos guardados y aprobados por el verificador.</p>
+            <div id="memory-fields" class="memory-fields"></div>
+          </section>
+        </aside>
+      </div>
+      <nav class="project-floating-toolbar" id="project-floating-toolbar" aria-label="Opciones del proyecto" hidden>
+        <div class="board-tools" role="group" aria-label="Herramientas del tablero">
+          <button class="board-toggle" id="open-problem-tree" type="button"><svg class="icon" aria-hidden="true"><use href="#i-route"/></svg>Árbol</button>
+          <button class="board-toggle" id="toggle-notes" type="button" data-board-tool="notes" aria-pressed="false" aria-controls="board-notes-panel"><svg class="icon" aria-hidden="true"><use href="#i-note"/></svg>Post-its</button>
+          <button class="board-toggle" id="toggle-agents" type="button" data-board-tool="agents" aria-pressed="false" aria-controls="board-agents-panel"><svg class="icon" aria-hidden="true"><use href="#i-route"/></svg>Agentes</button>
+        </div>
+        <button id="edit-project" type="button" aria-label="Editar cuaderno"><svg class="icon" aria-hidden="true"><use href="#i-edit"/></svg>Editar cuaderno</button>
+      </nav>
+    </main>
+  </div>
+  <dialog class="project-dialog" id="project-dialog" aria-labelledby="new-project-title">
+    <form id="notebook-form" class="notebook-form" novalidate>
+      <h2 id="new-project-title">Nuevo cuaderno</h2><p id="project-form-description">Cuéntanos qué quieres explorar. El nombre y el reto son obligatorios.</p>
+      <p id="project-form-error" class="project-form-error" role="alert" hidden></p>
+      <div class="dialog-grid">
+        <div class="dialog-fields">
+          <label for="notebook-name">Nombre del proyecto <span class="required-label">Obligatorio</span></label>
+          <input id="notebook-name" required maxlength="120" placeholder="Ej. Movilidad en el campus" autocomplete="off" aria-describedby="notebook-name-error" />
+          <p class="field-error" id="notebook-name-error" role="alert" hidden></p>
+          <label for="context-question">Reto o pregunta de negocio <span class="required-label" id="question-required">Obligatorio</span></label>
+          <p class="field-hint" id="question-hint">¿Qué quieres entender o mejorar, y para quién?</p>
+          <textarea id="context-question" required maxlength="1500" rows="3" placeholder="Ej. ¿Cómo podemos reducir las llegadas tarde de los estudiantes?" aria-describedby="question-hint context-question-error"></textarea>
+          <p class="field-error" id="context-question-error" role="alert" hidden></p>
+          <div class="context-field-grid">
+            <div><label for="context-environment">Entorno <span class="optional-label">Opcional</span></label><p class="field-hint">¿Por qué es relevante? Describe el contexto.</p><textarea id="context-environment" maxlength="1500" rows="3"></textarea></div>
+            <div><label for="context-objective">Objetivo del proyecto <span class="optional-label">Opcional</span></label><p class="field-hint">¿Con qué propósito o estrategia se relaciona?</p><textarea id="context-objective" maxlength="1500" rows="3"></textarea></div>
+          </div>
+          <details class="more-project-details" id="more-project-details"><summary>Más detalles <span>Opcional</span></summary>
+            <div class="context-field-grid">
+              <div><label for="context-hypothesis">Hipótesis o supuestos</label><p class="field-hint">Una explicación por contrastar, no un resultado confirmado.</p><textarea id="context-hypothesis" maxlength="1500" rows="3" placeholder="Si hacemos A, esperamos B…"></textarea></div>
+              <div><label for="context-acceptance_criteria">Criterio de aceptación</label><p class="field-hint">¿Qué resultado sería suficiente para avanzar?</p><textarea id="context-acceptance_criteria" maxlength="1500" rows="3"></textarea></div>
+            </div>
+            <label for="context-ambition">Ambición 10X</label><p class="field-hint">¿Qué impacto mayor te gustaría alcanzar, si corresponde?</p><textarea id="context-ambition" maxlength="1500" rows="2"></textarea>
+            <label for="initial-stage">Etapa inicial</label><select id="initial-stage"></select>
+          </details>
+        </div>
+        <aside class="creation-preview">
+          <p class="preview-heading">Tu cuaderno</p>
+          <div class="project-folder folder-preview" id="folder-preview" data-color="blue" role="img" aria-label="Vista previa del cuaderno azul"><span class="folder-papers" aria-hidden="true"><span></span><span></span><span></span></span><span class="folder-front"><strong class="folder-title" id="preview-name">Tu nuevo cuaderno</strong><span class="folder-stage" id="preview-stage">Definir un reto</span></span></div>
+          <fieldset class="color-picker"><legend>Color del cuaderno</legend>
+            <label class="color-choice"><input type="radio" name="notebook-color" value="blue" checked /><span class="color-swatch" data-color="blue"></span>Azul</label>
+            <label class="color-choice"><input type="radio" name="notebook-color" value="yellow" /><span class="color-swatch" data-color="yellow"></span>Amarillo</label>
+            <label class="color-choice"><input type="radio" name="notebook-color" value="green" /><span class="color-swatch" data-color="green"></span>Verde</label>
+            <label class="color-choice"><input type="radio" name="notebook-color" value="orange" /><span class="color-swatch" data-color="orange"></span>Naranja</label>
+            <label class="color-choice"><input type="radio" name="notebook-color" value="purple" /><span class="color-swatch" data-color="purple"></span>Morado</label>
+            <label class="color-choice"><input type="radio" name="notebook-color" value="gray" /><span class="color-swatch" data-color="gray"></span>Gris</label>
+          </fieldset><p class="field-hint">Puedes cambiar el color y completar el contexto después.</p>
+        </aside>
+      </div>
+      <div class="project-danger" id="project-danger" hidden><button class="delete-link" id="delete-notebook" type="button"><svg class="icon"><use href="#i-trash"/></svg>Eliminar este cuaderno</button><div class="delete-confirm" id="delete-confirm" hidden><p>Se eliminarán la conversación, los Post-its y la memoria de este cuaderno. No se puede deshacer.</p><button class="button danger" id="confirm-delete" type="button">Eliminar cuaderno</button><button class="button quiet" id="cancel-delete" type="button">Cancelar</button></div></div><div class="form-actions"><button class="button quiet" id="cancel-notebook" type="button">Cancelar</button><button class="button primary" id="save-project" type="submit">Crear cuaderno</button></div>
+    </form>
+  </dialog>
+  <dialog class="calv-dialog" id="calv-dialog" aria-labelledby="calv-dialog-title">
+    <form id="calv-form" novalidate>
+      <h2 id="calv-dialog-title">Nueva entrada</h2>
+      <p class="calv-error" id="calv-error" role="alert" hidden></p>
+      <label class="sr-only" for="calv-entry-title">Título</label>
+      <input class="calv-entry-title" id="calv-entry-title" maxlength="200" required placeholder="¿Qué hay que recordar?" autocomplete="off" aria-describedby="calv-error" />
+      <fieldset class="calv-kinds"><legend>Tipo</legend><label><input type="radio" name="calv-kind" value="tarea" checked /><span><svg class="icon" aria-hidden="true"><use href="#i-task"/></svg>Tarea</span></label><label><input type="radio" name="calv-kind" value="recordatorio" /><span><svg class="icon" aria-hidden="true"><use href="#i-bell"/></svg>Recordatorio</span></label><label><input type="radio" name="calv-kind" value="reunion" /><span><svg class="icon" aria-hidden="true"><use href="#i-meeting"/></svg>Reunión</span></label></fieldset>
+      <div class="calv-when">
+        <div><label for="calv-date">Fecha</label><input type="date" id="calv-date" required /></div>
+        <div><label for="calv-start">Hora</label><input type="time" id="calv-start" required /></div>
+        <div><label for="calv-end">Hasta <span class="calv-optional">opcional</span></label><input type="time" id="calv-end" /></div>
+      </div>
+      <div class="calv-pair">
+        <div><label for="calv-project">Proyecto</label><select id="calv-project"></select></div>
+        <div><label for="calv-priority">Importancia</label><select id="calv-priority"><option value="high">Alta</option><option value="medium" selected>Media</option><option value="low">Baja</option></select></div>
+      </div>
+      <label class="calv-done" id="calv-done-row" hidden><input type="checkbox" id="calv-done" /> Marcar como completada</label>
+      <div class="calv-delete-confirm" id="calv-delete-confirm" hidden><p>¿Eliminar esta entrada? No se puede deshacer.</p><button class="button danger" id="calv-confirm-delete" type="button">Eliminar</button><button class="button quiet" id="calv-cancel-delete" type="button">Cancelar</button></div>
+      <div class="form-actions"><button class="delete-link" id="calv-delete" type="button" hidden><svg class="icon"><use href="#i-trash"/></svg>Eliminar</button><button class="button quiet" id="calv-cancel" type="button">Cancelar</button><button class="button primary" id="calv-save" type="submit">Guardar</button></div>
+    </form>
+  </dialog>
+  <dialog class="note-dialog note-sheet" id="note-dialog" aria-labelledby="note-dialog-title">
+    <form id="note-form" novalidate>
+      <h2 id="note-dialog-title">Nuevo post-it</h2>
+      <div class="note-editor-scroll">
+        <p class="note-error" id="note-error" role="alert" hidden></p>
+        <label class="sr-only" for="note-title">Título</label>
+        <input id="note-title" class="note-sheet-title" required maxlength="100" placeholder="Ponle un título" autocomplete="off" aria-describedby="note-error" />
+        <label class="sr-only" for="note-text">Texto</label>
+        <textarea id="note-text" class="note-sheet-text" required maxlength="3000" rows="6" placeholder="Escribe aquí lo que no quieres olvidar…" aria-describedby="note-error"></textarea>
+        <fieldset class="note-chips"><legend>Categoría</legend>
+          <label><input type="radio" name="note-category" value="idea" checked /><span>Idea</span></label>
+          <label><input type="radio" name="note-category" value="prototipo" /><span>Prototipo</span></label>
+          <label><input type="radio" name="note-category" value="observacion" /><span>Observación</span></label>
+          <label><input type="radio" name="note-category" value="pregunta" /><span>Pregunta</span></label>
+          <label><input type="radio" name="note-category" value="decision" /><span>Decisión</span></label>
+          <label><input type="radio" name="note-category" value="otro" /><span>Otro</span></label>
+        </fieldset>
+        <fieldset class="note-colors"><legend>Color</legend>
+          <label title="Amarillo"><input type="radio" name="note-color" value="yellow" checked /><span class="note-swatch" data-note-color="yellow"></span><span class="sr-only">Amarillo</span></label>
+          <label title="Rosa"><input type="radio" name="note-color" value="pink" /><span class="note-swatch" data-note-color="pink"></span><span class="sr-only">Rosa</span></label>
+          <label title="Azul"><input type="radio" name="note-color" value="blue" /><span class="note-swatch" data-note-color="blue"></span><span class="sr-only">Azul</span></label>
+          <label title="Verde"><input type="radio" name="note-color" value="green" /><span class="note-swatch" data-note-color="green"></span><span class="sr-only">Verde</span></label>
+          <label title="Morado"><input type="radio" name="note-color" value="purple" /><span class="note-swatch" data-note-color="purple"></span><span class="sr-only">Morado</span></label>
+          <label title="Naranja"><input type="radio" name="note-color" value="orange" /><span class="note-swatch" data-note-color="orange"></span><span class="sr-only">Naranja</span></label>
+        </fieldset>
+        <details class="note-source" id="note-source" hidden><summary>Fragmento original del chat</summary><blockquote id="note-source-text"></blockquote></details>
+      </div>
+      <div class="note-sheet-foot">
+        <p class="note-sign"><span class="note-avatar" id="note-sign-avatar" aria-hidden="true"></span><span><span class="sr-only">Firma: </span><strong id="note-sign-name"></strong> <span id="note-sign-date"></span></span></p>
+        <div class="form-actions"><button class="button quiet" id="cancel-note" type="button">Cancelar</button><button class="button primary" id="save-note" type="submit">Guardar post-it</button></div>
+      </div>
+    </form>
+  </dialog>
+  <dialog class="tool-dialog" id="tool-dialog" aria-labelledby="tool-dialog-title">
+    <h2 id="tool-dialog-title"></h2>
+    <p class="tool-dialog-meta" id="tool-dialog-meta"></p>
+    <div class="tool-dialog-body" id="tool-dialog-body"></div>
+    <div class="form-actions"><button class="button quiet" id="close-tool" type="button">Cerrar</button></div>
+  </dialog>
+  <dialog class="sharing-dialog" id="sharing-dialog" aria-labelledby="sharing-dialog-title">
+    <div class="sharing-head"><div><p class="sharing-kicker">Proyecto compartido</p><h2 id="sharing-dialog-title">Compartir proyecto</h2><p id="sharing-description">Los chats permanecen privados. Los Post-its, el calendario y los avances son comunes.</p></div><button class="icon-button" id="close-sharing" type="button" aria-label="Cerrar"><svg class="icon"><use href="#i-close"/></svg></button></div>
+    <p class="sharing-error" id="sharing-error" role="alert" hidden></p>
+    <form class="sharing-invite" id="sharing-invite-form">
+      <label for="sharing-username">Invitar por usuario</label><div class="sharing-invite-row"><input id="sharing-username" required maxlength="40" placeholder="usuario" autocomplete="off" /><select id="sharing-role" aria-label="Permiso"><option value="viewer">Puede ver</option><option value="editor">Puede editar</option></select><button class="button primary" type="submit">Invitar</button></div>
+    </form>
+    <section class="sharing-section" aria-labelledby="sharing-people-title"><div class="sharing-section-head"><h3 id="sharing-people-title">Personas con acceso</h3><span id="sharing-people-count"></span></div><div class="sharing-people" id="sharing-people"></div></section>
+    <section class="sharing-section" aria-labelledby="sharing-advances-title"><div class="sharing-section-head"><div><h3 id="sharing-advances-title">Avances compartidos</h3><p>Hallazgos y decisiones que darán contexto a cada agente.</p></div></div><div class="sharing-advances" id="sharing-advances"></div><form class="advance-form" id="advance-form"><select id="advance-kind" aria-label="Tipo de avance"><option value="decision">Decisión</option><option value="finding">Hallazgo</option><option value="hypothesis">Hipótesis</option><option value="next_step">Próximo paso</option><option value="other">Otro</option></select><textarea id="advance-content" required maxlength="1500" rows="2" placeholder="Escribe el avance más importante…"></textarea><button class="button primary" type="submit">Guardar avance</button></form></section>
+    <button class="button quiet sharing-leave" id="leave-project" type="button" hidden>Dejar de compartir conmigo</button>
+  </dialog>
+  <dialog class="profile-dialog" id="profile-dialog" aria-labelledby="profile-dialog-title">
+    <form id="profile-form" novalidate>
+      <h2 id="profile-dialog-title">Tu perfil</h2>
+      <p class="profile-dialog-description" id="profile-dialog-description">Tu nombre aparecerá en tus mensajes. Tus proyectos están vinculados a esta cuenta local.</p>
+      <p class="account-settings-username" id="account-settings-username" hidden></p>
+      <label for="profile-input">Nombre</label>
+      <input id="profile-input" maxlength="60" autocomplete="name" placeholder="Tu nombre" aria-describedby="profile-error" />
+      <p class="field-error" id="profile-error" role="alert" hidden></p>
+      <div class="form-actions"><button class="button quiet" id="cancel-profile" type="button">Cancelar</button><button class="button primary" type="submit">Guardar</button></div>
+      <button class="button quiet profile-logout" id="logout" type="button">Cerrar sesión</button>
+    </form>
+  </dialog>
+  <script type="module" src="/src/main.ts"></script>
+</body>
+</html>
