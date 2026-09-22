@@ -231,20 +231,25 @@
         <p class="project-count" id="tools-summary" role="status">Cargando fichas…</p>
         <div class="tools-grid" id="tools-grid"></div>
       </section>
+      <div class="workspace" id="project-workspace" hidden>
       <section class="problem-tree-view" id="problem-tree-view" hidden aria-labelledby="problem-tree-title">
+        <header class="chat-panel-heading tree-project-heading">
+          <div class="project-heading"><div class="project-progress" id="tree-project-progress" role="img" aria-label="Progreso de etapas" hidden><svg viewBox="0 0 48 48" aria-hidden="true"><circle class="progress-track" cx="24" cy="24" r="20"/><circle class="progress-fill" id="tree-project-progress-fill" cx="24" cy="24" r="20" pathLength="100" stroke-dasharray="100" stroke-dashoffset="100"/></svg><span id="tree-project-progress-label" aria-hidden="true"></span></div><div class="project-heading-text"><h1 id="tree-project-name"></h1><div class="project-stage"><span id="tree-project-phase"></span><span id="tree-project-stage"></span><span id="tree-project-access"></span></div></div></div>
+          <button class="project-share" id="tree-share-project" type="button" aria-label="Administrar acceso al proyecto"><svg class="icon" aria-hidden="true"><use href="#i-share"/></svg><span>Compartir</span></button>
+        </header>
         <header class="problem-tree-head">
-          <div><button class="problem-tree-back" id="problem-tree-back" type="button">← Volver al proyecto</button><h1 id="problem-tree-title">Árbol de problemas</h1><p id="problem-tree-subtitle">Conecta lo que ocurre con sus posibles causas y consecuencias.</p></div>
+          <div><button class="problem-tree-back" id="problem-tree-back" type="button">← Volver al chat</button><h2 id="problem-tree-title">Árbol de problemas</h2><p id="problem-tree-subtitle">Conecta lo que ocurre con sus posibles causas y consecuencias.</p></div>
           <div class="problem-tree-head-actions"><span class="problem-tree-save-state" id="problem-tree-save-state" role="status"></span><button class="button quiet" id="problem-tree-reload" type="button">Recargar</button><button class="button quiet" id="problem-tree-ask" type="button">Revisar con Hilo</button><button class="button primary" id="problem-tree-save" type="button">Guardar árbol</button></div>
         </header>
         <p class="problem-tree-error" id="problem-tree-error" role="alert" hidden></p>
         <div class="problem-tree-surface">
           <section class="problem-tree-lane effects" aria-labelledby="problem-tree-effects-title">
-            <div class="problem-tree-lane-head"><div><h2 id="problem-tree-effects-title">Efectos</h2><p>¿Qué sucede como consecuencia?</p></div><button class="problem-tree-add" id="problem-tree-add-effect" type="button">+ Añadir efecto</button></div>
+            <div class="problem-tree-lane-head"><div><h3 id="problem-tree-effects-title">Efectos</h3><p>¿Qué sucede como consecuencia?</p></div><button class="problem-tree-add" id="problem-tree-add-effect" type="button">+ Añadir efecto</button></div>
             <div class="problem-tree-list" id="problem-tree-effects"></div>
           </section>
           <div class="problem-tree-connector" aria-hidden="true"><span></span></div>
           <section class="problem-tree-core" aria-labelledby="problem-tree-core-title">
-            <div class="problem-tree-core-heading"><h2 id="problem-tree-core-title">Problema central</h2><span>Tronco</span></div>
+            <div class="problem-tree-core-heading"><h3 id="problem-tree-core-title">Problema central</h3><span>Tronco</span></div>
             <label for="problem-tree-problem">Escríbelo como una situación concreta, sin adelantar la solución.</label>
             <textarea id="problem-tree-problem" rows="2" maxlength="500" placeholder="Ej. Los estudiantes esperan demasiado para recibir orientación"></textarea>
             <label for="problem-tree-problem-source">Origen de esta definición <span>opcional</span></label>
@@ -252,14 +257,13 @@
           </section>
           <div class="problem-tree-connector" aria-hidden="true"><span></span></div>
           <section class="problem-tree-lane causes" aria-labelledby="problem-tree-causes-title">
-            <div class="problem-tree-lane-head"><div><h2 id="problem-tree-causes-title">Causas</h2><p>¿Qué podría estar originando el problema?</p></div><button class="problem-tree-add" id="problem-tree-add-cause" type="button">+ Añadir causa</button></div>
+            <div class="problem-tree-lane-head"><div><h3 id="problem-tree-causes-title">Causas</h3><p>¿Qué podría estar originando el problema?</p></div><button class="problem-tree-add" id="problem-tree-add-cause" type="button">+ Añadir causa</button></div>
             <div class="problem-tree-list" id="problem-tree-causes"></div>
           </section>
         </div>
         <footer class="problem-tree-foot"><p><strong>Fuente registrada</strong> significa que puedes rastrear de dónde salió una afirmación. Hilo no la considera verificada automáticamente.</p><p>Arrastra tarjetas para cambiar el orden o usa los botones de cada tarjeta.</p></footer>
       </section>
-      <div class="workspace" id="project-workspace" hidden>
-        <section class="chat-panel" aria-labelledby="project-name">
+        <section class="chat-panel" id="chat-panel" aria-labelledby="project-name">
           <header class="chat-panel-heading"><div class="project-heading" id="project-heading"><div class="project-progress" id="project-progress" role="img" aria-label="Progreso de etapas" hidden><svg viewBox="0 0 48 48" aria-hidden="true"><circle class="progress-track" cx="24" cy="24" r="20"/><circle class="progress-fill" id="project-progress-fill" cx="24" cy="24" r="20" pathLength="100" stroke-dasharray="100" stroke-dashoffset="100"/></svg><span id="project-progress-label" aria-hidden="true"></span></div><div class="project-heading-text"><h1 id="project-name">Inicio</h1><div class="project-stage" id="project-stage"><span id="project-phase"></span><span id="project-current-stage"></span><span id="project-access-label"></span></div></div></div><ul class="project-members" id="project-members" aria-label="Personas con acceso" hidden></ul><button class="project-share" id="share-project" type="button" aria-label="Administrar acceso al proyecto" title="Compartir este proyecto con otra cuenta local"><svg class="icon" aria-hidden="true"><use href="#i-share"/></svg><span id="share-project-label">Compartir</span></button><span class="sr-only" id="share-project-status" role="status"></span></header>
           <div class="messages" id="messages" role="log" aria-live="polite" aria-relevant="additions"></div>
           <div class="composer-area">
@@ -299,7 +303,7 @@
       </div>
       <nav class="project-floating-toolbar" id="project-floating-toolbar" aria-label="Opciones del proyecto" hidden>
         <div class="board-tools" role="group" aria-label="Herramientas del tablero">
-          <button class="board-toggle" id="open-problem-tree" type="button"><svg class="icon" aria-hidden="true"><use href="#i-route"/></svg>Árbol</button>
+          <button class="board-toggle" id="open-problem-tree" type="button" aria-pressed="false" aria-controls="problem-tree-view"><svg class="icon" aria-hidden="true"><use href="#i-route"/></svg>Árbol</button>
           <button class="board-toggle" id="toggle-notes" type="button" data-board-tool="notes" aria-pressed="false" aria-controls="board-notes-panel"><svg class="icon" aria-hidden="true"><use href="#i-note"/></svg>Post-its</button>
           <button class="board-toggle" id="toggle-agents" type="button" data-board-tool="agents" aria-pressed="false" aria-controls="board-agents-panel"><svg class="icon" aria-hidden="true"><use href="#i-route"/></svg>Agentes</button>
         </div>

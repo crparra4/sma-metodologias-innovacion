@@ -196,13 +196,14 @@ function syncControls() {
   const blocked = busy || loadingNotebook || noteSaving;
   const canEdit = activeAccess?.role !== 'viewer';
   const isOwner = activeAccess?.role === 'owner';
-  el<HTMLButtonElement>('new-note').disabled = loadingNotebook || !activeState || currentView !== 'project' || noteSaving || !canEdit;
+  el<HTMLButtonElement>('new-note').disabled = loadingNotebook || !activeState || !['project', 'tree'].includes(currentView) || noteSaving || !canEdit;
   el<HTMLButtonElement>('save-selection').disabled = loadingNotebook || !activeState || !selectedExcerpt || selectedExcerpt.length > 3000 || noteSaving || !canEdit;
   el<HTMLButtonElement>('send').disabled = blocked || !available || serverBusy || !activeState || !messageInput.value.trim();
   el<HTMLButtonElement>('new-notebook').disabled = blocked;
   el<HTMLButtonElement>('edit-project').disabled = blocked || serverBusy || !activeState || !isOwner;
   el<HTMLButtonElement>('open-problem-tree').disabled = blocked || !activeState;
   el<HTMLButtonElement>('share-project').disabled = loadingNotebook || !activeState;
+  el<HTMLButtonElement>('tree-share-project').disabled = loadingNotebook || !activeState;
   for (const id of ['go-home', 'go-tools', 'go-calendar', 'see-all-projects', 'home-new-project', 'empty-new-project', 'sidebar-search', 'sidebar-projects']) el<HTMLButtonElement>(id).disabled = blocked || !stages.length;
   el('project-grid').querySelectorAll('button').forEach(node => { node.disabled = blocked; });
   el<HTMLButtonElement>('delete-notebook').disabled = blocked || !activeState || !isOwner;
@@ -349,32 +350,42 @@ function renderMemory() {
 
 function updateHeader() {
   el('project-name').textContent = currentView === 'home' ? 'Inicio' : activeState?.notebook_id || 'Elige un proyecto';
+  el('tree-project-name').textContent = activeState?.notebook_id || '';
   el('project-phase').textContent = activeState?.phase || '';
+  el('tree-project-phase').textContent = activeState?.phase || '';
   el('project-current-stage').textContent = activeState ? stageName(activeState.stage) : 'Crea un proyecto para empezar a conversar';
+  el('tree-project-stage').textContent = activeState ? stageName(activeState.stage) : '';
   el('project-access-label').textContent = activeAccess
     ? activeAccess.role === 'owner' ? 'Propietario' : activeAccess.role === 'editor' ? `Compartido por ${activeAccess.owner_name} · puedes editar` : `Compartido por ${activeAccess.owner_name} · solo lectura`
     : '';
+  el('tree-project-access').textContent = el('project-access-label').textContent;
   el('project-phase').hidden = !activeState;
   const currentStage = activeState?.stage;
   const stagePosition = stages.findIndex(stage => stage.id === currentStage) + 1;
-  const hasProgress = currentView === 'project' && stagePosition > 0 && stages.length > 0;
+  const hasProgress = ['project', 'tree'].includes(currentView) && stagePosition > 0 && stages.length > 0;
   el('project-progress').hidden = !hasProgress;
+  el('tree-project-progress').hidden = !hasProgress;
   if (hasProgress) {
     el('project-progress-label').textContent = `${stagePosition} de ${stages.length}`;
+    el('tree-project-progress-label').textContent = `${stagePosition} de ${stages.length}`;
     el('project-progress').setAttribute('aria-label', `Etapa ${stagePosition} de ${stages.length}: ${stageName(activeState!.stage)}`);
+    el('tree-project-progress').setAttribute('aria-label', `Etapa ${stagePosition} de ${stages.length}: ${stageName(activeState!.stage)}`);
     el('project-progress-fill').setAttribute('stroke-dashoffset', String(100 - stagePosition / stages.length * 100));
+    el('tree-project-progress-fill').setAttribute('stroke-dashoffset', String(100 - stagePosition / stages.length * 100));
   }
-  el('project-floating-toolbar').hidden = currentView !== 'project';
+  el('project-floating-toolbar').hidden = !['project', 'tree'].includes(currentView);
   el('project-name').title = activeState?.notebook_id || '';
   el('project-heading').hidden = false;
   el('menu-toggle').hidden = false;
   el('home-view').hidden = currentView !== 'home';
   el('tools-view').hidden = currentView !== 'tools';
   el('problem-tree-view').hidden = currentView !== 'tree';
+  el('chat-panel').hidden = currentView !== 'project';
   el('calendar-view').hidden = currentView !== 'calendar';
   el('go-calendar').setAttribute('aria-current', currentView === 'calendar' ? 'page' : 'false');
   el('go-tools').setAttribute('aria-current', currentView === 'tools' ? 'page' : 'false');
-  el('project-workspace').hidden = currentView !== 'project';
+  el('project-workspace').hidden = !['project', 'tree'].includes(currentView);
+  renderBoard();
   el('go-home').setAttribute('aria-current', currentView === 'home' ? 'page' : 'false');
   renderMemory(); syncControls();
 }
@@ -391,7 +402,7 @@ function renderNotebooks() {
   el('recent-group').hidden = !notebooks.length;
   el('see-all-projects').hidden = notebooks.length <= 3;
   for (const notebook of notebooks.slice(0, 3)) {
-    const selected = currentView === 'project' && notebook.project_id === activeAccess?.project_id;
+    const selected = ['project', 'tree'].includes(currentView) && notebook.project_id === activeAccess?.project_id;
     const button = document.createElement('button'); button.className = `notebook-item ${selected ? 'selected' : ''}`; button.type = 'button';
     button.setAttribute('aria-current', selected ? 'page' : 'false');
     const title = document.createElement('strong'); title.textContent = notebook.notebook_id;
@@ -536,7 +547,18 @@ async function showProblemTree(updateLocation = true) {
     activeState.context.question, activeState.notebook_id);
 }
 
-el('open-problem-tree').addEventListener('click', () => { if (!busy && !loadingNotebook) void showProblemTree(); });
+el('open-problem-tree').addEventListener('click', () => {
+  if (busy || loadingNotebook) return;
+  if (currentView === 'tree') {
+    if (!problemTree.canLeave()) return;
+    currentView = 'project';
+    history.pushState(null, '', `#proyecto=${encodeURIComponent(activeAccess!.project_id)}`);
+    updateHeader(); renderNotebooks();
+    return;
+  }
+  void showProblemTree();
+});
+el('tree-share-project').addEventListener('click', () => el<HTMLButtonElement>('share-project').click());
 
 const positions: Record<string, { x: number; y: number; w: number; h: number; label: string }> = {
   __start__: { x: 144, y: 15, w: 12, h: 12, label: 'Inicio' },
@@ -1088,7 +1110,7 @@ el('note-form').addEventListener('input', () => {
 const BOARD_KEY = 'hilo-tablero';
 const BOARD_TOOLS = ['notes', 'agents'] as const;
 type BoardTool = typeof BOARD_TOOLS[number];
-const boardTools = new Set<BoardTool>(readBoard());
+const boardTools = new Set<BoardTool>(readBoard().slice(-1));
 
 function readBoard(): BoardTool[] {
   // Por defecto el tablero muestra solo el chat.
@@ -1101,6 +1123,10 @@ function readBoard(): BoardTool[] {
 function renderBoard() {
   const workspace = el('project-workspace');
   workspace.dataset.boardCount = String(boardTools.size);
+  workspace.classList.toggle('board-primary-tree', currentView === 'tree');
+  const treeToggle = el<HTMLButtonElement>('open-problem-tree');
+  treeToggle.setAttribute('aria-pressed', String(currentView === 'tree'));
+  treeToggle.title = currentView === 'tree' ? 'Volver al chat' : 'Mostrar el árbol de problemas';
   for (const tool of BOARD_TOOLS) {
     const active = boardTools.has(tool);
     workspace.classList.toggle(`board-has-${tool}`, active);
@@ -1114,7 +1140,8 @@ function renderBoard() {
 }
 
 function setBoardTool(tool: BoardTool, active: boolean) {
-  if (active) boardTools.add(tool); else boardTools.delete(tool);
+  boardTools.clear();
+  if (active) boardTools.add(tool);
   // Sin almacenamiento disponible la eleccion vale para esta pestana.
   try { localStorage.setItem(BOARD_KEY, JSON.stringify([...boardTools])); } catch { /* sin persistencia */ }
   renderBoard();
