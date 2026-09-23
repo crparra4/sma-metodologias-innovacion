@@ -33,7 +33,13 @@ from .notes import NoteRequest
 from .problem_tree import ProblemTreeUpdate
 from .sharing import SharingStore
 from .tasks import TaskRequest
-from .tree_diagnosis import TREE_TOOL_ID, grounded, review_prompt, rule_findings
+from .tree_diagnosis import (
+    TREE_TOOL_ID,
+    grounded,
+    review_prompt,
+    rule_findings,
+    summary_text,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -266,6 +272,10 @@ def create_app(
                     break
                 block = candidate
             items.append(block)
+            # Solo si sigue vigente: un diagnóstico de otra versión del árbol confundiría al agente.
+            diagnosis = sharing.tree_diagnosis(access["project_id"])
+            if diagnosis and diagnosis["tree_version"] == tree["version"]:
+                items.append(diagnosis["summary"])
         return items[-40:]
 
     @app.middleware("http")
@@ -682,6 +692,10 @@ def create_app(
                 model_status = "no_disponible"
             finally:
                 generation_lock.release()
+        sharing.save_tree_diagnosis(
+            access["project_id"], tree["version"],
+            summary_text(findings, tree, tree["version"], model_status),
+        )
         return {
             "version": tree["version"],
             "findings": [finding.model_dump() for finding in findings],

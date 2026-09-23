@@ -67,6 +67,14 @@ class SharingStore:
                     updated_by TEXT NOT NULL REFERENCES users(id),
                     updated_at INTEGER NOT NULL
                 );
+                -- Último diagnóstico, ya en texto breve para el contexto del agente.
+                -- tree_version indica a qué versión del árbol corresponde.
+                CREATE TABLE IF NOT EXISTS project_tree_diagnoses (
+                    project_id TEXT PRIMARY KEY REFERENCES shared_projects(id) ON DELETE CASCADE,
+                    tree_version INTEGER NOT NULL,
+                    summary TEXT NOT NULL,
+                    created_at INTEGER NOT NULL
+                );
             """)
 
     def _connect(self) -> sqlite3.Connection:
@@ -106,6 +114,23 @@ class SharingStore:
                     "version": 0, "updated_at": None}
         return {**json.loads(row["content"]), "version": row["version"],
                 "updated_at": row["updated_at"]}
+
+    def save_tree_diagnosis(self, project_id: str, tree_version: int, summary: str) -> None:
+        with self._connect() as db:
+            db.execute("""
+                INSERT INTO project_tree_diagnoses VALUES (?, ?, ?, ?)
+                ON CONFLICT(project_id) DO UPDATE SET
+                    tree_version=excluded.tree_version, summary=excluded.summary,
+                    created_at=excluded.created_at
+            """, (project_id, tree_version, summary, int(time.time())))
+
+    def tree_diagnosis(self, project_id: str) -> dict | None:
+        with self._connect() as db:
+            row = db.execute(
+                "SELECT tree_version, summary FROM project_tree_diagnoses WHERE project_id=?",
+                (project_id,),
+            ).fetchone()
+        return dict(row) if row else None
 
     def save_problem_tree(self, project_id: str, user_id: str, content: dict,
                           version: int) -> dict:

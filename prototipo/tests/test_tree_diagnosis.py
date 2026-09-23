@@ -7,7 +7,12 @@ from test_sharing import register
 
 from ruta_dia_agents.config import Settings
 from ruta_dia_agents.contracts import Verdict
-from ruta_dia_agents.tree_diagnosis import ModelReview, grounded, rule_findings
+from ruta_dia_agents.tree_diagnosis import (
+    ModelReview,
+    grounded,
+    rule_findings,
+    summary_text,
+)
 from ruta_dia_agents.web import create_app
 
 
@@ -152,3 +157,48 @@ def test_diagnosis_degrades_to_rules_when_model_fails(tmp_path):
     assert body["model_status"] == "no_disponible"
     assert body["findings"]
     assert all(item["layer"] == "regla" for item in body["findings"])
+
+
+def test_summary_is_short_ordered_text():
+    model = grounded(ModelReview(problem_solution_fragment="crear una app",
+                                 problem_explanation="Describe una solución."), FLAWED)[0]
+    text = summary_text(rule_findings(FLAWED) + model, FLAWED, 3, "ok")
+    assert text.startswith("Diagnóstico del árbol (versión 3, sugerencias no verificadas): ")
+    # lo más grave primero, con frases fijas en vez de la explicación del modelo
+    assert text.index("describe una solución") < text.index("sin fuente")
+    assert "la causa «Falta de una app que centralice los datos» nombra lo que falta" in text
+    assert "2 de 3 tarjetas sin fuente" in text
+    assert "Describe una solución." not in text
+    assert len(text) < 500
+
+
+def test_summary_edge_cases():
+    assert summary_text([], SOUND, 2, "ok").endswith(": sin observaciones.")
+    assert "el problema central no se revisó" in summary_text([], SOUND, 2, "no_disponible")
+    crowded = {**SOUND, "causes": [node(f"c{i}", "x y", "s") for i in range(9)]}
+    text = summary_text(rule_findings(crowded), crowded, 1, "ok")
+    assert text.count(";") == 5  # seis líneas como máximo
+    assert text.endswith("de menor prioridad.")
+
+
+def test_agent_reads_the_diagnosis_only_while_it_is_current(tmp_path):
+    runtime = ReviewingRuntime(review=ModelReview(
+        problem_solution_fragment="crear una app", problem_explanation="Describe una solución.",
+    ))
+    client = client_with(tmp_path, runtime)
+    with client:
+        diagnosis = saved_tree_endpoint(client, FLAWED)
+        project_id = diagnosis.split("/")[3]
+        assert client.post(diagnosis).status_code == 200
+
+        def context():
+            return client.get(f"/api/notebooks/{project_id}").json()["state"]["shared_context"]
+
+        current = [item for item in context() if item.startswith("Diagnóstico del árbol")]
+        assert len(current) == 1
+        assert "versión 1" in current[0] and "describe una solución" in current[0]
+
+        # el árbol cambia: el diagnóstico viejo deja de llegar al agente
+        tree = diagnosis.removesuffix("/diagnosis")
+        assert client.put(tree, json={"version": 1, **FLAWED}).status_code == 200
+        assert not any(item.startswith("Diagnóstico del árbol") for item in context())
