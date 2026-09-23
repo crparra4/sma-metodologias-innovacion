@@ -56,8 +56,9 @@ Para detener también Qwen:
 ### Árbol de problemas interactivo
 
 Dentro de un proyecto, la barra azul inferior permanece visible y «Árbol» cambia el panel
-principal del chat por el árbol. El árbol puede ocupar todo el espacio o compartir el tablero
-con **Post-its** o **Agentes**; solo se muestran dos paneles a la vez. Al pulsar de nuevo «Árbol»,
+principal del chat por el árbol. Al abrirlo, **Chat** y **Árbol** aparecen juntos. El árbol también
+puede ocupar todo el espacio o compartir el tablero con **Post-its** o **Agentes**; solo se muestran
+dos paneles a la vez. Al pulsar de nuevo «Árbol»,
 se vuelve al chat. En pantallas estrechas, el panel complementario aparece debajo del árbol.
 
 El árbol contiene efectos, problema central y causas. Cada

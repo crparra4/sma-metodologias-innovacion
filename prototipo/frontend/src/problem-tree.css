@@ -1,7 +1,5 @@
 .problem-tree-view{flex:1;min-height:0;overflow:auto;background:#f3f5f9;color:#263348;padding:28px clamp(20px,4vw,56px) 36px}
 .problem-tree-head{display:flex;align-items:flex-end;justify-content:space-between;gap:24px;max-width:1260px;margin:0 auto 24px}
-.problem-tree-back{border:0;background:transparent;color:#294eb8;font:600 13px "Segoe UI",system-ui,sans-serif;cursor:pointer;padding:8px 0;margin-bottom:6px}
-.problem-tree-back:hover{text-decoration:underline;text-underline-offset:3px}
 .problem-tree-head h2{font-size:27px;line-height:1.2;margin:0 0 7px;font-weight:680;letter-spacing:-.025em}
 .problem-tree-head p{font-size:13px;color:#5f6d82;margin:0}
 .problem-tree-head-actions{display:flex;align-items:center;gap:8px;flex-wrap:wrap;justify-content:flex-end}
@@ -45,28 +43,93 @@
 @media(max-width:700px){.problem-tree-view{padding:20px 14px 30px}.problem-tree-head{margin-bottom:18px}.problem-tree-head h2{font-size:23px}.problem-tree-head-actions{width:100%}.problem-tree-head-actions .button{flex:1}.problem-tree-save-state{width:100%}.problem-tree-surface{padding:20px 15px 24px}.problem-tree-lane-head{align-items:flex-start;flex-direction:column;gap:10px}.problem-tree-add{width:100%}.problem-tree-core{padding:16px}.problem-tree-list{grid-template-columns:1fr}.problem-tree-card-actions button{padding:7px 8px}}
 /* El árbol comparte el mismo tablero y altura que el chat del proyecto. */
 #project-workspace .problem-tree-view{display:flex;flex-direction:column;min-width:0;min-height:0;height:100%;overflow:auto;padding:0 0 64px;background:#fff;border:1px solid #d8e1f0;border-radius:12px;scrollbar-gutter:stable}
-#project-workspace .tree-project-heading{position:sticky;top:0;z-index:2;display:flex;align-items:center;gap:14px;flex-shrink:0;min-height:72px;padding:12px 22px;background:#fff;border-bottom:1px solid #e9edf5}
-#project-workspace .tree-project-heading .project-heading{display:flex;align-items:center;gap:14px;flex:1;min-width:0}
-#project-workspace .tree-project-heading .project-heading-text{flex:1;min-width:0}
-#project-workspace .tree-project-heading h1{display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:2;overflow:hidden;overflow-wrap:anywhere;margin:0;font-size:16px;font-weight:650;line-height:1.4}
-#project-workspace .tree-project-heading .project-stage{display:flex;align-items:center;flex-wrap:wrap;gap:6px;margin-top:6px;font-size:11px;color:#627087}
-#tree-project-phase{padding:2px 7px;border-radius:5px;background:#edf2fc;color:#244ba8;font-weight:600}
-#tree-project-stage{color:#426293}
-#tree-project-access{padding-left:7px;border-left:1px solid #c9d4e5;color:#526886;font-weight:600}
-#project-workspace .problem-tree-head{width:100%;max-width:1320px;margin:0 auto 0;padding:24px 28px 12px;align-items:center}
-#project-workspace .problem-tree-head h2{font-size:24px}
+#project-workspace .problem-tree-head{position:sticky;top:0;z-index:2;width:100%;max-width:none;margin:0;min-height:72px;padding:12px 22px;align-items:center;background:#fff;border-bottom:1px solid #e5ebf5}
+#project-workspace .problem-tree-head h2{font-size:16px;font-weight:650;line-height:1.4;margin:0;letter-spacing:0}
+#project-workspace .problem-tree-head p{font-size:11px;line-height:1.5;color:#627087;margin:4px 0 0}
+/* Misma estructura que la cabecera del chat: insignia de 48 px, título y una línea de apoyo. */
+.problem-tree-heading{display:flex;align-items:center;gap:14px;min-width:0}
+.problem-tree-heading-text{min-width:0}
+.problem-tree-badge{flex:0 0 48px;width:48px;height:48px;box-sizing:border-box;border-radius:50%;border:3.5px solid #cfe4d5;background:#f3f9f4 url("/hoja.png") no-repeat center/16px 27px}
 #project-workspace .problem-tree-surface{width:100%;max-width:1320px;margin:0 auto;padding:18px 28px 28px;border:0;border-radius:0}
 #project-workspace .problem-tree-foot{width:100%;max-width:1320px;padding:0 28px 28px;margin:0 auto}
 #project-workspace .problem-tree-error{width:calc(100% - 56px)}
 @media(max-width:900px){#project-workspace .problem-tree-head{align-items:flex-start}}
 @media(max-width:700px){
   #project-workspace .problem-tree-view{height:calc(100dvh - 96px);min-height:480px}
-  #project-workspace .tree-project-heading{min-height:64px;padding:10px 14px}
-  #project-workspace .tree-project-heading .project-heading{gap:10px}
-  #project-workspace .tree-project-heading h1{font-size:15px}
-  #project-workspace .problem-tree-head{padding:18px 16px 12px}
-  #project-workspace .problem-tree-head h2{font-size:22px}
+  #project-workspace .problem-tree-head{padding:12px 16px}
+  .problem-tree-badge{flex-basis:44px;width:44px;height:44px}
+  #project-workspace .problem-tree-head h2{font-size:15px}
   #project-workspace .problem-tree-surface{padding:14px 16px 24px}
   #project-workspace .problem-tree-foot{padding:0 16px 50px}
   #project-workspace .problem-tree-error{width:calc(100% - 32px)}
 }
+
+/* Dos niveles: una tarjeta raíz y las tarjetas de fondo que la explican. */
+.problem-tree-branch{display:flex;flex-direction:column;gap:9px;min-width:0}
+.problem-tree-children{display:flex;flex-direction:column;gap:9px;margin-left:14px;padding-left:13px;border-left:2px solid #cbd6e5}
+.problem-tree-lane.causes .problem-tree-children{border-left-color:#e3d6c7}
+.problem-tree-card.is-child{border-style:dashed;background:#fff}
+.problem-tree-lane.causes .problem-tree-card.is-child{background:#fffdfa}
+.problem-tree-count{margin-left:auto;margin-right:8px;color:#627087;font-size:11px;white-space:nowrap}
+.problem-tree-count.at-limit{color:#8a5a2b;font-weight:600}
+.problem-tree-view.is-busy{cursor:progress}
+.problem-tree-view.is-busy .problem-tree-surface{opacity:.72}
+@media(max-width:700px){.problem-tree-children{margin-left:8px;padding-left:10px}.problem-tree-count{width:100%;margin:0 0 6px;text-align:left}}
+
+/* Lenguaje visual del árbol: copa, tronco y raíces conservan campos legibles. */
+.problem-tree-lane.effects .problem-tree-lane-head h3{display:flex;align-items:center;gap:9px;color:#2f6b45}
+.problem-tree-lane.effects .problem-tree-lane-head h3::before{content:"";width:15px;height:25px;background:url("/hoja.png") no-repeat center/contain;transform:rotate(-14deg)}
+.problem-tree-lane.causes .problem-tree-lane-head h3{display:flex;align-items:center;gap:9px;color:#74472d}
+.problem-tree-lane.causes .problem-tree-lane-head h3::before{content:"";width:19px;height:24px;background:url("/raiz.png") no-repeat center/contain}
+.problem-tree-lane.effects .problem-tree-card{position:relative;border:1px solid #9fc5a9;border-left:5px solid #4f8c62;border-radius:20px 8px 20px 8px;background:#edf6ef;box-shadow:0 5px 14px #315f3b12}
+/* Hojas: la doble en las tarjetas principales, la sencilla en las de fondo. */
+.problem-tree-lane.effects .problem-tree-card::before{content:"";position:absolute;right:12px;top:6px;width:30px;height:46px;background:url("/hoja-doble.png") no-repeat center/contain;opacity:.9;transform:rotate(-8deg);pointer-events:none}
+.problem-tree-lane.effects .problem-tree-card.is-child::before{width:21px;height:34px;top:9px;right:14px;background-image:url("/hoja.png");transform:rotate(12deg)}
+.problem-tree-lane.effects .problem-tree-card-head{padding-right:40px}
+.problem-tree-lane.effects .problem-tree-card.is-child .problem-tree-card-head{padding-right:30px}
+.problem-tree-lane.effects .problem-tree-card-head{color:#315f40}
+.problem-tree-lane.effects .problem-tree-card.is-child{background:#f6fbf7;border-color:#b8d5c0}
+.problem-tree-lane.causes .problem-tree-card{position:relative;border:1px solid #c7a27f;border-left:5px solid #8b5b38;border-radius:7px 18px 7px 18px;background:#f4e8d9;box-shadow:0 5px 14px #65412712}
+/* Raíces: la tupida en las tarjetas principales, la fina en las de fondo. Cuelgan del borde superior. */
+.problem-tree-lane.causes .problem-tree-card::before{content:"";position:absolute;right:13px;top:3px;width:34px;height:44px;background:url("/raiz.png") no-repeat center top/contain;opacity:.9;pointer-events:none}
+.problem-tree-lane.causes .problem-tree-card.is-child::before{width:21px;height:36px;right:15px;background-image:url("/raiz-fina.png")}
+.problem-tree-lane.causes .problem-tree-card-head{padding-right:42px}
+.problem-tree-lane.causes .problem-tree-card.is-child .problem-tree-card-head{padding-right:30px}
+.problem-tree-lane.causes .problem-tree-card-head{color:#70462e}
+.problem-tree-lane.causes .problem-tree-card.is-child{background:#fbf5ed;border-color:#d6b89c}
+.problem-tree-lane.effects .problem-tree-children{border-left-color:#79a987}
+.problem-tree-lane.causes .problem-tree-children{border-left-color:#9c6c49}
+.problem-tree-core{position:relative;overflow:hidden;border-color:#d6752f;border-width:2px;border-radius:10px 10px 18px 18px;background:#f7c184;box-shadow:inset 9px 0 #e9964e,inset -9px 0 #e9964e,0 8px 20px #a85b2518}
+.problem-tree-core::before,.problem-tree-core::after{content:"";position:absolute;top:-22px;width:45px;height:150%;border:2px solid #c9662a;border-radius:50%;opacity:.15;pointer-events:none}
+.problem-tree-core::before{left:-30px}.problem-tree-core::after{right:-30px}
+.problem-tree-core>*{position:relative;z-index:1}
+.problem-tree-core h3{color:#733c1f}
+.problem-tree-core-heading span{background:#fff0de;color:#8b4d25;border:1px solid #dc955e}
+.problem-tree-core label{color:#68432e}
+.problem-tree-core textarea,.problem-tree-core input{border-color:#ce8c5b;background:#fffaf4}
+.problem-tree-lane.effects + .problem-tree-connector span{background:#72a681}
+.problem-tree-lane.effects + .problem-tree-connector span::after{border-top-color:#72a681}
+.problem-tree-core + .problem-tree-connector span{background:#956340}
+.problem-tree-core + .problem-tree-connector span::after{border-top-color:#956340}
+
+.problem-tree-share{display:inline-flex;align-items:center;gap:6px}
+.problem-tree-share .icon{width:15px;height:15px}
+
+/* Diagnóstico: resumen arriba; cada observación junto a lo que señala. */
+.problem-tree-diagnosis{margin:14px 28px 0;padding:13px 16px;border:1px solid #d6dff0;border-left:4px solid #294eb8;border-radius:10px;background:#f6f8fd;color:#34425a;font-size:12px}
+.problem-tree-diagnosis h3{display:flex;align-items:center;justify-content:space-between;gap:12px;margin:0;font-size:13px;font-weight:650}
+.problem-tree-diagnosis ul{margin:8px 0 0;padding-left:18px}
+.problem-tree-diagnosis li{margin:4px 0;line-height:1.5}
+.problem-tree-diagnosis .diagnosis-status{margin:8px 0 0;color:#627087;font-size:11px;line-height:1.5}
+.diagnosis-close{border:0;background:transparent;color:#294eb8;padding:2px 4px;font:600 11px "Segoe UI",system-ui,sans-serif;cursor:pointer}
+.diagnosis-close:hover{text-decoration:underline;text-underline-offset:3px}
+.diagnosis-stale-note{display:none;margin:8px 0 0;color:#8a5a2b;font-size:11px;font-weight:600}
+.problem-tree-view.diagnosis-stale .diagnosis-stale-note{display:block}
+.problem-tree-finding{margin:8px 0 2px;padding:7px 9px;border:1px solid #f1d3a6;border-radius:7px;background:#fff4e5;color:#7a4b12;font-size:11px;line-height:1.45}
+.problem-tree-finding.sev-alta{border-color:#f3c3be;background:#fdecea;color:#8f2f2a}
+.problem-tree-finding.sev-baja{border-color:#dde3ee;background:#f3f5f9;color:#4f5d73}
+.problem-tree-finding .finding-label{display:block;margin-bottom:2px;font-size:10px;font-weight:700;letter-spacing:.02em}
+.problem-tree-finding p{margin:0}
+.problem-tree-lane-findings:not(:empty){margin:-6px 0 12px}
+.problem-tree-view.diagnosis-stale .problem-tree-finding{opacity:.5}
+@media(max-width:700px){.problem-tree-diagnosis{margin:12px 16px 0}}

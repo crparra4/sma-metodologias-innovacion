@@ -7,6 +7,7 @@ from openai import OpenAI
 
 from .config import Settings
 from .runtime import ContractRuntime, T
+from .tree_diagnosis import ModelReview
 
 ROLE_INSTRUCTIONS = {
     "orchestrator": (
@@ -21,7 +22,13 @@ ROLE_INSTRUCTIONS = {
         "Eres el Verificador de Ruta DIA. Auditas únicamente la orientación actual contra el "
         "mensaje y la ficha; no corriges ni reescribes la respuesta."
     ),
+    "tree_reviewer": (
+        "Eres el Revisor del árbol de problemas de Ruta DIA. Señalas errores de estructura "
+        "usando solo la ficha y el árbol recibido; no reescribes tarjetas ni propones soluciones."
+    ),
 }
+# Fragmento citado más una frase de explicación: algo más que el límite corto por defecto.
+ROLE_MAX_TOKENS = {"tree_reviewer": 512}
 
 
 class DirectOpenAIRuntime(ContractRuntime):
@@ -44,7 +51,9 @@ class DirectOpenAIRuntime(ContractRuntime):
     def _run(self, agent: object, description: str, output_model: type[T]) -> T:
         role = str(agent)
         thinking = role == "verifier" and self.settings.thinking
-        max_tokens = 1536 if thinking else min(self.settings.max_tokens or 384, 384)
+        max_tokens = 1536 if thinking else ROLE_MAX_TOKENS.get(
+            role, min(self.settings.max_tokens or 384, 384)
+        )
         schema_name = re.sub(r"[^a-zA-Z0-9_-]", "_", output_model.__name__)[:64]
         options = {
             "model": self.settings.model,
@@ -85,3 +94,7 @@ class DirectOpenAIRuntime(ContractRuntime):
             }
         )
         return parsed
+
+    def review_tree(self, description: str) -> ModelReview:
+        """Revisión de contenido del árbol; su salida pasa después por `grounded`."""
+        return self._run("tree_reviewer", description, ModelReview)
