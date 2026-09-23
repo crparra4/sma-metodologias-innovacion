@@ -227,3 +227,25 @@ Guardar respuesta abre editor con fragmento correcto, cancelado sin guardar; flu
 escritura multilínea y foco Tab/enviar verificados sin enviar. No hubo inferencia ni escrituras
 API. App de Reserva conserva6 mensajes y3 notas reales (ejemplo2, Pregunta · ejemplo de prueba,
 diseño), NO borrar esas notas por parecer de prueba. Capturas chat-refresh-*.png.
+
+### Diagnóstico del árbol de problemas (23 sep 2026)
+
+Botón **Diagnosticar** en la cabecera del árbol. Diagnostica la versión guardada
+(`POST /api/projects/{id}/problem-tree/diagnosis`) en dos capas, en `tree_diagnosis.py`:
+
+1. **Reglas** (código, instantáneas): carril vacío, tarjetas sin fuente, ninguna causa de fondo,
+   causas redactadas como «falta de / no hay / sin…», tarjetas repetidas o muy breves.
+2. **Contenido** (Qwen3.5-4B, rol `tree_reviewer`): solo revisa si el problema central describe
+   una solución. Debe citar literalmente el fragmento; si la cita no aparece, se descarta.
+   Si el modelo está ocupado o no responde, se devuelven solo las reglas (`model_status`).
+
+Cada observación se muestra junto a lo que señala (tronco, carril o tarjeta), no en un informe
+aparte: es el efecto de atención dividida de la Teoría de la Carga Cognitiva. Al editar, el
+diagnóstico se marca como desactualizado. El diagnóstico **nunca modifica el árbol**.
+
+**No volver a pedirle al modelo** «tarjeta en el lado equivocado» ni «causa muy general»: con el
+4B dieron hasta 7 alarmas falsas por corrida y llegaron a marcar las cinco tarjetas de un árbol
+correcto. «Falta de…» pedida al modelo la aplicaba a casi todas las causas; por eso es una regla.
+Resultado final con dos árboles y dos semillas: 4/4 errores plantados, 0 alarmas falsas en el
+árbol correcto, 1,4 s por árbol. Detalle y cifras en el docstring de `tree_diagnosis.py`.
+Pruebas: `tests/test_tree_diagnosis.py` (12).

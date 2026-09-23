@@ -126,7 +126,9 @@ class SharingStore:
             current_version = row["version"] if row else 0
             if current_version != version:
                 raise HTTPException(
-                    409, "Otra persona modificó el árbol. Recarga la versión actual."
+                    409,
+                    "Otra persona modificó el árbol. "
+                    "Actualiza la página para ver la versión actual.",
                 )
             now = int(time.time())
             payload = json.dumps(content, ensure_ascii=False)

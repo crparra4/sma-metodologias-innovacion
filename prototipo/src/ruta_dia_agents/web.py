@@ -33,6 +33,7 @@ from .notes import NoteRequest
 from .problem_tree import ProblemTreeUpdate
 from .sharing import SharingStore
 from .tasks import TaskRequest
+from .tree_diagnosis import TREE_TOOL_ID, grounded, review_prompt, rule_findings
 
 logger = logging.getLogger(__name__)
 
@@ -238,14 +239,33 @@ def create_app(
         if tree["problem"]:
             summary = [f"Árbol de problemas (borrador del equipo, no verificado): "
                        f"problema central: {tree['problem']}"]
-            for label, key in (("Causa propuesta", "causes"), ("Efecto propuesto", "effects")):
-                for node in tree[key][:8]:
+            for singular, plural, key in (
+                ("Causa propuesta", "causas", "causes"),
+                ("Efecto propuesto", "efectos", "effects"),
+            ):
+                nodes = tree[key]
+                texts = {node["id"]: node["text"] for node in nodes}
+                shown = nodes[:8]
+                for node in shown:
                     source = (
                         f"; origen declarado: {node['source']}"
                         if node["source"] else "; sin fuente"
                     )
+                    above = texts.get(node.get("parent") or "")
+                    label = f"{singular} de fondo, detalla «{above}»" if above else singular
                     summary.append(f"{label}: {node['text']}{source}")
-            items.append(". ".join(summary)[:3500])
+                if len(nodes) > len(shown):
+                    summary.append(
+                        f"El árbol tiene {len(nodes)} {plural} en total; "
+                        f"aquí se resumen las primeras {len(shown)}"
+                    )
+            block = ""
+            for part in summary:
+                candidate = f"{block}. {part}" if block else part
+                if len(candidate) > 3500:
+                    break
+                block = candidate
+            items.append(block)
         return items[-40:]
 
     @app.middleware("http")
@@ -633,6 +653,42 @@ def create_app(
             access["project_id"], user.id,
             body.model_dump(exclude={"version"}), body.version,
         )
+
+    @app.post("/api/projects/{project_id}/problem-tree/diagnosis")
+    def diagnose_problem_tree(project_id: str):
+        """Diagnostica la versión guardada. Las reglas siempre responden; la revisión
+        de contenido depende del modelo y, si no está, se degrada sin fallar."""
+        access = project_access(project_id)
+        tree = sharing.problem_tree(access["project_id"])
+        if not tree["problem"]:
+            raise HTTPException(409, "Guarda el árbol antes de diagnosticarlo.")
+        findings = rule_findings(tree)
+        discarded = 0
+        started = time.perf_counter()
+        if not generation_lock.acquire(blocking=False):
+            model_status = "ocupado"
+        else:
+            try:
+                review = getattr(runtime_factory(settings), "review_tree", None)
+                if review is None:
+                    model_status = "no_disponible"
+                else:
+                    prompt = review_prompt(tree, catalog.tool_card(TREE_TOOL_ID))
+                    content, discarded = grounded(review(prompt), tree)
+                    findings.extend(content)
+                    model_status = "ok"
+            except Exception:
+                logger.exception("Fallo en el diagnóstico de contenido del árbol")
+                model_status = "no_disponible"
+            finally:
+                generation_lock.release()
+        return {
+            "version": tree["version"],
+            "findings": [finding.model_dump() for finding in findings],
+            "model_status": model_status,
+            "discarded": discarded,
+            "elapsed_ms": round((time.perf_counter() - started) * 1000),
+        }
 
     @app.post("/api/projects/{project_id}/invitations", status_code=201)
     def invite_to_project(project_id: str, body: InvitationRequest, request: Request):

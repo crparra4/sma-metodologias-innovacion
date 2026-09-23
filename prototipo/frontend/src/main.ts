@@ -140,17 +140,7 @@ async function api<T>(path: string, options?: RequestInit): Promise<T> {
   return response.json();
 }
 
-const problemTree = new ProblemTreeController(api, () => {
-  currentView = 'project';
-  history.pushState(null, '', `#proyecto=${encodeURIComponent(activeAccess!.project_id)}`);
-  updateHeader(); renderNotebooks();
-}, () => {
-  currentView = 'project';
-  history.pushState(null, '', `#proyecto=${encodeURIComponent(activeAccess!.project_id)}`);
-  updateHeader(); renderNotebooks();
-  messageInput.value = 'Ayúdame a revisar las posibles causas y efectos de mi árbol de problemas. ¿Qué relación debería contrastar primero?';
-  fitMessageInput(); syncControls(); messageInput.focus();
-});
+const problemTree = new ProblemTreeController(api);
 
 function showError(message = '') {
   el('global-error').textContent = message;
@@ -350,28 +340,20 @@ function renderMemory() {
 
 function updateHeader() {
   el('project-name').textContent = currentView === 'home' ? 'Inicio' : activeState?.notebook_id || 'Elige un proyecto';
-  el('tree-project-name').textContent = activeState?.notebook_id || '';
   el('project-phase').textContent = activeState?.phase || '';
-  el('tree-project-phase').textContent = activeState?.phase || '';
   el('project-current-stage').textContent = activeState ? stageName(activeState.stage) : 'Crea un proyecto para empezar a conversar';
-  el('tree-project-stage').textContent = activeState ? stageName(activeState.stage) : '';
   el('project-access-label').textContent = activeAccess
     ? activeAccess.role === 'owner' ? 'Propietario' : activeAccess.role === 'editor' ? `Compartido por ${activeAccess.owner_name} · puedes editar` : `Compartido por ${activeAccess.owner_name} · solo lectura`
     : '';
-  el('tree-project-access').textContent = el('project-access-label').textContent;
   el('project-phase').hidden = !activeState;
   const currentStage = activeState?.stage;
   const stagePosition = stages.findIndex(stage => stage.id === currentStage) + 1;
   const hasProgress = ['project', 'tree'].includes(currentView) && stagePosition > 0 && stages.length > 0;
   el('project-progress').hidden = !hasProgress;
-  el('tree-project-progress').hidden = !hasProgress;
   if (hasProgress) {
     el('project-progress-label').textContent = `${stagePosition} de ${stages.length}`;
-    el('tree-project-progress-label').textContent = `${stagePosition} de ${stages.length}`;
     el('project-progress').setAttribute('aria-label', `Etapa ${stagePosition} de ${stages.length}: ${stageName(activeState!.stage)}`);
-    el('tree-project-progress').setAttribute('aria-label', `Etapa ${stagePosition} de ${stages.length}: ${stageName(activeState!.stage)}`);
     el('project-progress-fill').setAttribute('stroke-dashoffset', String(100 - stagePosition / stages.length * 100));
-    el('tree-project-progress-fill').setAttribute('stroke-dashoffset', String(100 - stagePosition / stages.length * 100));
   }
   el('project-floating-toolbar').hidden = !['project', 'tree'].includes(currentView);
   el('project-name').title = activeState?.notebook_id || '';
@@ -380,7 +362,7 @@ function updateHeader() {
   el('home-view').hidden = currentView !== 'home';
   el('tools-view').hidden = currentView !== 'tools';
   el('problem-tree-view').hidden = currentView !== 'tree';
-  el('chat-panel').hidden = currentView !== 'project';
+  el('chat-panel').hidden = currentView !== 'project' && !(currentView === 'tree' && boardTools.has('chat'));
   el('calendar-view').hidden = currentView !== 'calendar';
   el('go-calendar').setAttribute('aria-current', currentView === 'calendar' ? 'page' : 'false');
   el('go-tools').setAttribute('aria-current', currentView === 'tools' ? 'page' : 'false');
@@ -556,6 +538,7 @@ el('open-problem-tree').addEventListener('click', () => {
     updateHeader(); renderNotebooks();
     return;
   }
+  setBoardTool('chat', true);
   void showProblemTree();
 });
 el('tree-share-project').addEventListener('click', () => el<HTMLButtonElement>('share-project').click());
@@ -1108,7 +1091,7 @@ el('note-form').addEventListener('input', () => {
   if (el<HTMLInputElement>('note-title').value.trim() && el<HTMLTextAreaElement>('note-text').value.trim()) el('note-error').hidden = true;
 });
 const BOARD_KEY = 'hilo-tablero';
-const BOARD_TOOLS = ['notes', 'agents'] as const;
+const BOARD_TOOLS = ['chat', 'notes', 'agents'] as const;
 type BoardTool = typeof BOARD_TOOLS[number];
 const boardTools = new Set<BoardTool>(readBoard().slice(-1));
 
@@ -1122,13 +1105,15 @@ function readBoard(): BoardTool[] {
 
 function renderBoard() {
   const workspace = el('project-workspace');
-  workspace.dataset.boardCount = String(boardTools.size);
+  const selectedTool = [...boardTools][0];
+  const complement = currentView === 'project' && selectedTool === 'chat' ? undefined : selectedTool;
+  workspace.dataset.boardCount = complement ? '1' : '0';
   workspace.classList.toggle('board-primary-tree', currentView === 'tree');
   const treeToggle = el<HTMLButtonElement>('open-problem-tree');
   treeToggle.setAttribute('aria-pressed', String(currentView === 'tree'));
   treeToggle.title = currentView === 'tree' ? 'Volver al chat' : 'Mostrar el árbol de problemas';
   for (const tool of BOARD_TOOLS) {
-    const active = boardTools.has(tool);
+    const active = tool === 'chat' && currentView === 'project' ? true : complement === tool;
     workspace.classList.toggle(`board-has-${tool}`, active);
     const toggle = document.querySelector<HTMLButtonElement>(`[data-board-tool="${tool}"]`);
     if (toggle) {
@@ -1150,7 +1135,12 @@ function setBoardTool(tool: BoardTool, active: boolean) {
 document.querySelectorAll<HTMLButtonElement>('[data-board-tool]').forEach(toggle => {
   toggle.addEventListener('click', () => {
     const tool = toggle.dataset.boardTool as BoardTool;
+    if (tool === 'chat' && currentView === 'project') {
+      setBoardTool('chat', false);
+      return;
+    }
     setBoardTool(tool, !boardTools.has(tool));
+    updateHeader();
   });
 });
 renderBoard();
