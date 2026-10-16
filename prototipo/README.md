@@ -80,11 +80,12 @@ Solo se descarga una vez en cada entorno local.
 
 ### Linux
 
-Probado solo con pruebas automáticas desde Windows: falta la primera ejecución real en Linux.
+Probado en Ubuntu con el motor `cuda` (octubre de 2026).
 
 ```bash
 cd prototipo
 cp .env.example .env          # solo si aún no existe; edita RUTA_DIA_API_KEY
+bash scripts/build_frontend.sh   # en un clon nuevo: frontend/dist no viene en Git
 bash scripts/start_interface.sh
 ```
 
@@ -200,6 +201,8 @@ cuenta del sistema operativo puede leerlo. Si los datos lo exigen, cifra el disc
   borran al reiniciar la interfaz.
 - Como mucho dos hashes de contraseña a la vez; los demás esperan su turno.
 - Una petición de más de 1 MB se rechaza con 413 antes de validarla.
+- En Linux, al iniciar, la carpeta de datos queda solo para tu usuario (700; archivos en 600).
+  En Windows, `%LOCALAPPDATA%` ya es privada.
 
 ## Post-its del cuaderno
 

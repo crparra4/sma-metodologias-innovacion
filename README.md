@@ -6,7 +6,7 @@ herramientas interactivas y colaboración entre cuentas de una misma instalació
 La aplicación está en [`prototipo/`](prototipo/); este README explica cómo instalarla,
 cómo funciona y dónde está cada documento.
 
-> **Estado:** prototipo local para Windows. La interfaz y el modelo escuchan en
+> **Estado:** prototipo local para Windows y Linux. La interfaz y el modelo escuchan en
 > `127.0.0.1`. Publicar el código en GitHub no publica la aplicación ni permite
 > que otros computadores entren a los proyectos guardados en esta máquina.
 
@@ -21,6 +21,7 @@ cómo funciona y dónde está cada documento.
 - [Estructura del repositorio](#estructura-del-repositorio)
 - [Documentación](#documentación)
 - [Desarrollo y pruebas](#desarrollo-y-pruebas)
+- [Ramas](#ramas)
 - [Problemas frecuentes](#problemas-frecuentes)
 
 ## Funciones disponibles
@@ -35,10 +36,23 @@ cómo funciona y dónde está cada documento.
 - **Árbol de problemas:** tablero de problema central, causas y efectos que se
   guarda por proyecto con control de versiones. Un origen escrito en el árbol no
   se convierte automáticamente en evidencia verificada.
+- **Análisis de cinco porqués:** parte de una causa del árbol, registra la cadena
+  paso a paso y permite incorporar la causa candidata al árbol.
+- **Vistas propias por herramienta:** PESTEL (seis factores con post-its,
+  oportunidad o amenaza y prioridad), mapa de empatía (lo observado separado de lo
+  supuesto) y Customer Journey (etapas, curva de emoción y lectura de notas de
+  entrevista que propone post-its citando el texto). El agente lee estos tableros
+  como borradores del equipo.
+- **Temas sensibles:** crisis personal, daño, contenido sexual, odio, opinión
+  política o religiosa y consejo médico, legal o financiero reciben una respuesta
+  fija del sistema, sin pasar por el modelo.
 - **Agenda:** calendario y tareas personales o vinculadas a proyectos, con fecha,
   prioridad y estado.
 - **Seguimiento del agente:** la interfaz muestra el flujo, reintentos, dictamen
   y ficha metodológica utilizada.
+- **Protección del acceso:** límite de intentos de inicio de sesión, tope de
+  tamaño por petición y carpeta de datos privada en Linux. Detalle en
+  [`prototipo/README.md`](prototipo/README.md#protección-del-acceso).
 
 Las fichas son material de trabajo del prototipo. La aprobación del Verificador
 no equivale a validación experta. Todavía no hay RAG vectorial ni acceso remoto
@@ -48,17 +62,20 @@ entre computadores.
 
 | Componente | Requisito para esta configuración |
 | --- | --- |
-| Sistema | Windows x64 y PowerShell |
+| Sistema | Windows x64 con PowerShell, o Linux x86-64 (Ubuntu o Linux Mint) con bash |
 | Python | 3.10 a 3.13; [`.python-version`](prototipo/.python-version) fija 3.13 |
 | Gestor Python | `uv`, instalado como módulo de Python |
-| Frontend | Node.js y npm (probado con Node.js 24), y `pnpm` 11.15.1 (según [`package.json`](prototipo/frontend/package.json)) |
-| Modelo local | El instalador incluido descarga Qwen3.5-4B y llama.cpp para Windows x64/CUDA 12.4; requiere hardware y controladores NVIDIA compatibles |
+| Frontend | Node.js y npm (probado con Node.js 24), y `pnpm` 11.15.1 (según [`package.json`](prototipo/frontend/package.json)); en Linux también `rsync` |
+| Modelo local | El instalador descarga Qwen3.5-4B y llama.cpp. Windows: CUDA 12.4 (NVIDIA). Linux: CUDA 12.8 (controlador NVIDIA 570 o posterior), Vulkan o solo CPU |
 | Espacio | Aproximadamente 3,4 GB de descargas para modelo y runtime, más dependencias y datos |
 
-El script incluido instala la compilación CUDA. No ofrece una instalación
-alternativa de llama.cpp para CPU u otros sistemas operativos.
+En Windows el instalador usa la compilación CUDA. En Linux elige solo el motor
+más rápido disponible (CUDA, Vulkan o CPU) y `--backend` permite forzar otro. Con
+CPU cada respuesta tarda varios minutos.
 
 ## Instalación desde cero
+
+### Windows
 
 Abre **PowerShell**. Instala Python, Node.js y Git si aún no están disponibles;
 comprueba sus comandos y luego instala los gestores del proyecto:
@@ -106,7 +123,34 @@ comando. Los archivos quedan en `%LOCALAPPDATA%\QwenLocalTest`, fuera del
 repositorio. También puedes omitir este paso: el script de inicio los descarga
 cuando faltan.
 
+### Linux
+
+Instala las herramientas (Ubuntu o Linux Mint) y abre una terminal nueva después
+de instalar `uv`:
+
+```bash
+sudo apt install git nodejs npm rsync
+sudo npm install --global pnpm@11.15.1
+curl -LsSf https://astral.sh/uv/install.sh | sh
+```
+
+Clona el repositorio, prepara la configuración y construye la interfaz:
+
+```bash
+git clone https://github.com/crparra4/sma-metodologias-innovacion.git
+cd sma-metodologias-innovacion/prototipo
+cp .env.example .env              # luego reemplaza RUTA_DIA_API_KEY
+bash scripts/build_frontend.sh
+```
+
+`build_frontend.sh` instala las dependencias del frontend sobre una copia en
+`~/.cache/hilo-frontend` y deja el resultado en `frontend/dist`. Con una tarjeta
+NVIDIA instala antes el controlador (`sudo ubuntu-drivers install`, reinicia y
+comprueba con `nvidia-smi`); para Vulkan hace falta `sudo apt install libvulkan1`.
+
 ## Iniciar y detener
+
+### Windows
 
 Todos los comandos siguientes se ejecutan desde `prototipo`:
 
@@ -156,6 +200,26 @@ En este modo, abre `http://127.0.0.1:5173/` para trabajar con Vite o
 `http://127.0.0.1:8787/` para ver la compilación servida por FastAPI. Detén los
 procesos en primer plano con `Ctrl+C` y el modelo con `local_model.py stop`.
 
+### Linux
+
+Desde `prototipo`:
+
+```bash
+# Inicia Qwen, la API y la interfaz; abre el navegador.
+bash scripts/start_interface.sh
+
+# Detiene la interfaz; con --model también detiene el modelo y libera la GPU.
+bash scripts/stop_interface.sh --model
+```
+
+La primera vez, `start_interface.sh` crea el entorno de Python en `~/.venvs/hilo`
+(se cambia con `HILO_VENV`), descarga el modelo y el motor, e inicia todo. Acepta
+`--port 8788` y `--no-browser`. Si el modelo no arranca, prueba otro motor:
+
+```bash
+~/.venvs/hilo/bin/python scripts/install_local_model.py --backend vulkan
+```
+
 ## Arquitectura
 
 ```mermaid
@@ -196,6 +260,11 @@ La arquitectura detallada está en
 
 ## Datos y configuración
 
+Las rutas de esta tabla son las de Windows. En Linux, `%LOCALAPPDATA%\RutaDIA`
+es `~/.local/share/RutaDIA` y `%LOCALAPPDATA%\QwenLocalTest` es
+`~/.local/share/QwenLocalTest`. Al iniciar en Linux, la carpeta de datos queda
+accesible solo para tu usuario (permisos 700 y 600).
+
 | Ubicación | Contenido |
 | --- | --- |
 | `prototipo/.env` | Configuración y clave local; ignorado por Git |
@@ -229,17 +298,22 @@ remoto, HTTPS ni una base de datos compartida entre computadores.
 prototipo/
 ├── frontend/                 # Interfaz Vite/TypeScript y recursos visuales
 │   ├── src/main.ts           # Navegación y pantallas
-│   └── src/problem-tree.ts   # Árbol de problemas interactivo
+│   ├── src/problem-tree.ts   # Árbol de problemas interactivo
+│   ├── src/why-analysis.ts   # Análisis de cinco porqués
+│   ├── src/pestel.ts         # Vista PESTEL
+│   ├── src/empatia.ts        # Mapa de empatía
+│   └── src/journey.ts        # Customer Journey y lectura de notas
 ├── src/ruta_dia_agents/      # API, agentes, contratos, memoria y permisos
 │   ├── web.py                # FastAPI y rutas HTTP
 │   ├── langgraph_workflow.py # Flujo de los tres roles
-│   ├── sharing.py            # Proyectos compartidos y avances
-│   └── auth.py               # Cuentas y sesiones
+│   ├── sharing.py            # Proyectos compartidos, avances y tableros
+│   ├── sensitive.py          # Temas sensibles con respuesta fija
+│   └── auth.py               # Cuentas, sesiones y límite de intentos
 ├── knowledge/
 │   ├── routes/ruta-dia.json  # Etapas y herramientas habilitadas
 │   ├── tools/                # Fichas metodológicas
 │   └── frameworks/           # Marcos teóricos de apoyo
-├── scripts/                  # Instalación, arranque y evaluación local
+├── scripts/                  # Instalación, arranque (.ps1 en Windows, .sh en Linux) y evaluación
 ├── tests/                    # Pruebas del backend
 ├── evaluation/               # Casos y protocolo del piloto
 └── docs/                     # Arquitectura, interfaz y resultados
@@ -251,6 +325,8 @@ prototipo/
 | --- | --- |
 | [`prototipo/README.md`](prototipo/README.md) | CLI, memoria y evaluación del núcleo multiagente |
 | [`docs/interfaz-local.md`](prototipo/docs/interfaz-local.md) | Interfaz, cuentas, proyectos, Post-its, agenda y árbol |
+| [`docs/guia-de-pruebas.md`](prototipo/docs/guia-de-pruebas.md) | Pruebas manuales del árbol, el diagnóstico y los cinco porqués |
+| [`docs/recuperacion-qwen-2026-09-29.md`](prototipo/docs/recuperacion-qwen-2026-09-29.md) | Diagnóstico y arreglo del motor de llama.cpp |
 | [`docs/arquitectura-langgraph.md`](prototipo/docs/arquitectura-langgraph.md) | Flujo LangGraph, responsabilidades y persistencia |
 | [`docs/arquitectura.md`](prototipo/docs/arquitectura.md) | Decisión inicial con CrewAI; documento histórico |
 | [`docs/plan-compartir-proyectos.md`](prototipo/docs/plan-compartir-proyectos.md) | Primera versión local y ampliaciones de colaboración pendientes |
@@ -275,6 +351,14 @@ pnpm --dir frontend build
 node --test frontend/tests/agenda.test.mjs
 ```
 
+En Linux, con el entorno de `start_interface.sh`:
+
+```bash
+~/.venvs/hilo/bin/python -m pytest -q
+~/.venvs/hilo/bin/python -m ruff check .
+bash scripts/build_frontend.sh
+```
+
 Para desarrollar el frontend con recarga automática, deja el backend encendido
 y ejecuta `pnpm --dir frontend dev`; Vite reenvía `/api` a `127.0.0.1:8787`.
 Después de cambiar el frontend, recompílalo si lo abrirás desde FastAPI. Después
@@ -285,6 +369,16 @@ los comandos están en [`prototipo/README.md`](prototipo/README.md). Las rutas d
 la API se agrupan en `/api/auth`, `/api/notebooks`, `/api/projects`, `/api/tasks`
 y `/api/chat`. `/api/status` permite comprobar interfaz y modelo.
 
+## Ramas
+
+| Rama | Uso |
+| --- | --- |
+| `main` | Versión estable; la que se congela para la validación con participantes |
+| `develop` | Desarrollo del día a día |
+| `staging` | Pruebas de una versión antes de pasarla a `main` |
+
+Los cambios se hacen en `develop`, se prueban en `staging` y pasan a `main`.
+
 ## Problemas frecuentes
 
 | Síntoma | Comprobación y acción |
@@ -294,7 +388,10 @@ y `/api/chat`. `/api/status` permite comprobar interfaz y modelo.
 | `pnpm` no se reconoce | Instala Node.js; ejecuta `npm install --global pnpm@11.15.1` y abre una nueva terminal. |
 | `python -m uv` no se reconoce | Ejecuta `python -m pip install --user uv` con el mismo Python que usarás para `sync`. |
 | El puerto 8787 está ocupado | Usa `.\scripts\start_interface.ps1 -Port 8788` y entra a `http://127.0.0.1:8788/`. |
+| «Demasiados intentos» al iniciar sesión | Es el límite de intentos: espera el minuto que indica el mensaje. Reiniciar la interfaz también borra los contadores. |
+| En Linux falta la interfaz construida | Ejecuta `bash scripts/build_frontend.sh` desde `prototipo`; necesita `pnpm` y `rsync`. |
 | Olvidaste la contraseña de una cuenta existente | Con la interfaz detenida, ejecuta `.\.venv\Scripts\python.exe scripts/reset_local_password.py NOMBRE_DE_USUARIO`. Pide una clave nueva y crea una copia de la base de cuentas. |
 
 Los registros de la interfaz se guardan en `%LOCALAPPDATA%\RutaDIA` y el del
-modelo en `%LOCALAPPDATA%\QwenLocalTest\ruta-dia-server.log`.
+modelo en `%LOCALAPPDATA%\QwenLocalTest\ruta-dia-server.log`. En Linux están en
+`~/.local/share/RutaDIA` y `~/.local/share/QwenLocalTest/ruta-dia-server.log`.

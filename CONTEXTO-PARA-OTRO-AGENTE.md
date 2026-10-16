@@ -828,3 +828,15 @@ El usuario pidió limpiar el repo antes de subirlo. El repositorio es público
    `main` ya limpio, para no publicar el historial viejo en ramas nuevas. Ensayado en un clon: las
    tres ramas sin coincidencias. Pendiente: subirlas junto con el push de `main`.
 
+**Resultado (16 oct, hecho desde Linux):** se dio escritura a `.git` (`chmod -R u+w .git`), se
+confirmó el trabajo pendiente en `main` y se reescribió el historial con `git-filter-repo` en
+`D:\hilo\limpieza-historial\repo-limpio`. El usuario hizo el push desde ahí: GitHub tiene `main`,
+`develop` y `staging` en `c27bcc3`, con 6 commits publicados, 0 archivos con los nombres y solo el
+correo noreply. La carpeta `proyecto` quedó alineada con `git reset --hard origin/main`.
+- Un push hecho por error desde `proyecto` volvió a subir un momento el historial viejo; se corrigió
+  repitiendo el push desde `repo-limpio`. Desde ahora se trabaja en `proyecto`, en `develop`.
+- La rama local `master` conserva los 5 commits viejos con el correo corporativo: **no subirla**.
+- Respaldo del historial anterior: `D:\hilo\limpieza-historial\respaldo-20261016-1259.git`.
+- GitHub puede mantener un tiempo los commits viejos accesibles por su identificador; para borrarlos
+  del todo hay que pedirlo al soporte de GitHub.
+
