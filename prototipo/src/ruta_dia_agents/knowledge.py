@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+import re
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
@@ -52,6 +53,31 @@ class RouteDefinition(BaseModel):
 class KnowledgeIssue:
     code: str
     detail: str
+
+
+PROMPT_CARD_LIMIT = 7000  # caracteres: deja sitio al resto del prompt en 8.192 tokens
+
+_SECTION_HEADINGS = {
+    "what": r"(?:Qu[eé] es|TL;DR)",  # la guía de trabajo de campo abre con un resumen
+    "when": r"Cu[aá]ndo(?: se usa| usarla)",
+    "how": r"C[oó]mo se usa",
+}
+
+
+def card_section(card: str, section: str) -> str:
+    """Contenido bajo el encabezado de segundo nivel pedido, sin notas de borrador (`> …`)."""
+    match = re.search(
+        rf"^##[ \t]*{_SECTION_HEADINGS[section]}[^\n]*\n(.*?)(?=^##[ \t]|\Z)",
+        card.replace("\r\n", "\n"),
+        re.MULTILINE | re.DOTALL,
+    )
+    if not match:
+        return ""
+    lines = [line.rstrip() for line in match.group(1).splitlines()]
+    kept = [line for line in lines if not line.lstrip().startswith(">")]
+    text = "\n".join(kept).strip()
+    # Las secciones de una línea se devuelven sin saltos; las listas conservan su formato.
+    return text if section == "how" or text.startswith("-") else " ".join(text.split())
 
 
 class KnowledgeCatalog:
@@ -110,6 +136,27 @@ class KnowledgeCatalog:
         tool = self.tool(tool_id)
         return self._tool_path(tool).read_text(encoding="utf-8-sig")
 
+    def prompt_card(self, tool_id: str, limit: int = PROMPT_CARD_LIMIT) -> str:
+        """La ficha tal como se le pasa al modelo. Una ficha larga (la guía de trabajo de
+        campo tiene 26 mil caracteres) no cabe en la ventana del modelo local: se conservan
+        en orden las secciones que quepan y se dice cuáles se omitieron."""
+        card = self.tool_card(tool_id)
+        if len(card) <= limit:
+            return card
+        head, *sections = re.split(r"(?m)^(?=## )", card)
+        kept, skipped, size = [head], [], len(head)
+        for section in sections:
+            if size + len(section) <= limit:
+                kept.append(section)
+                size += len(section)
+            else:
+                skipped.append(section.splitlines()[0].lstrip("# ").strip())
+        note = (
+            "\n> Ficha resumida para el asistente. Secciones omitidas por extensión: "
+            f"{', '.join(skipped)}.\n"
+        )
+        return "".join(kept).rstrip() + "\n" + note
+
     def route_index(self) -> str:
         data: dict[str, Any] = {
             "route_id": self.route.id,
@@ -121,7 +168,12 @@ class KnowledgeCatalog:
                     "name": stage.name,
                     "objective": stage.objective,
                     "tools": [
-                        {"id": tool_id, "name": self.tool(tool_id).name}
+                        {
+                            "id": tool_id,
+                            "name": self.tool(tool_id).name,
+                            # Para que el Orquestador elija por propósito y no solo por nombre.
+                            "use_when": self.card_section(tool_id, "when"),
+                        }
                         for tool_id in stage.tools
                     ],
                 }
@@ -129,6 +181,13 @@ class KnowledgeCatalog:
             ],
         }
         return json.dumps(data, ensure_ascii=False, indent=2)
+
+    def card_section(self, tool_id: str, section: str) -> str:
+        """Texto literal de una sección de la ficha: "what", "when" o "how". Vacío si no existe.
+
+        Se usa para explicar o recomendar con las palabras de la ficha, sin pasar por el modelo.
+        """
+        return card_section(self.tool_card(tool_id), section)
 
     def tool_allowed_in_stage(self, tool_id: str, stage_id: int) -> bool:
         return tool_id in self.stage(stage_id).tools

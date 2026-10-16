@@ -1,0 +1,38 @@
+/* Barra del análisis de 5 porqués: encima de la caja de texto del chat. Compacta y con
+   su propio desplazamiento, porque junto al árbol el chat mide entre 360 y 480 px. */
+.why-bar{margin:0 0 12px;padding:12px 14px;max-height:min(46vh,380px);overflow:auto;border:1px solid #e3d6c7;border-left:4px solid #8b5b38;border-radius:12px;background:#fffaf5;color:#3b2f25;font-size:12px}
+.why-head{display:flex;align-items:flex-start;justify-content:space-between;gap:10px;margin-bottom:8px}
+.why-title{display:flex;align-items:baseline;gap:8px;min-width:0;flex-wrap:wrap}
+.why-title strong{font-size:12.5px;font-weight:650;color:#4a3526;overflow-wrap:anywhere}
+.why-chip{flex:none;padding:2px 7px;border-radius:5px;background:#f1e3d3;color:#7a4b25;font-size:10px;font-weight:700;letter-spacing:.02em}
+.why-state{flex:none;color:#8a6a50;font-size:10.5px;font-weight:600}
+.why-chain{margin:0 0 8px;padding-left:20px}
+.why-chain li{margin:0 0 7px;padding-left:2px}
+.why-chain li::marker{color:#8b5b38;font-weight:700}
+.why-step{margin:0 0 4px;line-height:1.45;color:#34281f}
+.why-evidence{box-sizing:border-box;width:calc(100% - 52px);padding:5px 8px;border:1px solid #e6d8c9;border-radius:6px;background:#fff;color:#3b2f25;font:400 11px/1.4 "Segoe UI",system-ui,sans-serif}
+.why-evidence::placeholder{color:#a08a78}
+.why-remove{margin-left:6px;padding:3px 5px;border:0;background:transparent;color:#a53c3c;font:600 10.5px "Segoe UI",system-ui,sans-serif;cursor:pointer}
+.why-doubts{margin:0 0 8px;padding:7px 9px;border-radius:7px;background:#fff1e0;color:#7a4b12}
+.why-doubts span{display:block;margin-bottom:2px;font-size:10px;font-weight:700}
+.why-doubts ul{margin:0;padding-left:16px}
+.why-next{margin:0 0 9px;color:#6d5645;font-size:11.5px;line-height:1.45}
+.why-skipped{margin:0 0 6px;padding:5px 8px;border-left:2px solid #d0a060;border-radius:0 6px 6px 0;background:#fdf4e6;color:#7a5424;font-size:11.5px;line-height:1.45}
+.why-actions{display:flex;flex-wrap:wrap;gap:6px}
+.why-button{padding:6px 10px;border:1px solid transparent;border-radius:7px;font:600 11.5px "Segoe UI",system-ui,sans-serif;cursor:pointer}
+.why-button.primary{background:#8b5b38;color:#fff}
+.why-button.primary:hover{background:#744a2c}
+.why-button.quiet{border-color:#e3d6c7;background:#fff;color:#6d4a30}
+.why-button.quiet:hover{background:#fbf1e6}
+.why-button.danger{margin-left:auto;background:transparent;color:#a53c3c}
+.why-button:focus-visible,.why-evidence:focus-visible,.why-remove:focus-visible{outline:2px solid #294eb8;outline-offset:2px}
+.why-close label,.why-result span{display:block;margin-bottom:4px;color:#7a5a42;font-size:10.5px;font-weight:700}
+.why-close input{box-sizing:border-box;width:100%;padding:7px 9px;border:1px solid #d9c5b1;border-radius:7px;background:#fff;font:400 12.5px/1.4 "Segoe UI",system-ui,sans-serif}
+.why-hint{margin:6px 0 9px;color:#8a6a50;font-size:11px;line-height:1.45}
+.why-result{margin-bottom:9px}
+.why-result p{margin:0 0 7px;line-height:1.45}
+.why-error{margin:8px 0 0;color:#963d37;font-weight:600}
+/* Botón de la tarjeta de causa en el árbol. */
+.tree-why{display:block;margin:10px 0 0;padding:6px 9px;border:1px dashed #c9a888;border-radius:7px;background:#fffaf5;color:#744a2c;font:600 11px "Segoe UI",system-ui,sans-serif;cursor:pointer}
+.tree-why:hover:not(:disabled){background:#fbf1e6;border-style:solid}
+.tree-why:disabled{opacity:.5;cursor:not-allowed}

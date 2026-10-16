@@ -64,6 +64,7 @@ def test_explicit_request_corrects_a_model_that_keeps_the_old_tool():
     client = Mock()
     client.chat.completions.create.return_value = response({
         "selection": "1:cinco-porques",
+        "kind": "trabajo",
         "intent": "Continuar cinco porqués",
         "expertise": "novel",
         "context_summary": "Seguir con la ficha anterior",
@@ -84,7 +85,8 @@ def test_explicit_request_corrects_a_model_that_keeps_the_old_tool():
 def test_prompt_includes_declared_context_without_promoting_hypotheses_to_facts():
     client = Mock()
     client.chat.completions.create.return_value = response({
-        "selection": "1:pestel", "intent": "Explorar entorno", "expertise": "novel",
+        "selection": "1:pestel", "intent": "Explorar entorno", "kind": "trabajo",
+        "expertise": "novel",
         "context_summary": "Consulta inicial", "reason": "Entorno",
     })
     runtime = DirectOpenAIRuntime(
@@ -105,3 +107,20 @@ def test_prompt_includes_declared_context_without_promoting_hypotheses_to_facts(
     assert "Ana guardó el avance: entrevistar a estudiantes." in prompt
     assert "no prueban causas ni resultados" in prompt
     assert "El bus es la causa" not in state.context.stated_context()
+
+
+def test_a_truncated_json_answer_is_retried_once_with_another_seed():
+    cut = SimpleNamespace(
+        choices=[SimpleNamespace(message=SimpleNamespace(content='{"value": "sin cerrar'))],
+        usage=None,
+    )
+    client = Mock()
+    client.chat.completions.create.side_effect = [cut, response({"value": "ok"})]
+    settings = replace(
+        Settings.from_env(), base_url="http://127.0.0.1:18083/v1", api_key="test", seed=7,
+    )
+    runtime = DirectOpenAIRuntime(settings, client=client)
+
+    assert runtime._run("orchestrator", "Devuelve el valor", ExampleOutput).value == "ok"
+    seeds = [call.kwargs["seed"] for call in client.chat.completions.create.call_args_list]
+    assert seeds == [7, 8]

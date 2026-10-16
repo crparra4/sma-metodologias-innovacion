@@ -563,3 +563,60 @@ La zona derecha muestra únicamente el avatar de iniciales de la cuenta, Ayuda y
 ### Menú desplegable de cuenta
 
 El avatar abre un panel azul de Hilo con avatar ampliado, nombre real y @usuario local. Acciones: Perfil, Configuración de la cuenta, Tema, guía de inicio rápido, Cambiar de cuenta y Finalizar la sesión. El tema oscuro está pendiente; cambiar de cuenta cierra la sesión y vuelve al acceso. Geometría, estados y límites funcionales en [.impeccable/surfaces/account-menu.md](.impeccable/surfaces/account-menu.md).
+
+## Inicio como cuaderno (6 oct 2026)
+
+Solo aplica dentro de `#home-view`; el encabezado y las demás vistas siguen con el sistema de
+arriba. Fuente: `prototipo/frontend/src/home-cuaderno.css`.
+
+- **Idea:** Inicio es una hoja de cuaderno donde se pegan cosas. Cada bloque es un material
+  distinto: hoja cuadriculada (fondo), hoja rayada (portada, agenda), cartulina con cinta
+  (fichas), calendario de argollas.
+- **Tipografía:** Caveat 700 para títulos y saludo; Patrick Hand 400 para etiquetas, botones
+  y nombres. Fechas y metadatos pequeños siguen en la fuente del sistema.
+- **Tinta:** contorno `#26324d` de 1.6 px (fino a propósito: el usuario pidió más elegancia); esfero azul `#294eb8` (el acento de siempre); esfero
+  rojo `#c2372e` para subrayar y tachar; lápiz `#5d6880` para texto secundario; resaltador
+  `#ffe98f`.
+- **Formas:** no repetir el rectángulo. Óvalo, círculo y mancha en los contadores; píldora en
+  botones y filtros; esquinas irregulares, distintas entre vecinos, en tarjetas y tareas.
+- **Sombra:** suave y baja (`--sombra`), sin desplazamiento lateral. Los paneles no van girados.
+- **Botones:** borde de tinta y sombra inferior de 3 px; al presionar bajan y la sombra se
+  reduce a 1 px.
+- **Movimiento:** curva con rebote `cubic-bezier(.3,1.5,.5,1)`; los estallidos de emojis solo
+  responden a una acción de la persona, nunca aparecen solos.
+- **Carpetas:** apaisadas, de al menos 320 px de ancho por 245 de alto (dos por fila en un
+  portátil, tres en pantalla grande). La primera casilla de la cuadrícula es la
+  tarjeta punteada «Agregar nuevo proyecto», del mismo tamaño que una carpeta.
+- **Límites:** las carpetas conservan su diseño; los colores de prioridad y plazo no cambian de
+  significado; ningún contador muestra datos que no existan.
+
+### Calendario (vista del menú)
+
+Misma temática, en `prototipo/frontend/src/calendario-cuaderno.css`. Planificador de argollas
+con cabecera lavanda; panel del día como bloc perforado. El día elegido se resalta y se encierra
+a mano, sin recuadro duro. Las entradas son etiquetas con el color de su proyecto. Las horas
+van en la fuente del sistema: a mano, algunos números se confunden. No cambiar los altos fijos
+de las celdas (ver el comentario al inicio del archivo).
+
+### Chat
+
+Misma temática, en `prototipo/frontend/src/chat-cuaderno.css`. Hoja perforada con margen rojo.
+La persona escribe a mano en tinta azul; Hilo responde en letra de imprenta sobre ficha blanca,
+para que la respuesta se lea sin esfuerzo. El veredicto es un sello punteado que conserva sus
+tres colores. Post-its, Agentes y Árbol todavía no usan esta temática.
+
+### Plazo por color (solo Inicio)
+
+Rojo = vencida, amarillo = vence en tres días o menos, verde = con tiempo, gris = completada.
+Se aplica al recuadro de cada tarea de la agenda y al recuadro del día en el calendario
+pequeño. Siempre acompañado de la etiqueta de plazo. Dentro de la tarjeta, prioridad y estado
+van en etiquetas neutras para no mezclar dos códigos de color. La vista Calendario del menú usa
+otro código: el color identifica el proyecto.
+
+### Post-its, Agentes y Árbol
+
+Misma temática, en `prototipo/frontend/src/tablero-cuaderno.css`. Post-its sobre hoja punteada,
+pegados con cinta y con su color de siempre. Grafo de agentes a trazo de tinta: amarillo en
+ejecución, verde completado, rojo fallido. El árbol conserva hojas, tronco y raíces, con borde
+completo del color de cada carril. A mano va lo que escribe la persona; en imprenta, lo que
+produce el sistema.

@@ -15,7 +15,7 @@ if (-not (Test-Path -LiteralPath $pythonExecutable)) {
 function Ensure-LocalModelFiles {
     $modelDirectory = Join-Path $env:LOCALAPPDATA 'QwenLocalTest'
     $modelPath = Join-Path $modelDirectory 'Qwen3.5-4B.Q4_K_M.gguf'
-    $serverPath = Join-Path $modelDirectory 'runtime\llama-server.exe'
+    $serverPath = Join-Path $modelDirectory 'runtime-b11146\llama-server.exe'
     if ((Test-Path -LiteralPath $modelPath) -and (Test-Path -LiteralPath $serverPath)) { return }
     Write-Output 'Falta Qwen o llama.cpp en este equipo. Descargando los archivos locales...'
     & $pythonExecutable (Join-Path $PSScriptRoot 'install_local_model.py')

@@ -15,8 +15,9 @@ rechazo produce una respuesta segura y explícita.
 
 ## Preparación
 
-Requiere Windows, Python 3.10–3.13, `uv`, Node.js y `pnpm`. En PowerShell,
-desde la carpeta del repositorio:
+Requiere Python 3.10–3.13, `uv`, Node.js y `pnpm`. Funciona en Windows y en Linux
+(Ubuntu o Linux Mint, x86-64); los pasos de Linux están en [Linux](#linux). En Windows,
+desde PowerShell y en la carpeta del repositorio:
 
 ```powershell
 cd .\prototipo
@@ -76,6 +77,46 @@ Solo se descarga una vez en cada entorno local.
 # Detiene la interfaz
 .\scripts\stop_interface.ps1
 ```
+
+### Linux
+
+Probado solo con pruebas automáticas desde Windows: falta la primera ejecución real en Linux.
+
+```bash
+cd prototipo
+cp .env.example .env          # solo si aún no existe; edita RUTA_DIA_API_KEY
+bash scripts/start_interface.sh
+```
+
+La primera vez, `start_interface.sh` crea el entorno de Python en `~/.venvs/hilo` (necesita
+`uv`), descarga el modelo y el motor en `~/.local/share/QwenLocalTest`, inicia Qwen y abre la
+interfaz. La memoria queda en `~/.local/share/RutaDIA`.
+
+| Motor de llama.cpp | Cuándo se elige | Requisito |
+|---|---|---|
+| `cuda` | Controlador de NVIDIA 570 o posterior | `nvidia-smi` funciona |
+| `vulkan` | Hay Vulkan y no aplica CUDA | Paquete `libvulkan1` y controlador de la GPU |
+| `cpu` | No hay GPU utilizable | Ninguno; cada respuesta tarda varios minutos |
+
+```bash
+# Forzar otro motor si el modelo no arranca (el registro queda en
+# ~/.local/share/QwenLocalTest/ruta-dia-server.log)
+~/.venvs/hilo/bin/python scripts/install_local_model.py --backend vulkan
+
+# Detener la interfaz; con --model también libera la GPU
+bash scripts/stop_interface.sh --model
+
+# Reconstruir la interfaz tras cambiar frontend/ (trabaja sobre una copia en ~/.cache)
+bash scripts/build_frontend.sh
+
+# Pruebas
+~/.venvs/hilo/bin/python -m pytest
+```
+
+Si el repositorio está en un disco que también abre Windows (arranque dual), `.venv` y
+`frontend/node_modules` son los de Windows: los scripts de Linux no los usan ni los modifican.
+Una carpeta `modelos` junto al repositorio con el `.gguf` ya descargado evita bajarlo otra
+vez: el instalador lo copia si su SHA-256 coincide.
 
 Abre `http://127.0.0.1:8787`. La primera cuenta que registres conservará los proyectos ya guardados;
 las cuentas siguientes tendrán conversaciones, post-its y tareas separados. Puedes cerrar sesión desde
@@ -145,6 +186,20 @@ conversación ni se modifica con respuestas del modelo.
 
 Usar el mismo valor de `--notebook` reanuda la memoria. Un nombre diferente inicia otro cuaderno.
 Para trasladar o respaldar las conversaciones, detén el proceso y copia los dos archivos SQLite.
+
+Límite conocido: las contraseñas se guardan con hash (`scrypt`), pero el contenido de cuadernos,
+tableros y conversaciones queda en SQLite sin cifrar. Quien pueda leer esa carpeta o entrar a la
+cuenta del sistema operativo puede leerlo. Si los datos lo exigen, cifra el disco o la carpeta.
+
+## Protección del acceso
+
+- Inicio de sesión: 5 intentos por minuto por usuario; al acertar, la cuenta vuelve a cero.
+- Registro e inicio de sesión juntos: 20 por minuto por dirección de origen. Como la interfaz solo
+  escucha en `127.0.0.1`, en la práctica es un cupo para toda la computadora.
+- Al pasar un tope la respuesta es 429 con `Retry-After`. Los contadores viven en memoria y se
+  borran al reiniciar la interfaz.
+- Como mucho dos hashes de contraseña a la vez; los demás esperan su turno.
+- Una petición de más de 1 MB se rechaza con 413 antes de validarla.
 
 ## Post-its del cuaderno
 

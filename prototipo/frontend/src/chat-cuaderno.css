@@ -1,0 +1,199 @@
+/* Chat como cuaderno.
+   Afecta al panel del chat (#chat-panel), al fondo del tablero y a la barra flotante del
+   proyecto. Post-its, Agentes y Árbol conservan su diseño.
+   Colores, fuentes y animaciones base vienen de home-cuaderno.css.
+   Idea: la conversación es una hoja perforada. Lo que escribe la persona va a mano, en tinta
+   azul; lo que responde Hilo va en una ficha de papel con letra de imprenta, porque hay que
+   leerlo con cuidado. El veredicto del Verificador es un sello y conserva sus tres colores.
+   Ojo: main.ts calcula el alto del cuadro de texto con line-height de 24px. No lo cambies. */
+
+@keyframes cuaderno-llegar-der{from{opacity:0;translate:18px 8px;rotate:1deg}}
+@keyframes cuaderno-llegar-izq{from{opacity:0;translate:-18px 8px;rotate:-1deg}}
+@keyframes cuaderno-escribiendo{0%,100%{translate:0 0;rotate:-6deg}25%{translate:5px -2px;rotate:8deg}50%{translate:10px 1px;rotate:-4deg}75%{translate:4px -1px;rotate:6deg}}
+@keyframes cuaderno-garabato{to{background-position-x:44px}}
+@keyframes cuaderno-sello{from{opacity:0;scale:1.9;rotate:-14deg}60%{opacity:1;scale:.92}}
+
+#app #project-workspace{
+  background-color:#fcfbf8;
+  background-image:linear-gradient(#e9eef6 1px,transparent 1px),linear-gradient(90deg,#e9eef6 1px,transparent 1px);
+  background-size:26px 26px;
+}
+#app #project-workspace[hidden]{display:none}
+
+/* ---------- La hoja ---------- */
+#app #project-workspace .chat-panel{border:var(--borde);border-radius:18px;background:var(--hoja);box-shadow:var(--sombra);color:var(--tinta);
+  animation:cuaderno-entrar .45s cubic-bezier(.2,.9,.3,1.2) both}
+
+/* Encabezado del proyecto */
+#app #project-workspace .chat-panel-heading{gap:12px;padding:14px 22px 12px;border-bottom:1.5px dashed #a9b3c6;background:var(--hoja);color:var(--tinta)}
+#app #project-workspace .chat-panel-heading h1{font-family:var(--mano);font-weight:700;font-size:30px;line-height:1.05;letter-spacing:0;color:var(--tinta)}
+#app #project-workspace .chat-panel-heading .project-stage{gap:8px;margin-top:4px;font-family:var(--esfero-letra);font-size:15px;line-height:1.3;color:var(--lapiz)}
+#app #project-workspace #project-phase{padding:0 9px 1px;border:0;border-radius:3px 9px 4px 10px;background:var(--resaltador);color:var(--tinta);font-weight:400}
+#app #project-workspace .project-progress>span{font-family:var(--esfero-letra);font-size:13px;font-weight:400;color:var(--tinta)}
+#app #project-workspace .project-progress .progress-track{stroke:#dfe5f1}
+#app #project-workspace .project-progress .progress-fill{stroke:var(--esfero);stroke-linecap:round}
+#app #project-workspace .project-share{min-height:38px;padding:4px 16px 5px;border:var(--borde);border-radius:999px;background:#fff;color:var(--tinta);
+  font-family:var(--esfero-letra);font-size:16px;font-weight:400;box-shadow:0 3px 0 #26324d2e;transition:translate .12s,box-shadow .12s,background .15s}
+#app #project-workspace .project-share:hover:not(:disabled){background:#fff7cf;border-color:var(--tinta);translate:0 -1px;box-shadow:0 4px 0 #26324d2e}
+#app #project-workspace .project-share:active:not(:disabled){translate:0 2px;box-shadow:0 1px 0 #26324d2e}
+
+/* Mensajes: hoja perforada con margen rojo */
+#app #project-workspace .messages{padding:26px clamp(18px,3vw,44px) 14px clamp(68px,6vw,96px);
+  background:
+    radial-gradient(circle at 22px 50%,#fcfbf8 0 7px,#26324d73 7.3px 8.4px,transparent 8.8px) 0 0/44px 230px repeat-y local,
+    linear-gradient(90deg,transparent 47px,#f0b9b2 47px 48.5px,transparent 48.5px) 0 0/100% 100% no-repeat,
+    var(--hoja)}
+#app #project-workspace[data-board-count="0"] .messages{padding-left:max(clamp(68px,6vw,96px),calc((100% - 1120px) / 2));
+  padding-right:max(clamp(18px,3vw,44px),calc((100% - 1120px) / 2))}
+
+/* Burbujas */
+#app #project-workspace .turn{margin-bottom:24px;padding:14px 18px 15px;border:var(--borde);box-shadow:0 2px 0 #26324d12,0 14px 22px -18px #26324d66}
+#app #project-workspace .assistant-turn{border-radius:20px 22px 20px 6px/22px 18px 22px 6px;background:#fff;animation:cuaderno-llegar-izq .4s cubic-bezier(.2,.9,.3,1.2) both}
+#app #project-workspace .user-turn{border-color:#1c3a94;border-radius:22px 20px 6px 20px/18px 22px 6px 22px;background:var(--esfero);animation:cuaderno-llegar-der .4s cubic-bezier(.2,.9,.3,1.2) both}
+#app #project-workspace .turn-label{gap:9px;margin-bottom:8px;font-family:var(--mano);font-weight:700;font-size:22px;line-height:1;color:var(--esfero)}
+#app #project-workspace .turn-avatar{width:32px;height:32px;border:1.6px solid var(--tinta);border-radius:52% 46% 55% 44%/46% 54% 44% 55%;background:var(--esfero);
+  font-family:"Segoe UI",system-ui,sans-serif;font-size:10px;font-weight:650}
+#app #project-workspace .user-turn .turn-avatar{border-color:#ffffff8c;background:#ffffff26}
+#app #project-workspace .user-turn .turn-label{color:#fff}
+#app #project-workspace .turn-time{font-family:"Segoe UI",system-ui,sans-serif;font-size:10.5px;font-weight:400}
+#app #project-workspace .turn-content{font-size:14.5px;line-height:1.7;color:#2b3852}
+/* Lo que escribe la persona va a mano, como en su cuaderno. */
+#app #project-workspace .user-turn .turn-content{font-family:var(--esfero-letra);font-size:19px;line-height:1.4;color:#fff}
+
+/* Pie de la respuesta: sello, ficha y acciones */
+#app #project-workspace .turn-footer{gap:10px;margin-top:14px;padding-top:12px;border-top:1.5px dashed #c5cddc}
+#app #project-workspace .verdict{padding:1px 10px 2px;border:1.6px dashed currentColor;border-radius:6px 10px 5px 11px;background:transparent;
+  font-family:var(--esfero-letra);font-size:15px;font-weight:400;line-height:1.3;letter-spacing:.03em;text-transform:uppercase;rotate:-2.5deg;
+  animation:cuaderno-sello .45s cubic-bezier(.3,1.4,.5,1) both}
+#app #project-workspace .verdict.approved{color:#1f6a4a;background:#eaf4ee}
+#app #project-workspace .verdict.observed{color:#8a5f14;background:#fbf1d8}
+#app #project-workspace .verdict.rejected{color:#a23b3b;background:#faeded}
+#app #project-workspace .turn-footer .source-link{min-height:32px;padding:2px 12px 3px;border:1.5px dashed #a9b3c6;border-radius:999px;background:#fff;color:var(--tinta);
+  font-family:var(--esfero-letra);font-size:15px;transition:translate .12s,rotate .2s,background .15s,border-color .15s}
+#app #project-workspace .turn-footer .source-link:hover:not(:disabled){background:#eef3fd;border-color:var(--esfero);color:var(--esfero);rotate:-1.5deg}
+#app #project-workspace .turn-footer .source-link:disabled{opacity:.6}
+#app #project-workspace .turn-footer .save-turn{border:var(--borde);background:#fff7cf;color:var(--tinta);box-shadow:0 3px 0 #26324d2e;transition:translate .12s,box-shadow .12s}
+#app #project-workspace .turn-footer .save-turn:hover:not(:disabled){background:#ffef9f;border-color:var(--tinta);color:var(--tinta);rotate:0deg;translate:0 -1px;box-shadow:0 4px 0 #26324d2e}
+#app #project-workspace .turn-footer .save-turn:active:not(:disabled){translate:0 2px;box-shadow:0 1px 0 #26324d2e}
+#app #project-workspace .copy-button{width:34px;height:34px;border:var(--borde);border-radius:50%;background:#fff;color:var(--tinta);transition:scale .2s cubic-bezier(.3,1.6,.5,1),rotate .2s,background .15s}
+#app #project-workspace .copy-button:hover{background:#fff7cf;scale:1.1;rotate:-8deg}
+#app #project-workspace .copy-button:active{scale:.9}
+#app #project-workspace .retry-label{font-family:var(--esfero-letra);font-size:15px;color:var(--lapiz)}
+#app #project-workspace .findings{border-top:1.5px dashed #c5cddc;color:#8c3030}
+#app #project-workspace .findings summary{font-family:var(--esfero-letra);font-size:16px;color:var(--esfero-rojo)}
+
+/* Hilo escribiendo: el lápiz se mueve y los renglones se garabatean */
+#app #project-workspace .turn.pending{background:#fffdf7}
+#app #project-workspace .pending-text{margin-bottom:12px;font-family:var(--esfero-letra);font-size:17px;color:var(--lapiz)}
+#app #project-workspace .pending-text::after{content:"✏️";display:inline-block;margin-left:8px;animation:cuaderno-escribiendo .9s ease-in-out infinite}
+#app #project-workspace .skeleton-line{height:10px;margin:0 0 10px;border-radius:0;opacity:.75;
+  background:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='44' height='10'%3E%3Cpath d='M0 6c6-5 11 4 22 0s16-5 22 0' fill='none' stroke='%239aa5bb' stroke-width='2' stroke-linecap='round'/%3E%3C/svg%3E") repeat-x 0 50%/44px 10px;
+  animation:cuaderno-garabato .9s linear infinite}
+
+/* ---------- Bienvenida ---------- */
+#app #project-workspace .welcome-mark::before{inset:-6px;border-radius:52% 46% 55% 44%/46% 54% 44% 55%;background:#fff7cf;filter:none;border:var(--borde);rotate:-6deg}
+#app #project-workspace .welcome-mark{animation:cuaderno-flotar 3.6s ease-in-out infinite}
+#app #project-workspace .welcome-hero h2{display:inline-block;padding-bottom:10px;font-family:var(--mano);font-weight:700;font-size:clamp(38px,4vw,52px);line-height:1;letter-spacing:0;color:var(--esfero);
+  background:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='44' height='8'%3E%3Cpath d='M0 5c6-5 11 4 22 0s16-5 22 0' fill='none' stroke='%23c2372e' stroke-width='1.8' stroke-linecap='round'/%3E%3C/svg%3E") repeat-x 0 100%/44px 8px}
+#app #project-workspace .welcome-hero .welcome-lead{margin:10px 0 34px;font-family:var(--esfero-letra);font-size:19px;line-height:1.35;color:#3d4a63}
+#app #project-workspace .welcome-cards{gap:20px}
+#app #project-workspace .welcome-card{position:relative;gap:6px;padding:20px 16px 17px;border:var(--borde);border-radius:var(--irregular);background:#fff;color:var(--tinta);
+  box-shadow:var(--sombra);rotate:-1.2deg;animation:cuaderno-caer .5s cubic-bezier(.2,1.2,.4,1) both;
+  transition:translate .25s cubic-bezier(.3,1.5,.5,1),rotate .25s cubic-bezier(.3,1.5,.5,1),box-shadow .2s,border-color .2s}
+/* En pantallas angostas la tarjeta pasa a dos columnas: la primera debe caber el icono ovalado. */
+#app #project-workspace .welcome-card{grid-template-columns:48px minmax(0,1fr)}
+#app #project-workspace .welcome-card:nth-child(2){rotate:.9deg;border-radius:16px 28px 14px 24px/26px 14px 24px 16px;animation-delay:.07s}
+#app #project-workspace .welcome-card:nth-child(3){rotate:-.6deg;border-radius:30px 14px 22px 18px/14px 26px 18px 28px;animation-delay:.14s}
+#app #project-workspace .welcome-card::before{content:"";position:absolute;top:-10px;left:50%;width:58px;height:20px;margin-left:-29px;rotate:-4deg;background:#f7e9a8c7;box-shadow:0 1px 2px #26324d1f}
+#app #project-workspace .welcome-card:nth-child(2)::before{rotate:5deg;left:36%;background:#d9f2cbcc}
+#app #project-workspace .welcome-card:nth-child(3)::before{rotate:-2deg;left:60%;background:#ffe1e8cc}
+#app #project-workspace .welcome-card:hover:not(:disabled){transform:none;rotate:0deg;translate:0 -6px;border-color:var(--esfero);box-shadow:0 22px 30px -18px #26324d80}
+#app #project-workspace .welcome-card:active:not(:disabled){translate:0 1px;scale:.985}
+#app #project-workspace .welcome-card-icon{width:40px;height:40px;border:1.6px solid currentColor;border-radius:50%;transition:rotate .3s cubic-bezier(.3,1.6,.5,1),scale .25s cubic-bezier(.3,1.6,.5,1)}
+#app #project-workspace .welcome-card:nth-child(2) .welcome-card-icon{width:46px;height:36px}
+#app #project-workspace .welcome-card:nth-child(3) .welcome-card-icon{border-radius:58% 42% 55% 45%/48% 60% 40% 52%}
+#app #project-workspace .welcome-card:hover .welcome-card-icon{rotate:-10deg;scale:1.12}
+#app #project-workspace .welcome-card strong{font-family:var(--esfero-letra);font-size:20px;font-weight:400;line-height:1.15}
+#app #project-workspace .welcome-card-text{font-family:var(--esfero-letra);font-size:15.5px;line-height:1.3;color:#4a5670}
+#app #project-workspace .welcome-hero .welcome-note{margin-top:28px;font-family:var(--esfero-letra);font-size:15px;line-height:1.35;color:var(--lapiz)}
+
+/* ---------- Cuadro para escribir ---------- */
+/* El espacio de abajo deja la nota libre de la barra flotante. */
+#app #project-workspace .composer-area{padding:8px clamp(16px,3vw,44px) 62px;border-top:0;background:var(--hoja)}
+#app #project-workspace .run-status{margin-bottom:6px;font-family:var(--esfero-letra);font-size:15px;color:var(--lapiz)}
+#app #project-workspace .run-status.running{color:var(--esfero)}
+#app #project-workspace #run-time{font-family:"Segoe UI",system-ui,sans-serif;font-size:10.5px}
+#app #project-workspace .composer{padding:6px 7px 6px 20px;gap:10px;border:var(--borde);background:#fff;box-shadow:0 3px 0 #26324d1f;transition:border-radius .16s ease,box-shadow .15s,border-color .15s}
+#app #project-workspace .composer:focus-within{outline:0;border-color:var(--esfero);box-shadow:0 3px 0 #294eb859,0 0 0 4px #294eb81a}
+#app #project-workspace .composer textarea{font-family:var(--esfero-letra);font-size:18px;line-height:24px;color:var(--tinta)}
+#app #project-workspace .composer textarea::placeholder{color:#7b869c}
+#app #project-workspace .send-button{width:38px;height:38px;border:var(--borde);border-radius:50%;background:var(--esfero);color:#fff;box-shadow:0 3px 0 var(--tinta);
+  transition:translate .12s,box-shadow .12s,background .15s,rotate .25s cubic-bezier(.3,1.6,.5,1)}
+#app #project-workspace .send-button:hover:not(:disabled){background:#3159cc;translate:0 -1px;rotate:-12deg;box-shadow:0 4px 0 var(--tinta)}
+#app #project-workspace .send-button:active:not(:disabled){translate:0 2px;box-shadow:0 1px 0 var(--tinta)}
+#app #project-workspace .send-button:disabled{border-color:#a9b3c6;background:#e6eaf2;color:#7b869c;box-shadow:0 3px 0 #c5cddc}
+#app #project-workspace .expand-button{border:1.5px solid var(--tinta);background:#fff;color:var(--tinta)}
+#app #project-workspace .expand-button:hover{background:#fff7cf}
+#app #project-workspace .composer-note{margin-top:6px;font-family:var(--esfero-letra);font-size:13px;color:var(--lapiz)}
+
+/* ---------- Barra flotante del proyecto ---------- */
+.project-floating-toolbar{gap:4px;padding:5px;border:1.6px solid #26324d;border-radius:999px;background:#294eb8;box-shadow:0 4px 0 #26324d}
+.project-floating-toolbar button{min-height:34px;padding:3px 13px 4px;border-radius:999px;font-family:"Patrick Hand","Segoe Print","Ink Free","Comic Sans MS",cursive;font-size:16px;
+  transition:background .15s,color .15s,scale .2s cubic-bezier(.3,1.6,.5,1)}
+.project-floating-toolbar button:active:not(:disabled){scale:.93}
+.project-floating-toolbar button+button{border-left:0}
+.project-floating-toolbar .board-toggle[aria-pressed="true"]{background:#fffdf7;color:#26324d;box-shadow:none}
+.project-floating-toolbar .board-toggle[aria-pressed="true"]:hover:not(:disabled){background:#fff7cf}
+.project-floating-toolbar #edit-project{margin-left:2px;border-left:1.5px dashed #ffffff73;border-radius:0 999px 999px 0}
+
+/* Chat angosto (junto al Árbol): sin perforaciones ni margen, para que las burbujas respiren. */
+#app #project-workspace .chat-panel{container:chat / inline-size}
+@container chat (max-width:520px){
+  #app #project-workspace .messages,
+  #app #project-workspace[data-board-count="0"] .messages{padding:18px 14px 10px;background:var(--hoja)}
+  #app #project-workspace .turn{padding:12px 14px 13px;margin-bottom:18px}
+  #app #project-workspace .chat-panel-heading{padding:12px 14px 10px}
+  #app #project-workspace .chat-panel-heading h1{font-size:25px}
+  #app #project-workspace .composer-area{padding:6px 12px 60px}
+}
+
+/* ---------- Tamaños ---------- */
+@media(max-width:980px){
+  #app #project-workspace .messages,
+  #app #project-workspace[data-board-count="0"] .messages{padding:22px 16px 12px 58px;
+    background:
+      radial-gradient(circle at 18px 50%,#fcfbf8 0 6px,#26324d73 6.3px 7.3px,transparent 7.7px) 0 0/36px 230px repeat-y local,
+      linear-gradient(90deg,transparent 38px,#f0b9b2 38px 39.5px,transparent 39.5px) 0 0/100% 100% no-repeat,
+      var(--hoja)}
+}
+@media(max-width:700px){
+  #app #project-workspace .messages,
+  #app #project-workspace[data-board-count="0"] .messages{padding:18px 14px 10px;background:var(--hoja)}
+  #app #project-workspace .chat-panel-heading{padding:12px 14px 10px}
+  #app #project-workspace .chat-panel-heading h1{font-size:25px}
+  #app #project-workspace .turn{padding:12px 14px 13px;margin-bottom:18px}
+  #app #project-workspace .turn-content{font-size:14px}
+  #app #project-workspace .user-turn .turn-content{font-size:18px}
+  #app #project-workspace .composer-area{padding:6px 12px 60px}
+  #app #project-workspace .composer{padding:5px 6px 5px 16px}
+  #app #project-workspace .composer-note{font-size:12px}
+  #app #project-workspace .welcome-hero h2{font-size:36px}
+  #app #project-workspace .welcome-card{padding:14px 14px 13px;rotate:0deg}
+  #app #project-workspace .welcome-card:nth-child(n){rotate:0deg}
+  #app #project-workspace .welcome-card::before{display:none}
+  #app #project-workspace .project-share{padding:4px;min-width:38px}
+  .project-floating-toolbar button{padding:3px 9px 4px;font-size:15px}
+}
+
+/* Con cinco herramientas la barra no cabe en un celular: en pantallas angostas quedan solo
+   los nombres, sin icono. */
+@media(max-width:480px){
+  .project-floating-toolbar .board-toggle .icon{display:none}
+  .project-floating-toolbar button{padding:3px 9px 4px}
+}
+/* Y si aun así no caben, la fila de herramientas se desliza de lado. */
+@media(max-width:700px){
+  .project-floating-toolbar .board-tools{min-width:0;overflow-x:auto;scrollbar-width:none}
+  .project-floating-toolbar .board-tools::-webkit-scrollbar{display:none}
+  .project-floating-toolbar .board-tools button{flex-shrink:0}
+}

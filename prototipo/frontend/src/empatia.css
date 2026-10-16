@@ -1,0 +1,74 @@
+/* Mapa de empatía. La caja, los pasos, la cinta del usuario, los post-its y los botones son
+   los de pestel.css (la vista lleva las dos clases: `pestel-view empathy-view`). Aquí va solo
+   lo propio: la forma del mapa de siempre, con la persona en el centro, los cuatro bloques
+   alrededor y dolores y necesidades abajo.
+   No lleva la tira de pasos del PESTEL: la ficha del mapa no tiene una secuencia así y
+   la tira repetía lo que ya se ve en el mapa.
+   Colores: el usuario en el azul de la página; cada bloque conserva un color, como las
+   columnas del PESTEL. En los post-its el color significa algo: verde observado, naranja
+   supuesto, amarillo sin marcar; la palabra siempre acompaña al color. */
+
+.empathy-block[data-block="piensa_siente"]{--g1:#7c3aed;--g2:#d946ef;grid-area:piensa;border-radius:14px 84px 14px 14px}
+.empathy-block[data-block="ve"]{--g1:#1d4ed8;--g2:#38bdf8;grid-area:ve;border-radius:14px 14px 14px 84px}
+.empathy-block[data-block="oye"]{--g1:#b45309;--g2:#f6a821;grid-area:oye;border-radius:14px 14px 84px 14px}
+.empathy-block[data-block="dice_hace"]{--g1:#c81e4a;--g2:#ff7a45;grid-area:dice;border-radius:14px 14px 84px 84px}
+.empathy-block[data-block="dolores"]{--g1:#be185d;--g2:#f472b6;border-radius:14px 14px 14px 64px}
+.empathy-block[data-block="necesidades"]{--g1:#0f766e;--g2:#34d399;border-radius:14px 14px 64px 14px}
+
+/* ---------- El mapa ---------- */
+.empathy-map{display:grid;grid-template-columns:minmax(0,1fr) 196px minmax(0,1fr);gap:20px 18px;padding-left:8px;
+  grid-template-areas:"piensa piensa piensa" "ve persona oye" "dice dice dice" "abajo abajo abajo"}
+.empathy-bottom{grid-area:abajo;display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:24px 26px}
+
+.empathy-block{position:relative;display:flex;flex-direction:column;gap:10px;min-width:0;min-height:150px;padding:14px 18px 16px;background:#f3f5fa;box-shadow:0 16px 22px -18px #26324d80}
+/* La cinta sobresale por la izquierda y se dobla hacia atrás, como en el PESTEL. */
+.empathy-block-head{display:flex;align-items:center;gap:10px;align-self:flex-start;min-height:50px;max-width:calc(100% - 34px);margin:0 0 0 -26px;padding:6px 36px 6px 16px;
+  background:linear-gradient(100deg,var(--g1) 0 50%,var(--g2));color:#fff;
+  clip-path:polygon(0 0,calc(100% - 20px) 0,100% 50%,calc(100% - 20px) 100%,0 100%);filter:drop-shadow(0 4px 5px #26324d40)}
+.empathy-block::before{content:"";position:absolute;left:-8px;top:64px;border-top:7px solid color-mix(in srgb,var(--g1) 62%,#000);border-left:8px solid transparent}
+.empathy-block-number{font:800 26px/1 "Segoe UI",system-ui,sans-serif;letter-spacing:-.02em}
+.empathy-block h3{margin:0;min-width:0;font:800 13px/1.25 "Segoe UI",system-ui,sans-serif;letter-spacing:.05em;text-transform:uppercase}
+.empathy-block-hint{margin:0 2px;font:500 12.5px/1.45 "Segoe UI",system-ui,sans-serif;color:#5b6478}
+.empathy-block .pestel-count{right:22px}
+
+/* Los bloques son anchos: los post-its van en fila, como en el tablero. */
+.pestel-wall.empathy-wall{grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:20px 14px}
+.pestel-wall.empathy-wall .sticky-note{min-height:112px}
+.empathy-block-actions{display:flex;flex-wrap:wrap;align-items:center;gap:8px 12px;margin-top:auto;padding-top:4px}
+.empathy-block-actions .pestel-add{flex:0 1 210px}
+.empathy-ask{margin-left:auto;padding:5px 14px;border:0;border-radius:999px;background:transparent;color:var(--g1);
+  font:700 12px/1.3 "Segoe UI",system-ui,sans-serif;white-space:nowrap;transition:background .15s,color .15s}
+.empathy-ask:hover:not(:disabled){background:linear-gradient(100deg,var(--g1),var(--g2));color:#fff}
+.empathy-block[data-block="dice_hace"] .empathy-block-actions,
+.empathy-block[data-block="oye"] .empathy-block-actions,
+.empathy-block[data-block="necesidades"] .empathy-block-actions{padding-right:34px}
+.empathy-block[data-block="ve"] .empathy-block-actions,
+.empathy-block[data-block="dice_hace"] .empathy-block-actions,
+.empathy-block[data-block="dolores"] .empathy-block-actions{padding-left:30px}
+
+/* ---------- La persona, en el centro ---------- */
+.empathy-person{grid-area:persona;align-self:center;justify-self:center;display:grid;justify-items:center;align-content:center;gap:4px;width:196px;aspect-ratio:1;padding:22px;
+  border:9px solid transparent;border-radius:50%;text-align:center;
+  background:linear-gradient(#fff,#fff) padding-box,linear-gradient(135deg,#26324d,#294eb8 55%,#5f88ec) border-box;
+  box-shadow:0 18px 26px -16px #26324d99}
+.empathy-person-face{font-size:46px;line-height:1}
+.empathy-person-name{margin:0;font:700 12.5px/1.3 "Segoe UI",system-ui,sans-serif;color:#26324d;overflow-wrap:anywhere;
+  display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:4;overflow:hidden}
+.empathy-person-name.is-empty{font-weight:500;color:#7b8598}
+
+/* Con el chat al lado o en celular: una columna, en el orden de la ficha. */
+@container pestel (max-width:900px){
+  .empathy-map{grid-template-columns:minmax(0,1fr);grid-template-areas:"persona" "piensa" "ve" "oye" "dice" "abajo"}
+  .empathy-person{width:100%;aspect-ratio:auto;grid-auto-flow:column;justify-content:center;justify-items:start;gap:12px;padding:10px 22px;border-width:5px;border-radius:999px;text-align:left}
+  .empathy-person-face{font-size:30px}
+  .empathy-person-name{-webkit-line-clamp:2}
+  .empathy-block{min-height:0}
+}
+@container pestel (max-width:620px){
+  .empathy-bottom{grid-template-columns:minmax(0,1fr)}
+  .pestel-wall.empathy-wall{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .empathy-block[data-block] .empathy-block-actions{padding-inline:0}
+  .empathy-block[data-block]{border-radius:14px 14px 40px 14px}
+  .empathy-ask{margin-left:0}
+}
+@container pestel (max-width:400px){.pestel-wall.empathy-wall{grid-template-columns:minmax(0,1fr)}}

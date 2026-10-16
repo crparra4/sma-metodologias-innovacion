@@ -2,39 +2,36 @@
 
 import argparse
 import json
-import os
 import socket
 import subprocess
 import time
 import urllib.error
 import urllib.parse
 import urllib.request
-from pathlib import Path
+
+from local_runtime import (
+    MODEL_FILE,
+    WINDOWS,
+    detached,
+    find_server,
+    local_dir,
+    process_identity,
+    runtime_dir,
+    server_env,
+    stop_process,
+)
 
 from ruta_dia_agents.config import Settings
 
-LOCAL = Path(os.environ["LOCALAPPDATA"]) / "QwenLocalTest"
+LOCAL = local_dir("QwenLocalTest")
 RECORD = LOCAL / "ruta-dia-server.json"
 KEY = LOCAL / "ruta-dia-server.key"
-
-
-def identity(pid):
-    command = (
-        f"Get-CimInstance Win32_Process -Filter 'ProcessId={int(pid)}' | "
-        "Select-Object ProcessId,CreationDate,ExecutablePath | ConvertTo-Json -Compress"
-    )
-    raw = subprocess.check_output(
-        ["powershell.exe", "-NoProfile", "-Command", command],
-        text=True,
-        creationflags=subprocess.CREATE_NO_WINDOW,
-    ).strip()
-    return json.loads(raw) if raw else None
 
 
 def owned_process():
     if RECORD.exists():
         recorded = json.loads(RECORD.read_text(encoding="utf-8"))
-        if identity(recorded["ProcessId"]) == recorded:
+        if process_identity(recorded["ProcessId"]) == recorded:
             return recorded
     return None
 
@@ -49,16 +46,7 @@ def main():
         return
     if action == "stop":
         if current:
-            subprocess.run(
-                [
-                    "powershell.exe",
-                    "-NoProfile",
-                    "-Command",
-                    f"Stop-Process -Id {int(current['ProcessId'])}",
-                ],
-                check=True,
-                creationflags=subprocess.CREATE_NO_WINDOW,
-            )
+            stop_process(current["ProcessId"])
         RECORD.unlink(missing_ok=True)
         KEY.unlink(missing_ok=True)
         print("Servidor detenido")
@@ -72,19 +60,24 @@ def main():
         raise ValueError("Configura RUTA_DIA_BASE_URL=http://127.0.0.1:18083/v1")
     if settings.model != "Qwen3.5-4B-Q4_K_M" or not settings.api_key:
         raise ValueError("Configura el alias Qwen3.5-4B-Q4_K_M y RUTA_DIA_API_KEY en .env")
-    model = LOCAL / "Qwen3.5-4B.Q4_K_M.gguf"
-    server = LOCAL / "runtime/llama-server.exe"
-    missing = [path for path in (model, server) if not path.is_file()]
+    model = LOCAL / MODEL_FILE
+    server = find_server(LOCAL)
+    # Sin motor instalado, se nombra el que se esperaba para que el mensaje sea útil.
+    expected = server or runtime_dir(LOCAL) / ("llama-server.exe" if WINDOWS else "llama-server")
+    missing = [path for path in (model, expected) if not path.is_file()]
     if missing:
         paths = "\n".join(f"  - {path}" for path in missing)
         raise FileNotFoundError(
             "No se encontraron los archivos necesarios para iniciar Qwen:\n"
             f"{paths}\n"
-            f"LOCALAPPDATA en esta sesion: {os.environ['LOCALAPPDATA']}"
+            f"Carpeta local en esta sesion: {LOCAL}\n"
+            "Para instalarlos: python scripts/install_local_model.py"
         )
     with socket.socket() as check:
         check.bind(("127.0.0.1", url.port))
     KEY.write_text(settings.api_key, encoding="utf-8")
+    if not WINDOWS:
+        KEY.chmod(0o600)
     args = [
         str(server),
         "-m",
@@ -126,10 +119,11 @@ def main():
             stdout=log,
             stderr=subprocess.STDOUT,
             cwd=server.parent,
-            creationflags=subprocess.CREATE_NO_WINDOW,
+            env=None if WINDOWS else server_env(server),
+            **detached(),
         )
     try:
-        record = identity(process.pid)
+        record = process_identity(process.pid)
         if record is None:
             raise RuntimeError("El servidor terminó al iniciar; revisa ruta-dia-server.log")
         RECORD.write_text(json.dumps(record), encoding="utf-8")

@@ -10,7 +10,7 @@ Cuando necesitas entender qué fuerzas externas afectan tu reto antes de propone
 1. Define el reto o la situación a analizar en una frase.
 2. Por cada factor, identifica 2–3 elementos del entorno que influyen:
    - **Político:** normativas, políticas públicas, decisiones de gobierno.
-   - **Económico:** costos, presupuesto, situación económica de los afiliados.
+   - **Económico:** costos, presupuesto, situación económica de los clientes o usuarios.
    - **Social:** comportamientos, expectativas y necesidades de las personas.
    - **Tecnológico:** canales digitales, automatización, herramientas disponibles.
    - **Ecológico:** factores ambientales o de sostenibilidad relevantes.

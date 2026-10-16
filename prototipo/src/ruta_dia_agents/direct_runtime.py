@@ -26,9 +26,15 @@ ROLE_INSTRUCTIONS = {
         "Eres el Revisor del árbol de problemas de Ruta DIA. Señalas errores de estructura "
         "usando solo la ficha y el árbol recibido; no reescribes tarjetas ni propones soluciones."
     ),
+    "journey_extractor": (
+        "Eres el Lector de notas de Ruta DIA. Copias frases textuales de las notas de una "
+        "entrevista y dices a qué etapa y fila del recorrido pertenecen. No redactas, no "
+        "resumes y no inventas."
+    ),
 }
 # Fragmento citado más una frase de explicación: algo más que el límite corto por defecto.
-ROLE_MAX_TOKENS = {"tree_reviewer": 512}
+# El lector de notas devuelve hasta ocho frases copiadas: necesita más salida.
+ROLE_MAX_TOKENS = {"tree_reviewer": 512, "journey_extractor": 900}
 
 
 class DirectOpenAIRuntime(ContractRuntime):
@@ -75,15 +81,23 @@ class DirectOpenAIRuntime(ContractRuntime):
                 "chat_template_kwargs": {"enable_thinking": thinking},
             },
         }
-        if self.settings.seed is not None:
-            options["seed"] = self.settings.seed
         if self.settings.top_p is not None:
             options["top_p"] = self.settings.top_p
-        response = self.client.chat.completions.create(**options)
-        content = response.choices[0].message.content
-        if not content:
-            raise ValueError(f"{role} no devolvió contenido estructurado")
-        parsed = output_model.model_validate(json.loads(content))
+        # El modelo pequeño a veces alarga un texto hasta agotar los tokens y el JSON queda
+        # cortado. Se repite una vez con otra semilla: con la misma saldría el mismo texto.
+        for retry in range(2):
+            if self.settings.seed is not None:
+                options["seed"] = self.settings.seed + retry
+            response = self.client.chat.completions.create(**options)
+            content = response.choices[0].message.content
+            if not content:
+                raise ValueError(f"{role} no devolvió contenido estructurado")
+            try:
+                parsed = output_model.model_validate(json.loads(content))
+                break
+            except json.JSONDecodeError:
+                if retry:
+                    raise
         usage = response.usage.model_dump() if response.usage else None
         self.calls.append(
             {
@@ -94,6 +108,11 @@ class DirectOpenAIRuntime(ContractRuntime):
             }
         )
         return parsed
+
+    def extract_journey(self, description: str, output_model: type[T]) -> T:
+        """Frases de unas notas para el recorrido; `journey_extract.grounded_quotes` comprueba
+        después que cada una esté literal en el texto."""
+        return self._run("journey_extractor", description, output_model)
 
     def review_tree(self, description: str) -> ModelReview:
         """Revisión de contenido del árbol; su salida pasa después por `grounded`."""

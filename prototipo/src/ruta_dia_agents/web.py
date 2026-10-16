@@ -3,6 +3,7 @@ from __future__ import annotations
 import asyncio
 import json
 import logging
+import os
 import sqlite3
 import threading
 import time
@@ -22,15 +23,23 @@ from pydantic import BaseModel, Field, field_validator
 from starlette.middleware.trustedhost import TrustedHostMiddleware
 
 from .audit import JsonlVerificationRecorder
-from .auth import COOKIE_NAME, AuthStore, User
+from .auth import COOKIE_NAME, AttemptLimiter, AuthStore, User
 from .config import PROJECT_ROOT, Settings
 from .contracts import NotebookColor, ProjectContext, ProjectState, TurnResult
 from .direct_runtime import DirectOpenAIRuntime
+from .empathy_map import EmpathyMapUpdate
+from .empathy_map import context_lines as empathy_context
+from .journey import JourneyUpdate
+from .journey import context_lines as journey_context
+from .journey_extract import NotesRequest, extraction_model, extraction_prompt, grounded_quotes
 from .knowledge import KnowledgeCatalog
 from .langgraph_workflow import LangGraphRutaDia
 from .memory import EditConflict, NotebookMemory
 from .notes import NoteRequest
+from .pestel import PestelUpdate
+from .pestel import context_lines as pestel_context
 from .problem_tree import ProblemTreeUpdate
+from .sensitive import sensitive_topic
 from .sharing import SharingStore
 from .tasks import TaskRequest
 from .tree_diagnosis import (
@@ -40,8 +49,61 @@ from .tree_diagnosis import (
     rule_findings,
     summary_text,
 )
+from .why_analysis import TOOL_ID as WHY_TOOL_ID
+from .why_analysis import WhyClose, WhyStart, WhyUpdate, context_text
 
 logger = logging.getLogger(__name__)
+
+# El cuerpo legítimo más grande es un tablero completo y no llega a esta cifra.
+MAX_BODY_BYTES = 1024 * 1024
+ACCESS_ATTEMPTS_PER_MINUTE = 20
+LOGIN_ATTEMPTS_PER_MINUTE = 5
+TOO_MANY_ATTEMPTS = "Demasiados intentos. Espera un minuto y vuelve a intentarlo."
+BODY_TOO_LARGE = "La solicitud es demasiado grande."
+
+
+def restrict_data_dir(path: Path) -> None:
+    """En Linux la carpeta de datos quedaba legible para otros usuarios del equipo (775 y 644):
+    cuentas, hashes, cuadernos y conversaciones. Se deja solo para la cuenta que corre Hilo.
+    En Windows, `%LOCALAPPDATA%` ya es privada por permisos de NTFS."""
+    if os.name != "posix":
+        return
+    try:
+        path.chmod(0o700)
+        for item in path.rglob("*"):
+            item.chmod(0o700 if item.is_dir() else 0o600)
+    except OSError as exc:  # una carpeta en un disco que no admite permisos (NTFS, FAT)
+        logging.getLogger(__name__).warning("No se pudieron restringir los permisos: %s", exc)
+
+
+class BodyLimitMiddleware:
+    """Rechaza con 413 el cuerpo que pasa del tope, antes de leerlo completo o validarlo."""
+
+    def __init__(self, app, max_bytes: int = MAX_BODY_BYTES):
+        self.app, self.max_bytes = app, max_bytes
+
+    async def __call__(self, scope, receive, send):
+        if scope["type"] != "http":
+            await self.app(scope, receive, send)
+            return
+        declared = dict(scope["headers"]).get(b"content-length", b"")
+        if declared.isdigit() and int(declared) > self.max_bytes:
+            response = JSONResponse({"detail": BODY_TOO_LARGE}, 413, {"Connection": "close"})
+            await response(scope, receive, send)
+            return
+        received = 0
+
+        # Sin Content-Length (envío por trozos) solo se sabe el tamaño al ir leyendo.
+        async def limited():
+            nonlocal received
+            message = await receive()
+            if message["type"] == "http.request":
+                received += len(message.get("body", b""))
+                if received > self.max_bytes:
+                    raise HTTPException(413, BODY_TOO_LARGE, {"Connection": "close"})
+            return message
+
+        await self.app(scope, limited, send)
 
 
 class NotebookRequest(BaseModel):
@@ -87,8 +149,8 @@ class RegisterRequest(BaseModel):
 
 
 class LoginRequest(BaseModel):
-    username: str
-    password: str
+    username: str = Field(max_length=40)
+    password: str = Field(max_length=128)
 
 
 class AccountProfileRequest(BaseModel):
@@ -164,14 +226,19 @@ def create_app(
     catalog = KnowledgeCatalog(settings.route_path)
     catalog.require_valid()
     settings.checkpoint_path.parent.mkdir(parents=True, exist_ok=True)
+    restrict_data_dir(settings.memory_path.parent)
     app = FastAPI(title="Ruta DIA local", docs_url=None, redoc_url=None)
     app.add_middleware(
         TrustedHostMiddleware, allowed_hosts=["localhost", "127.0.0.1", "testserver"]
     )
+    app.add_middleware(BodyLimitMiddleware)
     generation_lock = threading.Lock()
     app.state.jobs = set()
     auth = AuthStore(settings.memory_path.parent / "auth.sqlite3")
     sharing = SharingStore(settings.memory_path.parent / "auth.sqlite3")
+    # Registro e inicio de sesión cuestan un hash cada uno: comparten el cupo por origen.
+    access_attempts = AttemptLimiter(ACCESS_ATTEMPTS_PER_MINUTE)
+    login_attempts = AttemptLimiter(LOGIN_ATTEMPTS_PER_MINUTE)
     current_account: ContextVar[User | None] = ContextVar("hilo_account", default=None)
 
     def memory_path() -> Path:
@@ -276,6 +343,18 @@ def create_app(
             diagnosis = sharing.tree_diagnosis(access["project_id"])
             if diagnosis and diagnosis["tree_version"] == tree["version"]:
                 items.append(diagnosis["summary"])
+        pestel = pestel_context(sharing.pestel(access["project_id"]))
+        if pestel:
+            items.append(". ".join(pestel)[:3500])
+        empathy = empathy_context(sharing.empathy_map(access["project_id"]))
+        if empathy:
+            items.append(". ".join(empathy)[:3500])
+        journey = journey_context(sharing.journey(access["project_id"]))
+        if journey:
+            items.append(". ".join(journey)[:3500])
+        analysis = sharing.active_why_analysis(access["project_id"])
+        if analysis:
+            items.append(context_text(analysis))
         return items[-40:]
 
     @app.middleware("http")
@@ -302,10 +381,19 @@ def create_app(
         finally:
             current_account.reset(token)
 
+    def throttle(limiter: AttemptLimiter, key: str) -> None:
+        wait = limiter.attempt(key)
+        if wait:
+            raise HTTPException(429, TOO_MANY_ATTEMPTS, {"Retry-After": str(wait)})
+
+    def origin_key(request: Request) -> str:
+        return request.client.host if request.client else "local"
+
     @app.post("/api/auth/register", status_code=201)
     def register(body: RegisterRequest, request: Request):
         if body.password != body.confirm_password:
             raise HTTPException(400, "Las contraseñas no coinciden.")
+        throttle(access_attempts, origin_key(request))
         user = auth.register(body.username, body.display_name, body.password)
         auth.logout(request.cookies.get(COOKIE_NAME))
         response = JSONResponse(user.public(), status_code=201)
@@ -315,9 +403,13 @@ def create_app(
 
     @app.post("/api/auth/login")
     def login(body: LoginRequest, request: Request):
-        user = auth.authenticate(body.username, body.password)
+        username = body.username.strip().lower()
+        throttle(access_attempts, origin_key(request))
+        throttle(login_attempts, username)
+        user = auth.authenticate(username, body.password)
         if not user:
             raise HTTPException(401, "Usuario o contraseña incorrectos.")
+        login_attempts.forget(username)
         auth.logout(request.cookies.get(COOKIE_NAME))
         response = JSONResponse(user.public())
         response.set_cookie(COOKIE_NAME, auth.create_session(user), httponly=True,
@@ -664,6 +756,95 @@ def create_app(
             body.model_dump(exclude={"version"}), body.version,
         )
 
+    @app.get("/api/projects/{project_id}/pestel")
+    def get_pestel(project_id: str):
+        access = project_access(project_id)
+        return sharing.pestel(access["project_id"])
+
+    @app.put("/api/projects/{project_id}/pestel")
+    def save_pestel(project_id: str, body: PestelUpdate, request: Request):
+        access = project_access(project_id)
+        require_edit(access)
+        user = request.state.user
+        if not user:
+            raise HTTPException(401, "Inicia sesión para guardar el PESTEL.")
+        return sharing.save_pestel(
+            access["project_id"], user.id,
+            body.model_dump(exclude={"version"}), body.version,
+        )
+
+    @app.get("/api/projects/{project_id}/journey")
+    def get_journey(project_id: str):
+        access = project_access(project_id)
+        return sharing.journey(access["project_id"])
+
+    @app.put("/api/projects/{project_id}/journey")
+    def save_journey(project_id: str, body: JourneyUpdate, request: Request):
+        access = project_access(project_id)
+        require_edit(access)
+        user = request.state.user
+        if not user:
+            raise HTTPException(401, "Inicia sesión para guardar el recorrido.")
+        return sharing.save_journey(
+            access["project_id"], user.id,
+            body.model_dump(exclude={"version"}), body.version,
+        )
+
+    @app.post("/api/projects/{project_id}/journey/extract")
+    def extract_journey_notes(project_id: str, body: NotesRequest):
+        """Propone post-its a partir de notas pegadas. No guarda nada: devuelve solo frases
+        que están literales en el texto, para que la persona acepte una por una."""
+        access = project_access(project_id)
+        require_edit(access)
+        journey = sharing.journey(access["project_id"])
+        if not journey["stages"]:
+            raise HTTPException(409, "Agrega primero las etapas del recorrido.")
+        proposals: list[dict] = []
+        discarded = 0
+        started = time.perf_counter()
+        if not generation_lock.acquire(blocking=False):
+            model_status = "ocupado"
+        else:
+            try:
+                extract = getattr(runtime_factory(settings), "extract_journey", None)
+                if extract is None:
+                    model_status = "no_disponible"
+                else:
+                    output = extract(
+                        extraction_prompt(body.text, journey),
+                        extraction_model(len(journey["stages"])),
+                    )
+                    proposals, discarded = grounded_quotes(output, body.text, journey)
+                    model_status = "ok"
+            except Exception:
+                logger.exception("Fallo al leer notas para el recorrido")
+                model_status = "no_disponible"
+            finally:
+                generation_lock.release()
+        return {
+            "proposals": proposals,
+            "model_status": model_status,
+            "discarded": discarded,
+            "elapsed_ms": round((time.perf_counter() - started) * 1000),
+        }
+
+    @app.get("/api/projects/{project_id}/empathy-map")
+    def get_empathy_map(project_id: str):
+        access = project_access(project_id)
+        return sharing.empathy_map(access["project_id"])
+
+    @app.put("/api/projects/{project_id}/empathy-map")
+    def save_empathy_map(project_id: str, body: EmpathyMapUpdate, request: Request):
+        access = project_access(project_id)
+        require_edit(access)
+        user = request.state.user
+        if not user:
+            raise HTTPException(401, "Inicia sesión para guardar el mapa de empatía.")
+        return sharing.save_empathy_map(
+            access["project_id"], user.id,
+            body.model_dump(exclude={"version"}), body.version,
+        )
+
     @app.post("/api/projects/{project_id}/problem-tree/diagnosis")
     def diagnose_problem_tree(project_id: str):
         """Diagnostica la versión guardada. Las reglas siempre responden; la revisión
@@ -703,6 +884,63 @@ def create_app(
             "discarded": discarded,
             "elapsed_ms": round((time.perf_counter() - started) * 1000),
         }
+
+    def why_access(project_id: str, request: Request) -> dict:
+        access = project_access(project_id)
+        require_edit(access)
+        if not request.state.user:
+            raise HTTPException(401, "Inicia sesión para trabajar el análisis.")
+        if generation_lock.locked():
+            raise HTTPException(409, "Espera a que Hilo termine de responder.")
+        return access
+
+    @app.get("/api/projects/{project_id}/why-analyses")
+    def list_why_analyses(project_id: str):
+        return sharing.why_analyses(project_access(project_id)["project_id"])
+
+    @app.post("/api/projects/{project_id}/why-analyses", status_code=201)
+    def start_why_analysis(project_id: str, body: WhyStart, request: Request):
+        access = why_access(project_id, request)
+        return sharing.start_why_analysis(
+            access["project_id"], request.state.user.id, body.cause_id,
+        )
+
+    @app.patch("/api/projects/{project_id}/why-analyses/{analysis_id}")
+    def update_why_analysis(project_id: str, analysis_id: str, body: WhyUpdate,
+                            request: Request):
+        access = why_access(project_id, request)
+        changes = body.model_dump(exclude_none=True)
+        return sharing.update_why_analysis(access["project_id"], analysis_id, changes)
+
+    @app.post("/api/projects/{project_id}/why-analyses/{analysis_id}/review")
+    def review_why_analysis(project_id: str, analysis_id: str, request: Request):
+        access = why_access(project_id, request)
+        return sharing.set_why_status(access["project_id"], analysis_id, reviewing=True)
+
+    @app.post("/api/projects/{project_id}/why-analyses/{analysis_id}/resume")
+    def resume_why_analysis(project_id: str, analysis_id: str, request: Request):
+        access = why_access(project_id, request)
+        return sharing.set_why_status(access["project_id"], analysis_id, reviewing=False)
+
+    @app.post("/api/projects/{project_id}/why-analyses/{analysis_id}/close")
+    def close_why_analysis(project_id: str, analysis_id: str, body: WhyClose,
+                           request: Request):
+        access = why_access(project_id, request)
+        return sharing.set_why_status(
+            access["project_id"], analysis_id, status="cerrado", candidate=body.candidate,
+        )
+
+    @app.post("/api/projects/{project_id}/why-analyses/{analysis_id}/discard")
+    def discard_why_analysis(project_id: str, analysis_id: str, request: Request):
+        access = why_access(project_id, request)
+        return sharing.set_why_status(access["project_id"], analysis_id, status="descartado")
+
+    @app.post("/api/projects/{project_id}/why-analyses/{analysis_id}/incorporate")
+    def incorporate_why_analysis(project_id: str, analysis_id: str, request: Request):
+        access = why_access(project_id, request)
+        return sharing.incorporate_why_analysis(
+            access["project_id"], analysis_id, request.state.user.id,
+        )
 
     @app.post("/api/projects/{project_id}/invitations", status_code=201)
     def invite_to_project(project_id: str, body: InvitationRequest, request: Request):
@@ -798,12 +1036,31 @@ def create_app(
                             stage=stage.id,
                             phase=stage.phase,
                         ))
+                    # La respuesta ya es el paso de la cadena: se registra antes de que el
+                    # agente responda, para que pregunte por lo último dicho.
+                    analysis = None
+                    if access["owner_user_id"]:
+                        # Un mensaje sensible no es un paso de la cadena: no se registra.
+                        analysis = (
+                            sharing.active_why_analysis(access["project_id"])
+                            if access["role"] == "viewer" or sensitive_topic(body.message)
+                            else sharing.record_why_turn(
+                                access["project_id"], body.message.strip(),
+                            )
+                        )
                     state = memory.load(
                         ProjectState(notebook_id=access["notebook_id"],
                                      stage=stage.id, phase=stage.phase),
                         participant_id=user.id if user else None,
                         shared_context=shared_context(access, memory),
                     )
+                    if analysis:
+                        # La cadena (en el contexto compartido) es la fuente de verdad del
+                        # análisis. El historial reciente solo le daba al modelo preguntas
+                        # anteriores para copiar; se reconstruye desde la base al guardar.
+                        state = state.model_copy(
+                            update={"locked_tool": WHY_TOOL_ID, "recent_turns": []},
+                        )
                     runtime = runtime_factory(settings)
                     workflow = LangGraphRutaDia(
                         catalog, runtime, JsonlVerificationRecorder(resolved_audit_path),

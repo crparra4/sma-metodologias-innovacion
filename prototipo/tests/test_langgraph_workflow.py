@@ -95,7 +95,9 @@ def test_langgraph_routes_a_rejection_back_to_the_methodologist_once():
 def test_langgraph_degrades_after_the_second_rejection():
     runtime = FakeRuntime([Verdict.REJECTED, Verdict.REJECTED])
     result = workflow(runtime).handle_turn("Quiero PESTEL", ProjectState(notebook_id="lg-stop"))
-    assert result.message == SAFE_DEGRADATION
+    # Ya no es un callejón sin salida: entrega el paso a paso literal de la ficha.
+    assert result.message != SAFE_DEGRADATION
+    assert "Marca cada elemento como" in result.message
     assert result.degraded is True
     assert result.attempts == 2
 

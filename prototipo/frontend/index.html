@@ -156,11 +156,42 @@
     <main class="main">
       <div class="global-error" id="global-error" role="alert" hidden></div>
       <section class="home-view" id="home-view" aria-label="Todos tus proyectos">
-        <div class="home-heading"><div><h2>Tus proyectos</h2><p>Abre un proyecto para continuar donde lo dejaste.</p></div><button class="button primary" id="home-new-project"><svg class="icon"><use href="#i-plus"/></svg>Nuevo proyecto</button></div>
+        <div class="home-main">
+        <header class="home-hero" id="home-hero">
+          <span class="hero-tape" aria-hidden="true"></span>
+          <div class="hero-text">
+            <p class="hero-date" id="home-date"></p>
+            <h2 class="hero-greeting"><span id="home-greeting">¡Hola!</span> <span class="hero-name" id="home-name"></span></h2>
+            <span class="hero-underline" aria-hidden="true"><svg viewBox="0 0 320 18" preserveAspectRatio="none"><path pathLength="100" d="M4 11c22-7 40 6 62 0s40-7 62-1 42 6 64 0 44-6 64 0 40 5 60-1"/></svg><i>✏️</i></span>
+            <p class="hero-note" id="home-summary">Abre un proyecto para continuar donde lo dejaste.</p>
+            <div class="hero-stats" id="home-stats" role="group" aria-label="Resumen de tu cuaderno"></div>
+          </div>
+          <div class="hero-side">
+            <button class="hero-mascot" id="home-mascot" type="button" aria-label="Lápiz de Hilo. Tócalo para animarte.">
+              <svg viewBox="0 0 96 124" aria-hidden="true">
+                <g stroke="#1f2b46" stroke-width="3" stroke-linejoin="round" stroke-linecap="round">
+                  <rect x="30" y="6" width="36" height="17" rx="7" fill="#ff9db0"/>
+                  <rect x="28" y="21" width="40" height="10" fill="#c9d2e3"/>
+                  <rect x="28" y="31" width="40" height="55" fill="#ffd54a"/>
+                  <path d="M28 86h40L48 116z" fill="#f3d9b1"/>
+                  <path d="M42.6 107.5h10.8L48 116z" fill="#1f2b46"/>
+                  <path d="M41 33v51M55 33v51" stroke-width="2" opacity=".28"/>
+                </g>
+                <g class="mascot-eyes" fill="#1f2b46"><circle cx="40" cy="52" r="3.4"/><circle cx="56" cy="52" r="3.4"/></g>
+                <path d="M41 62q7 7 14 0" fill="none" stroke="#1f2b46" stroke-width="3" stroke-linecap="round"/>
+                <circle cx="34.5" cy="60" r="3" fill="#ff9db0"/><circle cx="61.5" cy="60" r="3" fill="#ff9db0"/>
+              </svg>
+              <span class="hero-bubble" id="home-bubble" role="status"></span>
+            </button>
+            <button class="button primary" id="home-new-project"><svg class="icon"><use href="#i-plus"/></svg>Nuevo proyecto</button>
+          </div>
+        </header>
+        <section class="home-projects" aria-labelledby="home-projects-title">
+        <div class="home-projects-head"><h3 id="home-projects-title">Tus proyectos</h3><p class="project-count" id="project-count" role="status">Cargando proyectos…</p></div>
         <div class="project-toolbar"><div class="project-search"><svg class="icon" aria-hidden="true"><use href="#i-search"/></svg><label class="sr-only" for="project-search">Buscar proyectos</label><input id="project-search" type="search" placeholder="Buscar proyectos…" autocomplete="off" /></div><div class="project-order"><label for="project-order">Ordenar por</label><select id="project-order"><option value="recent">Más recientes</option><option value="name">Nombre</option></select></div></div>
-        <p class="project-count" id="project-count" role="status">Cargando proyectos…</p>
         <div class="project-grid" id="project-grid"></div>
         <div class="home-empty" id="home-empty" hidden><h3 id="home-empty-title">Tu primer proyecto empieza aquí.</h3><p id="home-empty-description">Crea un proyecto para organizar tus conversaciones, fuentes y avances.</p><button class="button primary" id="empty-new-project">Crear mi primer proyecto</button></div>
+        </section>
         <section class="home-block" id="home-tools" aria-labelledby="home-tools-title">
           <div class="home-block-head">
             <h3 id="home-tools-title">Herramientas</h3>
@@ -169,6 +200,9 @@
           <p class="home-block-note">Las cuatro fichas que pueden guardar datos verificados en tu cuaderno. Las quince están en la biblioteca.</p>
           <div class="tool-tiles" id="home-tool-chips"></div>
         </section>
+        <p class="home-storage"><svg class="icon" aria-hidden="true"><use href="#i-book"/></svg>Las conversaciones y los avances de cada proyecto se guardan en tu computadora.</p>
+        </div>
+        <aside class="home-rail" aria-label="Calendario y agenda">
         <section class="home-block agenda" id="home-calendar" aria-labelledby="home-calendar-title">
           <div class="agenda-calendar calendar-lavender">
           <div class="home-block-head">
@@ -184,7 +218,7 @@
             </div>
           <div class="calendar" id="calendar"></div>
             </div>
-          <div class="calendar-key"><span><i class="key-dot task-dot"></i>Tareas</span><span><i class="key-dot activity-dot"></i>Conversaciones</span><span><i class="key-today"></i>Hoy</span></div>
+          <div class="calendar-key"><span><i class="key-box" data-tone="overdue"></i>Vencida</span><span title="Vence en tres días o menos"><i class="key-box" data-tone="soon"></i>Por vencer</span><span><i class="key-box" data-tone="later"></i>Con tiempo</span><span><i class="key-dot activity-dot"></i>Conversaciones</span><span><i class="key-today"></i>Hoy</span></div>
           <p class="calendar-detail" id="cal-detail" role="status"></p>
           </div>
           <div class="agenda-tasks agenda-lavender">
@@ -200,10 +234,10 @@
               <div class="task-form-row"><div><label for="task-priority">Importancia</label><select id="task-priority"><option value="high">Alta</option><option value="medium" selected>Media</option><option value="low">Baja</option></select></div><div><label for="task-project">Proyecto</label><select id="task-project"><option value="">Sin proyecto</option></select></div></div>
               <div class="form-actions"><button class="button quiet" id="cancel-task" type="button">Cancelar</button><button class="button primary" id="save-task" type="submit">Guardar tarea</button></div>
             </form>
-            <p class="task-color-key">La importancia indica prioridad. El plazo indica cuánto falta.</p>
+            <p class="task-color-key">El color del recuadro indica el plazo: <span data-tone="overdue">rojo</span>, vencida; <span data-tone="soon">amarillo</span>, vence en tres días o menos; <span data-tone="later">verde</span>, con tiempo.</p>
           </div>
         </section>
-        <p class="home-storage"><svg class="icon" aria-hidden="true"><use href="#i-book"/></svg>Las conversaciones y los avances de cada proyecto se guardan en tu computadora.</p>
+        </aside>
       </section>
       <section class="calendar-view" id="calendar-view" hidden aria-labelledby="calv-title">
         <div class="calv-main">
@@ -262,10 +296,65 @@
         </div>
         <footer class="problem-tree-foot"><p><strong>Fuente registrada</strong> significa que puedes rastrear de dónde salió una afirmación. Hilo no la considera verificada automáticamente.</p><p>Arrastra tarjetas para cambiar el orden o usa los botones de cada tarjeta.</p></footer>
       </section>
+      <section class="pestel-view" id="pestel-view" hidden aria-labelledby="pestel-title">
+        <header class="pestel-head">
+          <div class="pestel-heading"><span class="pestel-badge" aria-hidden="true">🧭</span><div class="pestel-heading-text"><h2 id="pestel-title">PESTEL</h2><p id="pestel-subtitle">Mira el entorno de tu reto desde seis lados.</p></div></div>
+          <div class="pestel-head-actions"><span class="pestel-save-state" id="pestel-save-state" role="status"></span><button class="button primary" id="pestel-save" type="button">Guardar PESTEL</button></div>
+        </header>
+        <p class="pestel-error" id="pestel-error" role="alert" hidden></p>
+        <div class="pestel-surface">
+          <ol class="pestel-steps" id="pestel-steps" aria-label="Pasos de la ficha PESTEL"></ol>
+          <section class="pestel-challenge" aria-labelledby="pestel-challenge-title">
+            <h3 id="pestel-challenge-title">El reto</h3>
+            <label for="pestel-challenge">Escribe en una frase la situación que vas a analizar.</label>
+            <textarea id="pestel-challenge" rows="2" maxlength="500" placeholder="Ej. Abrir una academia de programación para niños en Medellín"></textarea>
+          </section>
+          <div class="pestel-grid" id="pestel-grid"></div>
+          <section class="pestel-priority" id="pestel-priority" aria-labelledby="pestel-priority-title" aria-live="polite"></section>
+        </div>
+        <footer class="pestel-foot"><p>Lo que anotas aquí es un borrador de tu equipo: Hilo lo lee para acompañarte, pero no lo da por comprobado. Registrar la fuente te permite rastrear de dónde salió cada elemento.</p></footer>
+      </section>
+      <section class="pestel-view empathy-view" id="empathy-view" hidden aria-labelledby="empathy-title">
+        <header class="pestel-head">
+          <div class="pestel-heading"><span class="pestel-badge" aria-hidden="true">🫶</span><div class="pestel-heading-text"><h2 id="empathy-title">Mapa de empatía</h2><p id="empathy-subtitle">Mira el mundo desde el lugar de tu usuario.</p></div></div>
+          <div class="pestel-head-actions"><span class="pestel-save-state" id="empathy-save-state" role="status"></span><button class="button primary" id="empathy-save" type="button">Guardar mapa</button></div>
+        </header>
+        <p class="pestel-error" id="empathy-error" role="alert" hidden></p>
+        <div class="pestel-surface">
+          <section class="pestel-challenge" aria-labelledby="empathy-user-title">
+            <h3 id="empathy-user-title">El usuario</h3>
+            <label for="empathy-user">¿De quién es este mapa? Descríbelo en una frase.</label>
+            <textarea id="empathy-user" rows="2" maxlength="300" placeholder="Ej. Adultos mayores que usan la aplicación del banco"></textarea>
+          </section>
+          <div class="empathy-map" id="empathy-map"></div>
+        </div>
+        <footer class="pestel-foot"><p>Un mapa lleno de suposiciones parece comprensión y no lo es: marca cada post-it como observado o supuesto. Hilo lee este mapa para acompañarte, pero no lo da por comprobado.</p></footer>
+      </section>
+      <section class="pestel-view journey-view" id="journey-view" hidden aria-labelledby="journey-title">
+        <header class="pestel-head">
+          <div class="pestel-heading"><span class="pestel-badge" aria-hidden="true">🧗</span><div class="pestel-heading-text"><h2 id="journey-title">Customer Journey Map</h2><p id="journey-subtitle">Sigue a tu usuario paso a paso y mira dónde se le complica.</p></div></div>
+          <div class="pestel-head-actions"><span class="pestel-save-state" id="journey-save-state" role="status"></span><button class="button primary" id="journey-save" type="button">Guardar recorrido</button></div>
+        </header>
+        <p class="pestel-error" id="journey-error" role="alert" hidden></p>
+        <div class="journey-surface">
+          <aside class="journey-persona" aria-label="Usuario y escenario">
+            <span class="journey-avatar" aria-hidden="true">🙂</span>
+            <label for="journey-user">Usuario</label>
+            <textarea id="journey-user" rows="2" maxlength="300" placeholder="¿De quién es el recorrido? Ej. Paciente que pide una cita"></textarea>
+            <label for="journey-scenario">Escenario</label>
+            <textarea id="journey-scenario" rows="2" maxlength="300" placeholder="¿Qué recorrido vas a mirar? Ej. Pedir la cita por teléfono"></textarea>
+            <button class="journey-persona-ask" id="journey-ask" type="button" title="Hilo te pregunta por lo que falta, una cosa a la vez">Preguntarle a Hilo qué sigue</button>
+            <button class="journey-persona-paste" id="journey-paste" type="button">Pegar notas de entrevista</button>
+          </aside>
+          <div class="journey-scroll"><div class="journey-board" id="journey-board"></div></div>
+        </div>
+        <footer class="pestel-foot"><p>Marca como críticas las etapas donde más importa mejorar: no todas pesan igual. Hilo lee este recorrido para preguntarte por lo que falta, pero no lo llena por ti ni lo da por comprobado.</p></footer>
+      </section>
         <section class="chat-panel" id="chat-panel" aria-labelledby="project-name">
           <header class="chat-panel-heading"><div class="project-heading" id="project-heading"><div class="project-progress" id="project-progress" role="img" aria-label="Progreso de etapas" hidden><svg viewBox="0 0 48 48" aria-hidden="true"><circle class="progress-track" cx="24" cy="24" r="20"/><circle class="progress-fill" id="project-progress-fill" cx="24" cy="24" r="20" pathLength="100" stroke-dasharray="100" stroke-dashoffset="100"/></svg><span id="project-progress-label" aria-hidden="true"></span></div><div class="project-heading-text"><h1 id="project-name">Inicio</h1><div class="project-stage" id="project-stage"><span id="project-phase"></span><span id="project-current-stage"></span><span id="project-access-label"></span></div></div></div><ul class="project-members" id="project-members" aria-label="Personas con acceso" hidden></ul><button class="project-share" id="share-project" type="button" aria-label="Administrar acceso al proyecto" title="Compartir este proyecto con otra cuenta local"><svg class="icon" aria-hidden="true"><use href="#i-share"/></svg><span id="share-project-label">Compartir</span></button><span class="sr-only" id="share-project-status" role="status"></span></header>
           <div class="messages" id="messages" role="log" aria-live="polite" aria-relevant="additions"></div>
           <div class="composer-area">
+            <section class="why-bar" id="why-bar" aria-live="polite" hidden></section>
             <div class="run-status" id="run-status" role="status"><span>Una pregunta a la vez, con respaldo metodológico.</span><span id="run-time"></span></div>
             <form class="composer" id="chat-form">
               <label class="sr-only" for="message">Mensaje para Hilo</label>
@@ -304,6 +393,9 @@
         <div class="board-tools" role="group" aria-label="Herramientas del tablero">
           <button class="board-toggle" id="toggle-chat" type="button" data-board-tool="chat" aria-pressed="true" aria-controls="chat-panel"><svg class="icon" aria-hidden="true"><use href="#i-message"/></svg>Chat</button>
           <button class="board-toggle" id="open-problem-tree" type="button" aria-pressed="false" aria-controls="problem-tree-view"><svg class="icon" aria-hidden="true"><use href="#i-route"/></svg>Árbol</button>
+          <button class="board-toggle" id="open-pestel" type="button" aria-pressed="false" aria-controls="pestel-view"><svg class="icon" aria-hidden="true"><use href="#i-search"/></svg>PESTEL</button>
+          <button class="board-toggle" id="open-empathy" type="button" aria-pressed="false" aria-controls="empathy-view"><svg class="icon" aria-hidden="true"><use href="#i-person"/></svg>Empatía</button>
+          <button class="board-toggle" id="open-journey" type="button" aria-pressed="false" aria-controls="journey-view"><svg class="icon" aria-hidden="true"><use href="#i-arrow"/></svg>Journey</button>
           <button class="board-toggle" id="toggle-notes" type="button" data-board-tool="notes" aria-pressed="false" aria-controls="board-notes-panel"><svg class="icon" aria-hidden="true"><use href="#i-note"/></svg>Post-its</button>
           <button class="board-toggle" id="toggle-agents" type="button" data-board-tool="agents" aria-pressed="false" aria-controls="board-agents-panel"><svg class="icon" aria-hidden="true"><use href="#i-route"/></svg>Agentes</button>
         </div>
@@ -404,6 +496,99 @@
       <div class="note-sheet-foot">
         <p class="note-sign"><span class="note-avatar" id="note-sign-avatar" aria-hidden="true"></span><span><span class="sr-only">Firma: </span><strong id="note-sign-name"></strong> <span id="note-sign-date"></span></span></p>
         <div class="form-actions"><button class="button quiet" id="cancel-note" type="button">Cancelar</button><button class="button primary" id="save-note" type="submit">Guardar post-it</button></div>
+      </div>
+    </form>
+  </dialog>
+  <dialog class="note-dialog note-sheet" id="pestel-dialog" aria-labelledby="pestel-dialog-title" data-note-color="yellow">
+    <form id="pestel-form" novalidate>
+      <h2 id="pestel-dialog-title">Nuevo post-it</h2>
+      <div class="note-editor-scroll">
+        <p class="note-error" id="pestel-dialog-error" role="alert" hidden></p>
+        <p class="pestel-dialog-question" id="pestel-dialog-question"></p>
+        <label class="sr-only" for="pestel-dialog-text">Lo que influye en tu reto</label>
+        <textarea id="pestel-dialog-text" class="note-sheet-text" required maxlength="240" rows="4" aria-describedby="pestel-dialog-error"></textarea>
+        <fieldset class="note-chips"><legend>¿Qué es para tu reto?</legend>
+          <label><input type="radio" name="pestel-kind" value="oportunidad" /><span>Oportunidad</span></label>
+          <label><input type="radio" name="pestel-kind" value="amenaza" /><span>Amenaza</span></label>
+          <label><input type="radio" name="pestel-kind" value="" checked /><span>Aún no sé</span></label>
+        </fieldset>
+        <fieldset class="note-chips"><legend>Prioridad</legend>
+          <label><input type="checkbox" id="pestel-dialog-priority" /><span>★ Es de lo más relevante</span></label>
+          <p class="pestel-dialog-hint" id="pestel-dialog-priority-hint"></p>
+        </fieldset>
+        <fieldset class="note-chips pestel-dialog-source-field"><legend>Fuente (opcional)</legend>
+          <input id="pestel-dialog-source" class="pestel-dialog-source" maxlength="500" placeholder="¿De dónde sale? Ej. noticia, entrevista, documento" autocomplete="off" aria-label="Fuente" />
+        </fieldset>
+      </div>
+      <div class="note-sheet-foot">
+        <p class="note-sign"><strong id="pestel-dialog-factor"></strong></p>
+        <div class="form-actions"><button class="button quiet" id="pestel-dialog-cancel" type="button">Cancelar</button><button class="button primary" id="pestel-dialog-save" type="submit">Guardar post-it</button></div>
+      </div>
+    </form>
+  </dialog>
+  <dialog class="note-dialog note-sheet" id="empathy-dialog" aria-labelledby="empathy-dialog-title" data-note-color="yellow">
+    <form id="empathy-form" novalidate>
+      <h2 id="empathy-dialog-title">Nuevo post-it</h2>
+      <div class="note-editor-scroll">
+        <p class="note-error" id="empathy-dialog-error" role="alert" hidden></p>
+        <p class="pestel-dialog-question" id="empathy-dialog-question"></p>
+        <label class="sr-only" for="empathy-dialog-text">Lo que sabes de tu usuario</label>
+        <textarea id="empathy-dialog-text" class="note-sheet-text" required maxlength="240" rows="4" aria-describedby="empathy-dialog-error"></textarea>
+        <fieldset class="note-chips"><legend>¿De dónde sale?</legend>
+          <label><input type="radio" name="empathy-basis" value="observado" /><span>Lo observé o me lo dijeron</span></label>
+          <label><input type="radio" name="empathy-basis" value="supuesto" /><span>Lo supongo</span></label>
+          <label><input type="radio" name="empathy-basis" value="" checked /><span>Aún no sé</span></label>
+        </fieldset>
+        <fieldset class="note-chips pestel-dialog-source-field"><legend>Fuente (opcional)</legend>
+          <input id="empathy-dialog-source" class="pestel-dialog-source" maxlength="500" placeholder="¿Quién lo dijo o dónde lo viste? Ej. entrevista 3" autocomplete="off" aria-label="Fuente" />
+        </fieldset>
+      </div>
+      <div class="note-sheet-foot">
+        <p class="note-sign"><strong id="empathy-dialog-block"></strong></p>
+        <div class="form-actions"><button class="button quiet" id="empathy-dialog-cancel" type="button">Cancelar</button><button class="button primary" id="empathy-dialog-save" type="submit">Guardar post-it</button></div>
+      </div>
+    </form>
+  </dialog>
+  <dialog class="note-dialog note-sheet" id="journey-dialog" aria-labelledby="journey-dialog-title" data-note-color="yellow">
+    <form id="journey-form" novalidate>
+      <h2 id="journey-dialog-title">Nuevo post-it</h2>
+      <div class="note-editor-scroll">
+        <p class="note-error" id="journey-dialog-error" role="alert" hidden></p>
+        <p class="pestel-dialog-question" id="journey-dialog-question"></p>
+        <label class="sr-only" for="journey-dialog-text">Lo que pasa en esta etapa</label>
+        <textarea id="journey-dialog-text" class="note-sheet-text" required maxlength="240" rows="4" aria-describedby="journey-dialog-error"></textarea>
+        <fieldset class="note-chips"><legend>¿En qué fila va?</legend>
+          <label><input type="radio" name="journey-lane" value="acciones" checked /><span>Lo que hace</span></label>
+          <label><input type="radio" name="journey-lane" value="contacto" /><span>Punto de contacto</span></label>
+          <label><input type="radio" name="journey-lane" value="dolores" /><span>Dolor</span></label>
+          <label><input type="radio" name="journey-lane" value="oportunidades" /><span>Oportunidad</span></label>
+        </fieldset>
+      </div>
+      <div class="note-sheet-foot">
+        <p class="note-sign"><strong id="journey-dialog-stage"></strong></p>
+        <div class="form-actions"><button class="button quiet" id="journey-dialog-cancel" type="button">Cancelar</button><button class="button primary" id="journey-dialog-save" type="submit">Guardar post-it</button></div>
+      </div>
+    </form>
+  </dialog>
+  <dialog class="note-dialog note-sheet" id="journey-notes-dialog" aria-labelledby="journey-notes-title" data-note-color="blue">
+    <form id="journey-notes-form" novalidate>
+      <h2 id="journey-notes-title">Notas de entrevista · Customer Journey</h2>
+      <div class="note-editor-scroll">
+        <p class="note-error" id="journey-notes-error" role="alert" hidden></p>
+        <div id="journey-notes-input">
+          <p class="pestel-dialog-question">Pega un trozo de tus notas o de la transcripción.</p>
+          <label class="sr-only" for="journey-notes-text">Notas de la entrevista</label>
+          <textarea id="journey-notes-text" class="note-sheet-text" maxlength="1800" rows="8" placeholder="Ej. Yo me enteré por un volante que le dieron a mi hijo en el colegio, pero no decía cuánto costaba…" aria-describedby="journey-notes-hint"></textarea>
+          <p class="pestel-dialog-hint" id="journey-notes-hint">Hilo solo propone frases que estén tal cual en lo que pegues, y tú decides cuáles entran al mapa. <span id="journey-notes-count">0 de 1.800</span></p>
+        </div>
+        <div id="journey-notes-results" hidden>
+          <p class="journey-notes-status" id="journey-notes-status" role="status"></p>
+          <ul class="journey-proposals" id="journey-proposals"></ul>
+        </div>
+      </div>
+      <div class="note-sheet-foot">
+        <p class="note-sign"><strong id="journey-notes-progress"></strong></p>
+        <div class="form-actions"><button class="button quiet" id="journey-notes-cancel" type="button">Cerrar</button><button class="button quiet" id="journey-notes-again" type="button" hidden>Pegar otro trozo</button><button class="button primary" id="journey-notes-submit" type="submit">Buscar post-its</button></div>
       </div>
     </form>
   </dialog>

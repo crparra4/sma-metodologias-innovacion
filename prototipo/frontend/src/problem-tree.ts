@@ -1,9 +1,11 @@
 import './problem-tree.css';
+import type { WhyLabel } from './why-analysis';
 
 type TreeNode = { id: string; text: string; source: string; parent: string };
 type Lane = 'causes' | 'effects';
 type Tree = { problem: string; problem_source: string; causes: TreeNode[]; effects: TreeNode[]; version: number; updated_at: number | null };
 type Request = <T>(path: string, options?: RequestInit) => Promise<T>;
+type WhyLink = { start: (causeId: string, text: string) => Promise<void>; labelFor: (causeId: string) => WhyLabel };
 
 const MAX_NODES = 30;
 const byId = <T extends HTMLElement = HTMLElement>(id: string) => document.getElementById(id) as T;
@@ -34,7 +36,7 @@ export class ProblemTreeController {
   private diagnosis: Diagnosis | null = null;
   private diagnosing = false;
 
-  constructor(private request: Request) {
+  constructor(private request: Request, private why?: WhyLink) {
     byId('problem-tree-save').addEventListener('click', () => { void this.save(); });
     byId('problem-tree-diagnose').addEventListener('click', () => { void this.diagnose(); });
     byId('problem-tree-add-cause').addEventListener('click', () => this.add('causes'));
@@ -64,6 +66,27 @@ export class ProblemTreeController {
   }
 
   isDirty() { return JSON.stringify(contentOf(this.draft)) !== this.saved; }
+
+  /** Recarga la versión guardada; no pisa cambios sin guardar. */
+  async reload() { if (this.projectId && !this.isDirty()) await this.load(); }
+
+  /** Actualiza solo los botones de 5 porqués: no redibuja, para no quitar el foco. */
+  refreshWhy() {
+    document.querySelectorAll<HTMLButtonElement>('#problem-tree-causes .tree-why').forEach(button => {
+      const id = button.closest<HTMLElement>('[data-tree-node]')?.dataset.treeNode;
+      if (id) this.paintWhy(button, id);
+    });
+  }
+
+  private paintWhy(button: HTMLButtonElement, causeId: string) {
+    if (!this.why) return;
+    const label = this.why.labelFor(causeId);
+    const saved = (JSON.parse(this.saved).causes as TreeNode[]).some(item => item.id === causeId && !item.parent);
+    button.textContent = label.label;
+    button.dataset.blocked = String(label.disabled || !saved);
+    button.disabled = this.isDirty() || this.saving || button.dataset.blocked === 'true';
+    button.title = this.isDirty() || !saved ? 'Guarda el árbol para profundizar en esta causa.' : label.title;
+  }
   canLeave() { return !this.isDirty() || window.confirm('Hay cambios sin guardar en el árbol. ¿Quieres salir y descartarlos?'); }
 
   private locked() { return this.role === 'viewer' || this.saving; }
@@ -256,6 +279,14 @@ export class ProblemTreeController {
     });
     // La observación va junto al texto al que se refiere: evita la atención dividida.
     card.append(head, textLabel, text, ...this.notesFor(node.id), sourceLabel, source);
+    if (this.why && lane === 'causes' && !nested && this.role !== 'viewer') {
+      const why = document.createElement('button'); why.type = 'button'; why.className = 'tree-why';
+      why.addEventListener('click', () => {
+        void this.why!.start(node.id, node.text).catch(error => this.showError((error as Error).message));
+      });
+      this.paintWhy(why, node.id);
+      card.append(why);
+    }
     if (this.role !== 'viewer') card.append(this.actions(node, lane, noun, nested, siblings, index));
     return card;
   }
@@ -311,6 +342,10 @@ export class ProblemTreeController {
             : this.draft.version ? 'Guardado' : 'Árbol nuevo';
     byId('problem-tree-view').classList.toggle('is-busy', this.saving);
     byId('problem-tree-view').classList.toggle('diagnosis-stale', this.isStale());
+    document.querySelectorAll<HTMLButtonElement>('#problem-tree-causes .tree-why').forEach(button => {
+      button.disabled = dirty || this.saving || button.dataset.blocked === 'true';
+      if (dirty) button.title = 'Guarda el árbol para profundizar en esta causa.';
+    });
     const diagnose = byId<HTMLButtonElement>('problem-tree-diagnose');
     diagnose.disabled = this.loading || this.saving || this.diagnosing || dirty || !this.draft.version;
     diagnose.textContent = this.diagnosing ? 'Diagnosticando…' : 'Diagnosticar';

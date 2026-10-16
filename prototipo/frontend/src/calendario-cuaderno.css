@@ -1,0 +1,188 @@
+/* Calendario como cuaderno.
+   Solo afecta a #calendar-view y a su diálogo de entrada (.calv-dialog).
+   Colores, fuentes, botones y animaciones vienen de home-cuaderno.css.
+   Materiales: planificador de argollas (cuadrícula), bloc perforado y rayado (panel del día),
+   etiquetas de color (entradas). Los colores de cada proyecto y el punto rojo de «vencida»
+   no cambian de significado.
+   Ojo: main.ts ajusta cuántas entradas caben por celda contando píxeles. No cambies el alto
+   de .calv-cell-top (24px), .calv-chip (20px) ni .calv-more (16px). */
+
+@keyframes cuaderno-pasar-sig{from{opacity:0;translate:28px 0;rotate:.5deg}}
+@keyframes cuaderno-pasar-ant{from{opacity:0;translate:-28px 0;rotate:-.5deg}}
+
+#app #calendar-view{
+  grid-template-columns:minmax(0,1fr) clamp(290px,24vw,340px);color:var(--tinta);
+  background-color:#fcfbf8;
+  background-image:linear-gradient(#e9eef6 1px,transparent 1px),linear-gradient(90deg,#e9eef6 1px,transparent 1px);
+  background-size:26px 26px;
+}
+#app #calendar-view[hidden]{display:none}
+#app #calendar-view .calv-main{padding:22px 22px 24px clamp(22px,2.6vw,40px)}
+#app #calendar-view :is(.calv-toolbar,.calv-grid,.calv-side){animation:cuaderno-entrar .45s cubic-bezier(.2,.9,.3,1.2) both}
+#app #calendar-view .calv-grid{animation-delay:.06s}
+#app #calendar-view .calv-side{animation-delay:.12s}
+
+/* ---------- Barra superior ---------- */
+#app #calendar-view .calv-toolbar{gap:12px;margin-bottom:26px}
+#app #calendar-view .calv-title{margin:0 10px 0 0;padding-bottom:8px;font-family:var(--mano);font-weight:700;font-size:36px;line-height:1;letter-spacing:0;color:var(--tinta);
+  background:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='44' height='8'%3E%3Cpath d='M0 5c6-5 11 4 22 0s16-5 22 0' fill='none' stroke='%23294eb8' stroke-width='1.8' stroke-linecap='round'/%3E%3C/svg%3E") repeat-x 0 100%/44px 8px}
+#app #calendar-view .calv-today{width:62px;min-height:40px;height:40px;padding:0;border:var(--borde);border-radius:50%;background:#fff7cf;color:var(--tinta);
+  font-family:var(--esfero-letra);font-size:17px;font-weight:400;box-shadow:0 3px 0 var(--tinta);transition:translate .12s,box-shadow .12s,rotate .2s}
+#app #calendar-view .calv-today:hover{rotate:-6deg;translate:0 -1px;box-shadow:0 4px 0 var(--tinta)}
+#app #calendar-view .calv-today:active{translate:0 2px;box-shadow:0 1px 0 var(--tinta)}
+#app #calendar-view .calv-nav{gap:8px}
+#app #calendar-view .calv-nav .icon-button{width:36px;height:36px;border:var(--borde);border-radius:50%;background:#fff;color:var(--tinta);
+  box-shadow:0 3px 0 #26324d2e;transition:translate .12s,box-shadow .12s,background .15s}
+#app #calendar-view .calv-nav .icon-button:hover{background:#fff7cf;translate:0 -1px;box-shadow:0 4px 0 #26324d2e}
+#app #calendar-view .calv-nav .icon-button:active{translate:0 2px;box-shadow:0 1px 0 #26324d2e}
+#app #calendar-view .calv-range{font-family:var(--mano);font-weight:700;font-size:32px;line-height:1;letter-spacing:0;color:var(--esfero)}
+#app #calendar-view .calv-switch{gap:4px;padding:4px;border:var(--borde);border-radius:999px;background:#fff}
+#app #calendar-view .calv-switch button{min-height:32px;padding:2px 16px 3px;border-radius:999px;color:var(--lapiz);
+  font-family:var(--esfero-letra);font-size:16px;font-weight:400;transition:background .15s,color .15s,scale .2s cubic-bezier(.3,1.6,.5,1)}
+#app #calendar-view .calv-switch button:hover{color:var(--tinta)}
+#app #calendar-view .calv-switch button:active{scale:.94}
+#app #calendar-view .calv-switch button[aria-pressed="true"]{background:var(--violeta);color:#fff}
+#app #calendar-view .calv-new{min-height:42px;padding:7px 18px 8px;font-size:17px}
+
+/* ---------- Planificador de argollas ---------- */
+#app #calendar-view .calv-grid{position:relative;overflow:visible;border:var(--borde);border-radius:18px;background:var(--hoja);box-shadow:var(--sombra)}
+#app #calendar-view .calv-grid::before{content:"";position:absolute;z-index:2;top:-13px;left:30px;right:30px;height:26px;pointer-events:none;
+  background:radial-gradient(circle at 50% 50%,transparent 0 5px,var(--tinta) 5.4px 6.9px,transparent 7.3px) 0 0/40px 26px space no-repeat}
+#app #calendar-view :is(.calv-weekdays,.calv-week-head){border-radius:16px 16px 0 0;border-bottom:var(--borde);background:#ece6f7}
+#app #calendar-view .calv-weekdays span{padding:14px 10px 6px;font-family:var(--esfero-letra);font-size:16px;font-weight:400;letter-spacing:.02em;text-transform:lowercase;color:var(--violeta-hondo)}
+#app #calendar-view .calv-month{border-radius:0 0 16px 16px;overflow:hidden}
+#app #calendar-view .calv-grid.is-turning-next :is(.calv-month,.calv-week-scroll){animation:cuaderno-pasar-sig .32s cubic-bezier(.2,.9,.3,1.1)}
+#app #calendar-view .calv-grid.is-turning-prev :is(.calv-month,.calv-week-scroll){animation:cuaderno-pasar-ant .32s cubic-bezier(.2,.9,.3,1.1)}
+#app #calendar-view .calv-cell{border-right:1px dashed #d3dae8;border-bottom:1px dashed #d3dae8;transition:background .15s}
+#app #calendar-view .calv-cell:nth-child(7n){border-right:0}
+#app #calendar-view .calv-cell:hover{background:#fffbe6}
+#app #calendar-view .calv-cell.is-outside{background:repeating-linear-gradient(135deg,transparent 0 7px,#eef1f6 7px 8px)}
+#app #calendar-view .calv-cell.is-outside .calv-daynum{color:#98a3b5}
+/* El día elegido queda resaltado y encerrado a mano, sin recuadro duro. */
+#app #calendar-view .calv-cell.is-selected{background:#fff6cf;box-shadow:none}
+#app #calendar-view .calv-cell.is-selected::after{content:"";position:absolute;inset:3px;pointer-events:none;
+  border:2px solid var(--esfero);border-radius:14px 20px 12px 22px/20px 12px 22px 14px;animation:cuaderno-encerrar .3s cubic-bezier(.3,1.5,.5,1)}
+#app #calendar-view .calv-daynum{min-width:26px;font-family:var(--esfero-letra);font-size:17px;font-weight:400;color:var(--tinta);
+  border-radius:52% 46% 55% 44%/46% 54% 44% 55%;transition:scale .2s cubic-bezier(.3,1.6,.5,1)}
+#app #calendar-view .calv-cell:hover .calv-daynum{scale:1.15}
+#app #calendar-view .calv-cell.is-today .calv-daynum{background:var(--esfero);color:#fff}
+#app #calendar-view .calv-add{border-radius:50%;color:var(--esfero);transition:opacity .15s,rotate .3s cubic-bezier(.3,1.6,.5,1),background .15s}
+#app #calendar-view .calv-add:hover{background:var(--esfero);color:#fff;rotate:90deg}
+#app #calendar-view :is(.calv-chip,.calv-block){border:1px solid color-mix(in srgb,var(--ev-ink) 28%,transparent);font-family:var(--esfero-letra);
+  transition:translate .15s,rotate .2s,filter .15s}
+#app #calendar-view .calv-chip{border-radius:5px 9px 4px 10px/9px 4px 10px 5px;font-size:14px;line-height:18px}
+#app #calendar-view .calv-chip:nth-child(even){border-radius:9px 5px 10px 4px/4px 10px 5px 9px}
+#app #calendar-view .calv-chip:hover{translate:0 -1px;rotate:-1deg}
+#app #calendar-view .calv-chip-time{font-family:"Segoe UI",system-ui,sans-serif;font-size:10.5px;font-weight:650}
+#app #calendar-view :is(.is-done .calv-chip-title,.calv-block.is-done .calv-chip-title){text-decoration-color:var(--esfero-rojo)}
+#app #calendar-view .calv-more{font-family:var(--esfero-letra);font-size:14px;font-weight:400;color:var(--esfero)}
+
+/* Semana */
+#app #calendar-view .calv-week-day{padding:12px 4px 6px;border-left:1px dashed #cfc5e6;color:var(--violeta-hondo)}
+#app #calendar-view .calv-week-day span{font-family:var(--esfero-letra);font-size:15px;font-weight:400;letter-spacing:.02em;text-transform:lowercase}
+#app #calendar-view .calv-week-day strong{min-width:32px;height:32px;font-family:var(--mano);font-size:26px;line-height:1;color:var(--tinta);
+  border-radius:52% 46% 55% 44%/46% 54% 44% 55%;transition:scale .2s cubic-bezier(.3,1.6,.5,1)}
+#app #calendar-view .calv-week-day:hover strong{scale:1.15}
+#app #calendar-view .calv-week-day.is-today strong{background:var(--esfero);color:#fff}
+#app #calendar-view .calv-week-day.is-selected{background:#fff6cf}
+#app #calendar-view .calv-week-scroll{border-radius:0 0 16px 16px}
+#app #calendar-view .calv-week-board{background-image:linear-gradient(#e3ebf8 1px,transparent 1px)}
+/* Las horas se quedan en la fuente del sistema: a mano, el 14 y el 17 se confunden. */
+#app #calendar-view .calv-hours span{color:var(--lapiz)}
+#app #calendar-view .calv-week-col{border-left:1px dashed #d3dae8}
+#app #calendar-view .calv-week-col.is-today{background:#294eb80a}
+#app #calendar-view .calv-block{border-radius:8px 12px 7px 13px/12px 7px 13px 8px;font-size:14px;line-height:1.15;box-shadow:0 2px 0 #26324d14}
+#app #calendar-view .calv-block:hover{translate:0 -1px;rotate:-.6deg}
+#app #calendar-view .calv-block-range{font-family:"Segoe UI",system-ui,sans-serif}
+#app #calendar-view :is(.calv-now,.calv-now::before){background:var(--esfero-rojo)}
+
+/* ---------- Panel del día: bloc perforado ---------- */
+#app #calendar-view .calv-side{gap:18px;margin:22px clamp(18px,2vw,30px) 24px 0;padding:44px 20px 20px;border:var(--borde);
+  border-radius:14px 14px 22px 18px/14px 14px 18px 24px;box-shadow:var(--sombra);
+  background:
+    radial-gradient(circle,#fcfbf8 0 5px,#26324d 5.2px 6.4px,transparent 6.8px) 0 9px/30px 18px space no-repeat,
+    linear-gradient(transparent 33px,#c9d2e3 33px 34px,transparent 34px) 0 0/100% 34px no-repeat,
+    var(--hoja) repeating-linear-gradient(transparent 0 31px,#edf1f9 31px 32px)}
+#app #calendar-view .calv-weekday{font-family:var(--esfero-letra);font-size:18px;font-weight:400;color:var(--esfero)}
+#app #calendar-view .calv-day-head h2{display:inline;margin:0;padding:0 .12em;font-family:var(--mano);font-weight:700;font-size:40px;line-height:1.05;letter-spacing:0;color:var(--tinta);
+  background:linear-gradient(transparent 52%,var(--resaltador) 52% 92%,transparent 92%);border-radius:6px 14px 8px 12px}
+#app #calendar-view .calv-day-list{gap:12px}
+#app #calendar-view .calv-item{gap:10px;padding:10px 12px;border:1.4px solid color-mix(in srgb,var(--ev-ink) 45%,transparent);
+  border-radius:14px 18px 12px 20px/18px 12px 20px 14px;box-shadow:0 2px 0 #26324d0f;
+  animation:cuaderno-entrar .3s cubic-bezier(.2,.9,.3,1.2) both;transition:translate .15s,box-shadow .15s}
+#app #calendar-view .calv-item:nth-child(even){border-radius:18px 12px 20px 14px/12px 20px 14px 18px}
+#app #calendar-view .calv-item:nth-child(2){animation-delay:.04s}
+#app #calendar-view .calv-item:nth-child(n+3){animation-delay:.08s}
+#app #calendar-view .calv-item:hover{translate:0 -2px;box-shadow:0 12px 18px -14px #26324d80}
+#app #calendar-view .calv-item-open strong{font-family:var(--esfero-letra);font-size:19px;font-weight:400;line-height:1.2}
+#app #calendar-view .calv-item.is-done strong{text-decoration-color:var(--esfero-rojo)}
+#app #calendar-view .calv-item-meta{font-family:var(--esfero-letra);font-size:14px}
+#app #calendar-view .calv-item-late{font-weight:400;color:var(--esfero-rojo)}
+/* Casilla dibujada a mano; sigue siendo una casilla real para teclado y lectores. */
+#app #calendar-view .calv-item-check{appearance:none;display:grid;place-items:center;width:24px;height:24px;margin:1px 0 0;cursor:pointer;
+  border:1.8px solid var(--ev-ink);border-radius:52% 46% 55% 44%/46% 54% 44% 55%;background:#fff;
+  transition:scale .2s cubic-bezier(.3,1.6,.5,1),rotate .2s,background .15s}
+#app #calendar-view .calv-item-check:hover:not(:disabled){scale:1.15;rotate:-8deg}
+#app #calendar-view .calv-item-check:checked{background:var(--ev-ink);animation:cuaderno-pop .4s}
+#app #calendar-view .calv-item-check:checked::after{content:"";width:11px;height:6px;margin-top:-3px;border-left:2.2px solid #fff;border-bottom:2.2px solid #fff;rotate:-45deg}
+#app #calendar-view .calv-item-check:focus-visible{outline:3px solid var(--esfero);outline-offset:2px}
+#app #calendar-view .calv-item-check:disabled{opacity:.5;cursor:default}
+#app #calendar-view .calv-day-empty{align-items:flex-start;gap:10px;padding:16px;border:1.5px dashed #a9b3c6;border-radius:var(--irregular);background:#fff}
+#app #calendar-view .calv-day-empty p{font-family:var(--esfero-letra);font-size:17px;color:#3d4a63}
+#app #calendar-view .calv-day-empty .button{min-height:34px;padding:2px 14px 3px;border:var(--borde);background:#fff;color:var(--tinta);box-shadow:0 3px 0 #26324d2e;
+  transition:translate .12s,box-shadow .12s,background .15s}
+#app #calendar-view .calv-day-empty .button:hover{background:#fff7cf;translate:0 -1px;box-shadow:0 4px 0 #26324d2e}
+#app #calendar-view .calv-day-empty .button:active{translate:0 2px;box-shadow:0 1px 0 #26324d2e}
+#app #calendar-view .calv-filters{gap:12px;padding-top:16px;border-top:1.5px dashed #a9b3c6}
+#app #calendar-view .calv-filters h3{font-family:var(--mano);font-weight:700;font-size:26px;line-height:1;letter-spacing:0;text-transform:none;color:var(--tinta)}
+#app #calendar-view .calv-kind-filters{gap:8px}
+#app #calendar-view .calv-filter{min-height:32px;padding:2px 12px 3px;border:1.5px dashed #a9b3c6;background:#fff;color:var(--lapiz);
+  font-family:var(--esfero-letra);font-size:16px;font-weight:400;transition:rotate .2s,scale .2s cubic-bezier(.3,1.6,.5,1),background .15s}
+#app #calendar-view .calv-filter:hover{rotate:-2deg}
+#app #calendar-view .calv-filter:active{scale:.94}
+#app #calendar-view .calv-filter[aria-pressed="true"]{border:1.6px solid var(--esfero);background:#eef3fd;color:#23489f}
+#app #calendar-view .calv-project-filters{gap:0}
+#app #calendar-view .calv-project-filter{min-height:32px;padding:0 6px;border-radius:999px;font-family:var(--esfero-letra);font-size:17px;color:var(--tinta);transition:background .15s}
+#app #calendar-view .calv-project-filter:hover{background:#fff7cf}
+#app #calendar-view .calv-project-filter i{width:12px;height:12px;border-radius:50%}
+#app #calendar-view .calv-project-filter input{appearance:none;display:grid;place-items:center;flex:none;width:19px;height:19px;margin:0;cursor:pointer;
+  border:1.6px solid var(--tinta);border-radius:5px 8px 4px 9px/8px 4px 9px 5px;background:#fff;transition:scale .2s cubic-bezier(.3,1.6,.5,1),background .15s}
+#app #calendar-view .calv-project-filter input:checked{background:var(--esfero);border-color:var(--esfero)}
+#app #calendar-view .calv-project-filter input:checked::after{content:"";width:9px;height:5px;margin-top:-2px;border-left:2px solid #fff;border-bottom:2px solid #fff;rotate:-45deg}
+#app #calendar-view .calv-project-filter input:active{scale:.85}
+#app #calendar-view .calv-project-filter input:focus-visible{outline:3px solid var(--esfero);outline-offset:2px}
+
+/* ---------- Diálogo de entrada ---------- */
+.calv-dialog{border:var(--borde);border-radius:22px 16px 26px 14px/16px 24px 14px 22px;background:var(--hoja);color:var(--tinta)}
+.calv-dialog h2{margin-bottom:10px;font-family:var(--mano);font-weight:700;font-size:32px;line-height:1;letter-spacing:0;text-transform:none;color:var(--tinta)}
+.calv-dialog .calv-entry-title{background:transparent;font-family:var(--esfero-letra);font-size:24px;font-weight:400;color:var(--tinta);border-bottom:2px solid #c9d2e3}
+.calv-dialog .calv-entry-title:focus{border-bottom-color:var(--esfero)}
+.calv-dialog .calv-kinds legend,.calv-dialog label:not(.calv-done):not(.calv-kinds label){font-family:var(--esfero-letra);font-size:16px;font-weight:400;color:var(--tinta)}
+.calv-dialog .calv-kinds span{border:1.5px dashed #a9b3c6;font-family:var(--esfero-letra);font-size:16px;font-weight:400;color:var(--lapiz);transition:scale .2s cubic-bezier(.3,1.6,.5,1)}
+.calv-dialog .calv-kinds label:active span{scale:.94}
+.calv-dialog .calv-kinds input:checked+span{border:1.6px solid var(--esfero);background:var(--esfero);color:#fff}
+.calv-dialog :is(.calv-when input,.calv-pair select){border:1.5px solid var(--tinta);border-radius:10px 14px 9px 15px/14px 9px 15px 10px;background:#fff}
+.calv-dialog :is(.calv-when input,.calv-pair select):focus{border-color:var(--esfero);outline:0;box-shadow:0 0 0 3px #294eb824}
+.calv-dialog .calv-done{font-family:var(--esfero-letra);font-size:17px}
+.calv-dialog .form-actions{border-top:1.5px dashed #a9b3c6}
+.calv-dialog .button.primary{border:var(--borde);border-radius:999px;background:var(--esfero);color:#fff;font-family:var(--esfero-letra);font-size:17px;font-weight:400;
+  padding:6px 20px 7px;min-height:40px;box-shadow:0 3px 0 var(--tinta);transition:translate .12s,box-shadow .12s,background .15s}
+.calv-dialog .button.primary:hover:not(:disabled){translate:0 -1px;box-shadow:0 4px 0 var(--tinta);background:#3159cc}
+.calv-dialog .button.primary:active:not(:disabled){translate:0 2px;box-shadow:0 1px 0 var(--tinta)}
+.calv-dialog .button.quiet{font-family:var(--esfero-letra);font-size:16px;border-radius:999px}
+
+/* ---------- Tamaños ---------- */
+@media(max-width:1100px){
+  #app #calendar-view{grid-template-columns:minmax(0,1fr) 270px}
+  #app #calendar-view .calv-range{font-size:28px}
+}
+@media(max-width:860px){
+  #app #calendar-view .calv-main{padding:18px 14px 6px}
+  #app #calendar-view .calv-toolbar{margin-bottom:24px}
+  #app #calendar-view .calv-side{margin:22px 14px 22px;overflow:visible}
+  #app #calendar-view .calv-title{font-size:32px}
+  #app #calendar-view .calv-range{font-size:26px}
+  #app #calendar-view .calv-grid::before{left:18px;right:18px;background-size:34px 26px}
+  #app #calendar-view .calv-weekdays span{padding:12px 2px 4px;font-size:14px;text-align:center}
+  #app #calendar-view .calv-dots i{width:7px;height:7px}
+}

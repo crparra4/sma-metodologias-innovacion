@@ -1,9 +1,18 @@
 import './style.css';
+import './home-cuaderno.css';
+import './calendario-cuaderno.css';
+import './chat-cuaderno.css';
+import './tablero-cuaderno.css';
 import DOMPurify from 'dompurify';
 import { marked } from 'marked';
 import { taskTiming, localDateKey, kindLabels, kindIcons, dayLanes, notificationGroups, type Task, type EntryKind } from './agenda';
 import { authText, translateAuthError, loadAuthLanguage, saveAuthLanguage, type AuthTextKey } from './auth-language';
+import { EmpathyController } from './empatia';
+import { JourneyController } from './journey';
+import { PestelController } from './pestel';
 import { ProblemTreeController } from './problem-tree';
+import { WhyAnalysisController } from './why-analysis';
+import { initBoardFx, initCalendarFx, initChatFx, initHomeFx, renderHomeHero } from './home-fx';
 let tasks: Task[] = [];
 let taskFilter: 'today' | 'upcoming' | 'all' = 'upcoming';
 let editingTask: Task | null = null;
@@ -51,7 +60,10 @@ let activeAccess: ProjectAccess | null = null;
 let sharedMembers: SharingMember[] = [];
 let advances: Advance[] = [];
 let invitations: Invitation[] = [];
-let currentView: 'home' | 'project' | 'tools' | 'calendar' | 'tree' = 'home';
+let currentView: 'home' | 'project' | 'tools' | 'calendar' | 'tree' | 'pestel' | 'empathy' | 'journey' = 'home';
+// Vistas que viven dentro del tablero del proyecto; el árbol y el PESTEL ocupan el lugar principal.
+const inProject = () => ['project', 'tree', 'pestel', 'empathy', 'journey'].includes(currentView);
+const inTool = () => ['tree', 'pestel', 'empathy', 'journey'].includes(currentView);
 const methodologyNames: Record<string, string> = { transversal: 'Transversal', 'design-thinking': 'Design Thinking', 'lean-startup': 'Lean Startup', sit: 'SIT' };
 type Account = { id: string; username: string; display_name: string };
 let account: Account | null = null;
@@ -140,7 +152,28 @@ async function api<T>(path: string, options?: RequestInit): Promise<T> {
   return response.json();
 }
 
-const problemTree = new ProblemTreeController(api);
+// El árbol inicia el análisis; la barra del chat lo acompaña. Se referencian entre sí
+// solo dentro de funciones, así que el orden de creación no importa.
+const whyAnalysis: WhyAnalysisController = new WhyAnalysisController(api, {
+  send: text => { messageInput.value = text; fitMessageInput(); el<HTMLFormElement>('chat-form').requestSubmit(); },
+  openChat: () => { if (inTool() && !boardTools.has('chat')) setBoardTool('chat', true); },
+  reloadTree: (): Promise<void> => problemTree.reload(),
+  treeDirty: () => problemTree.isDirty(),
+  changed: () => problemTree.refreshWhy(),
+});
+const problemTree: ProblemTreeController = new ProblemTreeController(api, {
+  start: (causeId, text): Promise<void> => whyAnalysis.start(causeId, text),
+  labelFor: causeId => whyAnalysis.labelFor(causeId),
+});
+// «Preguntarle a Hilo» en un factor o bloque abre el chat al lado y envía el mensaje.
+const askFromBoard = (text: string) => {
+  if (busy || !available || serverBusy) { showToast('warning', 'Hilo está ocupado', 'Espera a que termine la respuesta actual y vuelve a intentarlo.'); return; }
+  if (!boardTools.has('chat')) { setBoardTool('chat', true); updateHeader(); }
+  messageInput.value = text; fitMessageInput(); el<HTMLFormElement>('chat-form').requestSubmit();
+};
+const pestel: PestelController = new PestelController(api, { ask: askFromBoard });
+const empathy: EmpathyController = new EmpathyController(api, { ask: askFromBoard });
+const journey: JourneyController = new JourneyController(api, { ask: askFromBoard });
 
 function showError(message = '') {
   el('global-error').textContent = message;
@@ -186,12 +219,15 @@ function syncControls() {
   const blocked = busy || loadingNotebook || noteSaving;
   const canEdit = activeAccess?.role !== 'viewer';
   const isOwner = activeAccess?.role === 'owner';
-  el<HTMLButtonElement>('new-note').disabled = loadingNotebook || !activeState || !['project', 'tree'].includes(currentView) || noteSaving || !canEdit;
+  el<HTMLButtonElement>('new-note').disabled = loadingNotebook || !activeState || !inProject() || noteSaving || !canEdit;
   el<HTMLButtonElement>('save-selection').disabled = loadingNotebook || !activeState || !selectedExcerpt || selectedExcerpt.length > 3000 || noteSaving || !canEdit;
   el<HTMLButtonElement>('send').disabled = blocked || !available || serverBusy || !activeState || !messageInput.value.trim();
   el<HTMLButtonElement>('new-notebook').disabled = blocked;
   el<HTMLButtonElement>('edit-project').disabled = blocked || serverBusy || !activeState || !isOwner;
   el<HTMLButtonElement>('open-problem-tree').disabled = blocked || !activeState;
+  el<HTMLButtonElement>('open-pestel').disabled = blocked || !activeState;
+  el<HTMLButtonElement>('open-empathy').disabled = blocked || !activeState;
+  el<HTMLButtonElement>('open-journey').disabled = blocked || !activeState;
   el<HTMLButtonElement>('share-project').disabled = loadingNotebook || !activeState;
   el<HTMLButtonElement>('tree-share-project').disabled = loadingNotebook || !activeState;
   for (const id of ['go-home', 'go-tools', 'go-calendar', 'see-all-projects', 'home-new-project', 'empty-new-project', 'sidebar-search', 'sidebar-projects']) el<HTMLButtonElement>(id).disabled = blocked || !stages.length;
@@ -228,7 +264,12 @@ async function refreshStatus() {
 
 function toolName(id: string) { return tools.find(tool => tool.id === id)?.name || id; }
 function stageName(id: number) { return stages.find(stage => stage.id === id)?.name || `Etapa ${id}`; }
-function scrollChat() { followingEnd = true; messageBox.scrollTo({ top: messageBox.scrollHeight, behavior: 'auto' }); }
+function scrollChat() {
+  followingEnd = true;
+  // Con el chat vacío se muestra la bienvenida desde el saludo; con mensajes, se sigue el final.
+  const top = messageBox.querySelector('.welcome') ? 0 : messageBox.scrollHeight;
+  messageBox.scrollTo({ top, behavior: 'auto' });
+}
 
 function turnHeader(role: string, createdAt?: string): HTMLElement {
   const header = document.createElement('div'); header.className = 'turn-label';
@@ -249,6 +290,9 @@ function turnHeader(role: string, createdAt?: string): HTMLElement {
   return header;
 }
 
+const FIXED_REPLY_CODES = ['greeting', 'out_of_scope', 'no_card', 'sensitive_topic'];
+const isFixedReply = (result: Result) => result.verification.findings.some(finding => FIXED_REPLY_CODES.includes(finding.code));
+
 function appendTurn(turn: Turn): HTMLElement {
   const wrapper = document.createElement('article');
   wrapper.className = `turn ${turn.role === 'user' ? 'user-turn' : 'assistant-turn'}`;
@@ -267,8 +311,10 @@ function appendTurn(turn: Turn): HTMLElement {
     badge.textContent = verdictNames[result.verification.verdict] || result.verification.verdict;
     const source = document.createElement('button');
     source.type = 'button'; source.className = 'source-link';
-    source.textContent = result.handoff.active_tool ? toolName(result.handoff.active_tool) : 'Etapa sin ficha';
-    source.disabled = !result.handoff.active_tool;
+    // Saludos, pedidos ajenos y conceptos sin ficha llevan respuesta fija: no citan ninguna ficha.
+    const fixedReply = isFixedReply(result);
+    source.textContent = fixedReply ? 'Sin ficha' : result.handoff.active_tool ? toolName(result.handoff.active_tool) : 'Etapa sin ficha';
+    source.disabled = fixedReply || !result.handoff.active_tool;
     source.addEventListener('click', () => {
       const tool = tools.find(item => item.id === result.handoff.active_tool);
       if (tool) void openTool(tool);
@@ -299,20 +345,30 @@ function appendTurn(turn: Turn): HTMLElement {
   return wrapper;
 }
 
+// Tarjetas de inicio: [ícono, tono, título, descripción, mensaje que prepara].
+const WELCOME_CARDS: [string, string, string, string, string][] = [
+  ['edit', 'blue', 'Definir mi reto', 'Delimita el problema antes de pensar en soluciones.',
+    'Quiero definir el reto de mi proyecto. ¿Cómo puedo comenzar?'],
+  ['search', 'green', 'Explorar las causas', 'Baja a la causa de fondo con cinco porqués.',
+    'Quiero aplicar cinco porqués para entender las causas de mi problema.'],
+  ['route', 'amber', 'Analizar el entorno', 'Revisa los factores externos con PESTEL.',
+    'Quiero analizar el entorno de mi proyecto utilizando PESTEL.'],
+];
+
 function welcome() {
   el('messages').replaceChildren();
-  const box = document.createElement('div'); box.className = 'welcome';
-  box.innerHTML = `<div class="welcome-symbol">${icon('route')}</div><h2>Tu proyecto, paso a paso.</h2><p>Cuéntame qué quieres entender o mejorar. Te acompañaré con una pregunta y la ficha metodológica que corresponda.</p><div class="suggestions"></div><div class="welcome-footnote">Puedes seguir el recorrido de los agentes y revisar qué información conserva tu cuaderno.</div>`;
-  const suggestions = [
-    ['Definir mi reto', 'Quiero definir el reto de mi proyecto. ¿Cómo puedo comenzar?'],
-    ['Explorar las causas', 'Quiero aplicar cinco porqués para entender las causas de mi problema.'],
-    ['Analizar el entorno', 'Quiero analizar el entorno de mi proyecto utilizando PESTEL.'],
-  ];
-  for (const [label, text] of suggestions) {
-    const button = document.createElement('button'); button.type = 'button'; button.className = 'suggestion';
-    const caption = document.createElement('span'); caption.textContent = label; button.append(caption); button.insertAdjacentHTML('beforeend', icon('arrow'));
-    button.addEventListener('click', () => { if (busy || !activeState) return; messageInput.value = text; fitMessageInput(); messageInput.focus(); syncControls(); });
-    box.querySelector('.suggestions')!.append(button);
+  const box = document.createElement('div'); box.className = 'welcome welcome-hero';
+  box.innerHTML = `<div class="welcome-mark" aria-hidden="true"><img src="/hilo-mark.png" alt=""></div><h2></h2><p class="welcome-lead">¿Qué quieres trabajar hoy en este proyecto?</p><div class="welcome-cards"></div><p class="welcome-note">Te acompaño con una pregunta a la vez y la ficha metodológica que corresponda.</p>`;
+  // El nombre lo escribe el usuario: va como texto, nunca dentro del HTML.
+  const firstName = (account?.display_name || '').trim().split(/\s+/)[0];
+  box.querySelector('h2')!.textContent = firstName ? `¡Hola, ${firstName}!` : '¡Hola!';
+  for (const [iconName, tone, title, description, prompt] of WELCOME_CARDS) {
+    const button = document.createElement('button'); button.type = 'button'; button.className = `welcome-card tone-${tone}`;
+    button.innerHTML = `<span class="welcome-card-icon">${icon(iconName)}</span><strong></strong><span class="welcome-card-text"></span>`;
+    button.querySelector('strong')!.textContent = title;
+    button.querySelector('.welcome-card-text')!.textContent = description;
+    button.addEventListener('click', () => { if (busy || !activeState) return; messageInput.value = prompt; fitMessageInput(); messageInput.focus(); syncControls(); });
+    box.querySelector('.welcome-cards')!.append(button);
   }
   el('messages').append(box);
 }
@@ -348,25 +404,28 @@ function updateHeader() {
   el('project-phase').hidden = !activeState;
   const currentStage = activeState?.stage;
   const stagePosition = stages.findIndex(stage => stage.id === currentStage) + 1;
-  const hasProgress = ['project', 'tree'].includes(currentView) && stagePosition > 0 && stages.length > 0;
+  const hasProgress = inProject() && stagePosition > 0 && stages.length > 0;
   el('project-progress').hidden = !hasProgress;
   if (hasProgress) {
     el('project-progress-label').textContent = `${stagePosition} de ${stages.length}`;
     el('project-progress').setAttribute('aria-label', `Etapa ${stagePosition} de ${stages.length}: ${stageName(activeState!.stage)}`);
     el('project-progress-fill').setAttribute('stroke-dashoffset', String(100 - stagePosition / stages.length * 100));
   }
-  el('project-floating-toolbar').hidden = !['project', 'tree'].includes(currentView);
+  el('project-floating-toolbar').hidden = !inProject();
   el('project-name').title = activeState?.notebook_id || '';
   el('project-heading').hidden = false;
   el('menu-toggle').hidden = false;
   el('home-view').hidden = currentView !== 'home';
   el('tools-view').hidden = currentView !== 'tools';
   el('problem-tree-view').hidden = currentView !== 'tree';
-  el('chat-panel').hidden = currentView !== 'project' && !(currentView === 'tree' && boardTools.has('chat'));
+  el('pestel-view').hidden = currentView !== 'pestel';
+  el('empathy-view').hidden = currentView !== 'empathy';
+  el('journey-view').hidden = currentView !== 'journey';
+  el('chat-panel').hidden = currentView !== 'project' && !(inTool() && boardTools.has('chat'));
   el('calendar-view').hidden = currentView !== 'calendar';
   el('go-calendar').setAttribute('aria-current', currentView === 'calendar' ? 'page' : 'false');
   el('go-tools').setAttribute('aria-current', currentView === 'tools' ? 'page' : 'false');
-  el('project-workspace').hidden = !['project', 'tree'].includes(currentView);
+  el('project-workspace').hidden = !inProject();
   renderBoard();
   el('go-home').setAttribute('aria-current', currentView === 'home' ? 'page' : 'false');
   renderMemory(); syncControls();
@@ -384,7 +443,7 @@ function renderNotebooks() {
   el('recent-group').hidden = !notebooks.length;
   el('see-all-projects').hidden = notebooks.length <= 3;
   for (const notebook of notebooks.slice(0, 3)) {
-    const selected = ['project', 'tree'].includes(currentView) && notebook.project_id === activeAccess?.project_id;
+    const selected = inProject() && notebook.project_id === activeAccess?.project_id;
     const button = document.createElement('button'); button.className = `notebook-item ${selected ? 'selected' : ''}`; button.type = 'button';
     button.setAttribute('aria-current', selected ? 'page' : 'false');
     const title = document.createElement('strong'); title.textContent = notebook.notebook_id;
@@ -439,15 +498,39 @@ function renderProjects() {
     card.addEventListener('click', () => { if (!busy && !loadingNotebook) void loadNotebook(notebook.project_id); });
     grid.append(card);
   }
+  // Va primero para quedar siempre junto a una carpeta. Sin proyectos manda el mensaje de
+  // bienvenida, y al buscar estorba.
+  if (notebooks.length && !query) {
+    const add = document.createElement('button'); add.type = 'button'; add.className = 'project-add';
+    add.innerHTML = `<span class="project-add-mark" aria-hidden="true">${icon('plus')}</span><span>Agregar nuevo proyecto<small>Empieza un cuaderno en blanco</small></span>`;
+    add.addEventListener('click', () => openProjectForm());
+    grid.prepend(add);
+  }
   el('project-count').textContent = query ? `${matches.length} de ${notebooks.length} proyectos` : `${notebooks.length} ${notebooks.length === 1 ? 'proyecto guardado' : 'proyectos guardados'}`;
   el('home-empty').hidden = !!matches.length;
   el('home-empty-title').textContent = notebooks.length ? 'No encontramos ese proyecto.' : 'Tu primer proyecto empieza aquí.';
   el('home-empty-description').textContent = notebooks.length ? 'Prueba con otro nombre o borra la búsqueda para ver todos tus proyectos.' : 'Crea un proyecto para organizar tus conversaciones, fuentes y avances.';
   el('empty-new-project').hidden = !!notebooks.length;
+  renderHero();
   syncControls();
 }
 
 function canNavigateAwayFromTree(): boolean {
+  if (currentView === 'journey') {
+    if (journey.canLeave()) return true;
+    if (activeAccess) history.replaceState(null, '', `#journey=${encodeURIComponent(activeAccess.project_id)}`);
+    return false;
+  }
+  if (currentView === 'empathy') {
+    if (empathy.canLeave()) return true;
+    if (activeAccess) history.replaceState(null, '', `#empatia=${encodeURIComponent(activeAccess.project_id)}`);
+    return false;
+  }
+  if (currentView === 'pestel') {
+    if (pestel.canLeave()) return true;
+    if (activeAccess) history.replaceState(null, '', `#pestel=${encodeURIComponent(activeAccess.project_id)}`);
+    return false;
+  }
   if (currentView !== 'tree' || problemTree.canLeave()) return true;
   if (activeAccess) history.replaceState(null, '', `#arbol=${encodeURIComponent(activeAccess.project_id)}`);
   return false;
@@ -477,15 +560,15 @@ async function followLocation() {
   if (busy || loadingNotebook) return;
   if (location.hash === '#herramientas') { showTools(false); return; }
   if (location.hash === '#calendario') { showCalendar(false); return; }
-  const treeMatch = location.hash.match(/^#arbol=(.+)$/);
+  const treeMatch = location.hash.match(/^#(arbol|pestel|empatia|journey)=(.+)$/);
   if (treeMatch) {
     let id: string;
-    try { id = decodeURIComponent(treeMatch[1]); } catch { showHome(false); return; }
+    try { id = decodeURIComponent(treeMatch[2]); } catch { showHome(false); return; }
     const notebook = notebooks.find(item => item.project_id === id || item.notebook_id === id);
     if (notebook) {
       await loadNotebook(notebook.project_id, false);
       if (currentView === 'project' && activeAccess?.project_id === notebook.project_id) {
-        await showProblemTree(false);
+        await (treeMatch[1] === 'pestel' ? showPestel(false) : treeMatch[1] === 'empatia' ? showEmpathy(false) : treeMatch[1] === 'journey' ? showJourney(false) : showProblemTree(false));
       }
       return;
     }
@@ -510,6 +593,7 @@ async function loadNotebook(id: string, updateLocation = true) {
     activeState = data.state; activeAccess = data.access; advances = data.advances || []; currentView = 'project'; localStorage.setItem(notebookStorageKey(), data.access.project_id);
     sharedMembers = await api<SharingMember[]>(`/projects/${encodeURIComponent(data.access.project_id)}/members`);
     notes = data.notes || []; selectedExcerpt = ''; renderNotes();
+    void whyAnalysis.setProject(data.access.project_id, data.access.role);
     if (updateLocation && location.hash !== `#proyecto=${encodeURIComponent(data.access.project_id)}`) history.pushState(null, '', `#proyecto=${encodeURIComponent(data.access.project_id)}`);
     el('messages').replaceChildren();
     if (data.turns.length) data.turns.forEach(appendTurn); else welcome();
@@ -538,8 +622,85 @@ el('open-problem-tree').addEventListener('click', () => {
     updateHeader(); renderNotebooks();
     return;
   }
+  if (currentView === 'pestel' && !pestel.canLeave()) return;
+  if (currentView === 'empathy' && !empathy.canLeave()) return;
+  if (currentView === 'journey' && !journey.canLeave()) return;
   setBoardTool('chat', true);
   void showProblemTree();
+});
+
+async function showPestel(updateLocation = true) {
+  if (!activeAccess || !activeState) return;
+  currentView = 'pestel';
+  if (updateLocation) history.pushState(null, '', `#pestel=${encodeURIComponent(activeAccess.project_id)}`);
+  updateHeader(); renderNotebooks(); setSidebar(false);
+  await pestel.open(activeAccess.project_id, activeAccess.role,
+    activeState.context.question, activeState.validated_fields?.pestel || {});
+}
+
+el('open-pestel').addEventListener('click', () => {
+  if (busy || loadingNotebook) return;
+  if (currentView === 'pestel') {
+    if (!pestel.canLeave()) return;
+    currentView = 'project';
+    history.pushState(null, '', `#proyecto=${encodeURIComponent(activeAccess!.project_id)}`);
+    updateHeader(); renderNotebooks();
+    return;
+  }
+  if (currentView === 'tree' && !problemTree.canLeave()) return;
+  if (currentView === 'empathy' && !empathy.canLeave()) return;
+  if (currentView === 'journey' && !journey.canLeave()) return;
+  setBoardTool('chat', true);
+  void showPestel();
+});
+
+async function showEmpathy(updateLocation = true) {
+  if (!activeAccess || !activeState) return;
+  currentView = 'empathy';
+  if (updateLocation) history.pushState(null, '', `#empatia=${encodeURIComponent(activeAccess.project_id)}`);
+  updateHeader(); renderNotebooks(); setSidebar(false);
+  await empathy.open(activeAccess.project_id, activeAccess.role, activeState.validated_fields?.['mapa-empatia'] || {});
+}
+
+el('open-empathy').addEventListener('click', () => {
+  if (busy || loadingNotebook) return;
+  if (currentView === 'empathy') {
+    if (!empathy.canLeave()) return;
+    currentView = 'project';
+    history.pushState(null, '', `#proyecto=${encodeURIComponent(activeAccess!.project_id)}`);
+    updateHeader(); renderNotebooks();
+    return;
+  }
+  if (currentView === 'tree' && !problemTree.canLeave()) return;
+  if (currentView === 'pestel' && !pestel.canLeave()) return;
+  if (currentView === 'journey' && !journey.canLeave()) return;
+  setBoardTool('chat', true);
+  void showEmpathy();
+});
+
+async function showJourney(updateLocation = true) {
+  if (!activeAccess || !activeState) return;
+  currentView = 'journey';
+  if (updateLocation) history.pushState(null, '', `#journey=${encodeURIComponent(activeAccess.project_id)}`);
+  updateHeader(); renderNotebooks(); setSidebar(false);
+  await journey.open(activeAccess.project_id, activeAccess.role);
+}
+
+el('open-journey').addEventListener('click', () => {
+  if (busy || loadingNotebook) return;
+  if (currentView === 'journey') {
+    if (!journey.canLeave()) return;
+    currentView = 'project';
+    history.pushState(null, '', `#proyecto=${encodeURIComponent(activeAccess!.project_id)}`);
+    updateHeader(); renderNotebooks();
+    return;
+  }
+  if (currentView === 'tree' && !problemTree.canLeave()) return;
+  if (currentView === 'pestel' && !pestel.canLeave()) return;
+  if (currentView === 'empathy' && !empathy.canLeave()) return;
+  // El recorrido necesita el ancho: se abre sin el chat al lado; «Preguntarle a Hilo» lo trae.
+  setBoardTool('chat', false);
+  void showJourney();
 });
 el('tree-share-project').addEventListener('click', () => el<HTMLButtonElement>('share-project').click());
 
@@ -629,13 +790,15 @@ function handleEvent(event: StreamEvent) {
     pending?.remove(); pending = null;
     appendTurn({ role: 'assistant', content: event.result.message, metadata: event.result });
     activeState = event.state; updateHeader();
+    pestel.setChatFacts(event.state.validated_fields?.pestel || {});
+    empathy.setChatFacts(event.state.validated_fields?.['mapa-empatia'] || {});
     traversedEdges.add(`${lastNode}>__end__`);
     markNode('__end__', 'done');
     if (event.result.degraded) {
-      markNode(event.result.handoff.active_tool ? 'degrade' : 'knowledge_gap', 'failed', 'Revisión necesaria');
+      markNode(event.result.handoff.active_tool && !isFixedReply(event.result) ? 'degrade' : 'knowledge_gap', 'failed', 'Revisión necesaria');
       if (event.result.verification.verdict === 'rejected') markNode('verify', 'failed', 'Rechazada');
     }
-    el('flow-description').textContent = event.result.degraded ? 'El control activó una respuesta segura.' : `Respuesta verificada · ${toolName(event.result.handoff.active_tool)}.`;
+    el('flow-description').textContent = isFixedReply(event.result) ? 'Respuesta fija del sistema, sin ficha.' : event.result.degraded ? 'El control activó una respuesta segura.' : `Respuesta verificada · ${toolName(event.result.handoff.active_tool)}.`;
     el('run-status').firstElementChild!.textContent = 'Respuesta guardada en este cuaderno.';
     el('run-time').textContent = `${((event.elapsed_ms || 0) / 1000).toFixed(1)} s`;
     scrollChat();
@@ -650,6 +813,7 @@ async function sendMessage(event: SubmitEvent) {
   event.preventDefault();
   const text = messageInput.value.trim();
   if (busy || loadingNotebook || !available || serverBusy || !activeState || !text) return;
+  if (currentView === 'journey') journey.noteChatMessage(text);
   const notebookId = activeState.notebook_id;
   busy = true; showError(); resetGraph(); syncControls();
   el('messages').querySelector('.welcome')?.remove();
@@ -690,6 +854,7 @@ async function sendMessage(event: SubmitEvent) {
     busy = false; el('run-status').classList.remove('running'); syncControls();
     messageInput.focus();
     void refreshStatus();
+    void whyAnalysis.refresh();  // la respuesta quedó registrada en el análisis en curso
   }
 }
 
@@ -1108,10 +1273,20 @@ function renderBoard() {
   const selectedTool = [...boardTools][0];
   const complement = currentView === 'project' && selectedTool === 'chat' ? undefined : selectedTool;
   workspace.dataset.boardCount = complement ? '1' : '0';
-  workspace.classList.toggle('board-primary-tree', currentView === 'tree');
+  // El PESTEL ocupa el mismo lugar que el árbol: comparte su clase de disposición.
+  workspace.classList.toggle('board-primary-tree', inTool());
   const treeToggle = el<HTMLButtonElement>('open-problem-tree');
   treeToggle.setAttribute('aria-pressed', String(currentView === 'tree'));
   treeToggle.title = currentView === 'tree' ? 'Volver al chat' : 'Mostrar el árbol de problemas';
+  const pestelToggle = el<HTMLButtonElement>('open-pestel');
+  pestelToggle.setAttribute('aria-pressed', String(currentView === 'pestel'));
+  pestelToggle.title = currentView === 'pestel' ? 'Volver al chat' : 'Mostrar el PESTEL del proyecto';
+  const journeyToggle = el<HTMLButtonElement>('open-journey');
+  journeyToggle.setAttribute('aria-pressed', String(currentView === 'journey'));
+  journeyToggle.title = currentView === 'journey' ? 'Volver al chat' : 'Mostrar el customer journey del proyecto';
+  const empathyToggle = el<HTMLButtonElement>('open-empathy');
+  empathyToggle.setAttribute('aria-pressed', String(currentView === 'empathy'));
+  empathyToggle.title = currentView === 'empathy' ? 'Volver al chat' : 'Mostrar el mapa de empatía del proyecto';
   for (const tool of BOARD_TOOLS) {
     const active = tool === 'chat' && currentView === 'project' ? true : complement === tool;
     workspace.classList.toggle(`board-has-${tool}`, active);
@@ -1236,6 +1411,17 @@ function profileName(): string {
   return account?.display_name || 'Tu cuenta';
 }
 
+// Portada de Inicio: saludo y contadores con los datos que ya están cargados.
+function renderHero() {
+  const today = localDateKey(new Date());
+  const open = tasks.filter(task => !task.completed);
+  renderHomeHero({
+    name: profileName(), projects: notebooks.length, pending: open.length,
+    today: open.filter(task => localDateKey(new Date(task.due_at)) === today).length,
+    overdue: open.filter(task => taskTiming(task).tone === 'overdue').length,
+  });
+}
+
 const initialsOf = (name: string) => name.split(/\s+/).filter(Boolean).slice(0, 2)
   .map(word => word[0]).join('').toLocaleUpperCase('es');
 
@@ -1291,6 +1477,7 @@ function renderProfile() {
   el('account-menu-name').textContent = name;
   el('account-menu-username').textContent = account ? `@${account.username}` : '';
   el('account-menu-initials').textContent = el('profile-initials').textContent;
+  renderHero();
 }
 
 function setAccountMenu(open: boolean) {
@@ -1404,6 +1591,12 @@ async function loadActivity() {
   if (version === activityVersion) renderCalendar();
 }
 
+// Plazo de un día: el más urgente entre sus tareas pendientes; si todas están hechas, 'done'.
+function dayTone(dayTasks: Task[]): string {
+  const tones = dayTasks.filter(task => !task.completed).map(task => taskTiming(task).tone);
+  return ['overdue', 'soon', 'near', 'later'].find(tone => tones.includes(tone)) || 'done';
+}
+
 function renderCalendar() {
   const grid = el('calendar'); grid.replaceChildren();
   const year = calendarCursor.getFullYear(); const month = calendarCursor.getMonth();
@@ -1430,7 +1623,7 @@ function renderCalendar() {
     if (total) cell.classList.add('active');
     if (key === selectedDay) { cell.classList.add('picked'); cell.setAttribute('aria-pressed', 'true'); } else cell.setAttribute('aria-pressed', 'false');
     const dots = document.createElement('span'); dots.className = 'cal-dots';
-    if (dayTasks.length) { const dot = document.createElement('i'); dot.className = 'cal-task-dot'; dot.dataset.tone = dayTasks.some(task => !task.completed) ? taskTiming(dayTasks.find(task => !task.completed)!).tone : 'done'; dots.append(dot); }
+    if (dayTasks.length) { const dot = document.createElement('i'); dot.className = 'cal-task-dot'; dot.dataset.tone = dayTone(dayTasks); cell.dataset.tone = dot.dataset.tone; dots.append(dot); }
     if (total) { const dot = document.createElement('i'); dot.className = 'cal-activity-dot'; dots.append(dot); }
     dots.setAttribute('aria-hidden', 'true'); cell.append(dots);
     cell.setAttribute('aria-label', `${day} de ${label}: ${dayTasks.length} ${dayTasks.length === 1 ? 'tarea' : 'tareas'}, ${total} ${total === 1 ? 'mensaje' : 'mensajes'}`);
@@ -1836,7 +2029,7 @@ async function saveEntry(task: Task | Omit<Task, 'id'>): Promise<boolean> {
 
 /** Todo lo que depende de las entradas se vuelve a pintar junto. */
 function tasksChanged() {
-  renderCalendar(); renderTasks(); renderCalendarView(); renderNotifications();
+  renderCalendar(); renderTasks(); renderCalendarView(); renderNotifications(); renderHero();
 }
 
 async function loadInvitations() {
@@ -2158,4 +2351,8 @@ async function init() {
   } catch (error) { showError(`${(error as Error).message} Recarga la página cuando el servidor esté disponible.`); }
   setInterval(() => { if (!busy) void refreshStatus(); }, 20000);
 }
+initHomeFx();
+initCalendarFx();
+initChatFx();
+initBoardFx();
 void init();

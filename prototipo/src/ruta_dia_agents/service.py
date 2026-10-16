@@ -71,7 +71,10 @@ class RutaDiaService:
                 handoff=handoff,
                 tool_card=tool_card,
                 retry_feedback=previous_verification,
-                allowed_fields=self.catalog.tool(handoff.active_tool).template_fields,
+                allowed_fields=(
+                    [] if state.locked_tool == handoff.active_tool
+                    else self.catalog.tool(handoff.active_tool).template_fields
+                ),
             )
             try:
                 validate_candidate(candidate, handoff, self.catalog)

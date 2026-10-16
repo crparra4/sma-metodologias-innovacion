@@ -9,6 +9,20 @@ from dotenv import load_dotenv
 PROJECT_ROOT = Path(__file__).resolve().parents[2]
 
 
+def _local_root() -> Path:
+    """Carpeta local para la memoria, fuera de carpetas sincronizadas o compartidas.
+
+    En Linux, SQLite no debe quedar en un disco NTFS compartido con Windows: va en la
+    carpeta de datos del usuario, igual que `scripts/local_runtime.py`.
+    """
+    appdata = os.getenv("LOCALAPPDATA")
+    if appdata:
+        return Path(appdata) / "RutaDIA"
+    if os.name != "nt":
+        return Path(os.getenv("XDG_DATA_HOME") or Path.home() / ".local" / "share") / "RutaDIA"
+    return PROJECT_ROOT / "data" / "RutaDIA"
+
+
 def _as_bool(value: str | None, default: bool = False) -> bool:
     if value is None:
         return default
@@ -37,8 +51,7 @@ class Settings:
     @classmethod
     def from_env(cls) -> Settings:
         load_dotenv(PROJECT_ROOT / ".env")
-        local_root = Path(os.getenv("LOCALAPPDATA", str(PROJECT_ROOT / "data"))) / "RutaDIA"
-        data_root = Path(os.getenv("RUTA_DIA_DATA_DIR", str(local_root))).expanduser()
+        data_root = Path(os.getenv("RUTA_DIA_DATA_DIR", str(_local_root()))).expanduser()
         return cls(
             model=os.getenv("RUTA_DIA_MODEL", "gemini/gemini-3.6-flash"),
             verbose=_as_bool(os.getenv("RUTA_DIA_VERBOSE")),

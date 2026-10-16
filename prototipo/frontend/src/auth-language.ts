@@ -21,6 +21,7 @@ const es = {
   wrongCredentials: 'Usuario o contraseña incorrectos.', duplicateUser: 'Ese usuario ya existe. Elige otro.',
   sessionError: 'No se pudo comprobar tu sesión.', reload: 'Recarga la página.',
   requestError: 'No se pudo completar el acceso. Inténtalo de nuevo.',
+  tooManyAttempts: 'Demasiados intentos. Espera un minuto y vuelve a intentarlo.',
 };
 export type AuthTextKey = keyof typeof es;
 const en: Record<AuthTextKey, string> = {
@@ -44,6 +45,7 @@ const en: Record<AuthTextKey, string> = {
   wrongCredentials: 'Incorrect username or password.', duplicateUser: 'This username is already taken. Choose another.',
   sessionError: 'Unable to check your session.', reload: 'Reload the page.',
   requestError: 'Unable to complete sign-in. Please try again.',
+  tooManyAttempts: 'Too many attempts. Wait a minute and try again.',
 };
 
 export function authText(language: AuthLanguage, key: AuthTextKey): string {

@@ -8,6 +8,12 @@ from pathlib import Path
 
 from fastapi import HTTPException
 
+from .empathy_map import empty_empathy_map
+from .journey import empty_journey
+from .pestel import empty_pestel
+from .problem_tree import MAX_NODES, ProblemTreeUpdate
+from .why_analysis import apply_turn, review_notice
+
 
 class SharingStore:
     """Registro local de proyectos, miembros, invitaciones y avances comunes."""
@@ -69,6 +75,50 @@ class SharingStore:
                 );
                 -- Último diagnóstico, ya en texto breve para el contexto del agente.
                 -- tree_version indica a qué versión del árbol corresponde.
+                -- Un análisis de 5 porqués por fila, ligado a la causa del árbol de la que parte.
+                -- Solo uno puede estar en curso por proyecto: es el que recibe las respuestas.
+                CREATE TABLE IF NOT EXISTS project_why_analyses (
+                    id TEXT PRIMARY KEY,
+                    project_id TEXT NOT NULL REFERENCES shared_projects(id) ON DELETE CASCADE,
+                    cause_id TEXT NOT NULL,
+                    cause_text TEXT NOT NULL,
+                    problem_text TEXT NOT NULL,
+                    steps_json TEXT NOT NULL DEFAULT '[]',
+                    doubts_json TEXT NOT NULL DEFAULT '[]',
+                    status TEXT NOT NULL DEFAULT 'en_curso',
+                    started INTEGER NOT NULL DEFAULT 0,
+                    reviewing INTEGER NOT NULL DEFAULT 0,
+                    awaiting_plan INTEGER NOT NULL DEFAULT 0,
+                    candidate TEXT NOT NULL DEFAULT '',
+                    incorporated_node_id TEXT NOT NULL DEFAULT '',
+                    created_by TEXT NOT NULL REFERENCES users(id),
+                    created_at INTEGER NOT NULL,
+                    updated_at INTEGER NOT NULL
+                );
+                CREATE UNIQUE INDEX IF NOT EXISTS one_active_why_analysis
+                    ON project_why_analyses(project_id) WHERE status = 'en_curso';
+                -- Un PESTEL por proyecto, con la misma edición por versiones que el árbol.
+                CREATE TABLE IF NOT EXISTS project_pestels (
+                    project_id TEXT PRIMARY KEY REFERENCES shared_projects(id) ON DELETE CASCADE,
+                    content TEXT NOT NULL,
+                    version INTEGER NOT NULL DEFAULT 1,
+                    updated_by TEXT NOT NULL REFERENCES users(id),
+                    updated_at INTEGER NOT NULL
+                );
+                CREATE TABLE IF NOT EXISTS project_empathy_maps (
+                    project_id TEXT PRIMARY KEY REFERENCES shared_projects(id) ON DELETE CASCADE,
+                    content TEXT NOT NULL,
+                    version INTEGER NOT NULL DEFAULT 1,
+                    updated_by TEXT NOT NULL REFERENCES users(id),
+                    updated_at INTEGER NOT NULL
+                );
+                CREATE TABLE IF NOT EXISTS project_journeys (
+                    project_id TEXT PRIMARY KEY REFERENCES shared_projects(id) ON DELETE CASCADE,
+                    content TEXT NOT NULL,
+                    version INTEGER NOT NULL DEFAULT 1,
+                    updated_by TEXT NOT NULL REFERENCES users(id),
+                    updated_at INTEGER NOT NULL
+                );
                 CREATE TABLE IF NOT EXISTS project_tree_diagnoses (
                     project_id TEXT PRIMARY KEY REFERENCES shared_projects(id) ON DELETE CASCADE,
                     tree_version INTEGER NOT NULL,
@@ -76,6 +126,14 @@ class SharingStore:
                     created_at INTEGER NOT NULL
                 );
             """)
+            # Qué notó el código en el último mensaje del análisis (why_analysis.apply_turn).
+            why_columns = {
+                row["name"] for row in db.execute("PRAGMA table_info(project_why_analyses)")
+            }
+            if "notice" not in why_columns:
+                db.execute(
+                    "ALTER TABLE project_why_analyses ADD COLUMN notice TEXT NOT NULL DEFAULT ''"
+                )
 
     def _connect(self) -> sqlite3.Connection:
         db = sqlite3.connect(self.path, timeout=5)
@@ -132,6 +190,208 @@ class SharingStore:
             ).fetchone()
         return dict(row) if row else None
 
+    # ── Análisis de 5 porqués ────────────────────────────────────────────────
+    @staticmethod
+    def _why(row: sqlite3.Row) -> dict:
+        return {
+            "id": row["id"], "cause_id": row["cause_id"], "cause_text": row["cause_text"],
+            "problem_text": row["problem_text"], "steps": json.loads(row["steps_json"]),
+            "doubts": json.loads(row["doubts_json"]), "status": row["status"],
+            "reviewing": bool(row["reviewing"]), "awaiting_plan": bool(row["awaiting_plan"]),
+            # reviewing es 1 al pedir la revisión y suma uno por cada mensaje durante ella.
+            "review_turns": max(0, row["reviewing"] - 1), "notice": row["notice"],
+            "candidate": row["candidate"],
+            "incorporated_node_id": row["incorporated_node_id"],
+            "created_at": row["created_at"], "updated_at": row["updated_at"],
+        }
+
+    def why_analyses(self, project_id: str) -> list[dict]:
+        with self._connect() as db:
+            rows = db.execute(
+                "SELECT * FROM project_why_analyses WHERE project_id=? ORDER BY created_at DESC",
+                (project_id,),
+            ).fetchall()
+        return [self._why(row) for row in rows]
+
+    def _why_row(self, db: sqlite3.Connection, project_id: str, analysis_id: str) -> sqlite3.Row:
+        row = db.execute(
+            "SELECT * FROM project_why_analyses WHERE project_id=? AND id=?",
+            (project_id, analysis_id),
+        ).fetchone()
+        if not row:
+            raise HTTPException(404, "El análisis no existe en este proyecto.")
+        return row
+
+    def active_why_analysis(self, project_id: str) -> dict | None:
+        with self._connect() as db:
+            row = db.execute(
+                "SELECT * FROM project_why_analyses WHERE project_id=? AND status='en_curso'",
+                (project_id,),
+            ).fetchone()
+        return self._why(row) if row else None
+
+    def start_why_analysis(self, project_id: str, user_id: str, cause_id: str) -> dict:
+        with self._connect() as db:
+            db.execute("BEGIN IMMEDIATE")
+            active = db.execute(
+                "SELECT cause_text FROM project_why_analyses "
+                "WHERE project_id=? AND status='en_curso'", (project_id,),
+            ).fetchone()
+            if active:
+                raise HTTPException(409, (
+                    f"Ya hay un análisis de 5 porqués en curso sobre «{active['cause_text']}». "
+                    "Termínalo o descártalo antes de empezar otro."
+                ))
+            row = db.execute(
+                "SELECT content FROM project_problem_trees WHERE project_id=?", (project_id,),
+            ).fetchone()
+            tree = json.loads(row["content"]) if row else {}
+            cause = next(
+                (node for node in tree.get("causes", []) if node["id"] == cause_id), None,
+            )
+            if cause is None:
+                raise HTTPException(404, "Esa causa no está en el árbol guardado.")
+            if cause.get("parent"):
+                raise HTTPException(409, (
+                    "Los 5 porqués parten de una causa principal: una causa de fondo ya no "
+                    "admite otra debajo."
+                ))
+            now = int(time.time())
+            analysis_id = uuid.uuid4().hex
+            db.execute("""
+                INSERT INTO project_why_analyses (
+                    id, project_id, cause_id, cause_text, problem_text,
+                    created_by, created_at, updated_at
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+            """, (analysis_id, project_id, cause_id, cause["text"], tree.get("problem", ""),
+                  user_id, now, now))
+            return self._why(self._why_row(db, project_id, analysis_id))
+
+    def record_why_turn(self, project_id: str, message: str) -> dict | None:
+        """Registra el mensaje en el análisis en curso, antes de que responda el agente.
+
+        El primer mensaje solo abre el análisis. Durante la revisión, lo que se escribe
+        comenta la cadena y no es un paso nuevo. El resto lo decide why_analysis.apply_turn.
+        """
+        with self._connect() as db:
+            db.execute("BEGIN IMMEDIATE")
+            row = db.execute(
+                "SELECT * FROM project_why_analyses WHERE project_id=? AND status='en_curso'",
+                (project_id,),
+            ).fetchone()
+            if not row:
+                return None
+            analysis = self._why(row)
+            if not row["started"]:
+                db.execute("UPDATE project_why_analyses SET started=1 WHERE id=?", (row["id"],))
+            elif analysis["reviewing"]:
+                db.execute(
+                    "UPDATE project_why_analyses SET reviewing=reviewing+1, notice=?, "
+                    "updated_at=? WHERE id=?",
+                    (review_notice(message), int(time.time()), row["id"]),
+                )
+            else:
+                turn = apply_turn(analysis, message)
+                db.execute(
+                    "UPDATE project_why_analyses SET steps_json=?, doubts_json=?, "
+                    "awaiting_plan=?, notice=?, updated_at=? WHERE id=?",
+                    (json.dumps(turn["steps"], ensure_ascii=False),
+                     json.dumps(turn["doubts"], ensure_ascii=False),
+                     int(turn["awaiting_plan"]), turn["notice"], int(time.time()), row["id"]),
+                )
+            return self._why(self._why_row(db, project_id, row["id"]))
+
+    def update_why_analysis(self, project_id: str, analysis_id: str, changes: dict) -> dict:
+        with self._connect() as db:
+            db.execute("BEGIN IMMEDIATE")
+            row = self._why_row(db, project_id, analysis_id)
+            if row["status"] != "en_curso":
+                raise HTTPException(409, "El análisis ya terminó; no se puede editar.")
+            columns = {"steps": "steps_json", "doubts": "doubts_json"}
+            texts = [step["text"] for step in json.loads(row["steps_json"])]
+            if "steps" in changes and [step["text"] for step in changes["steps"]] != texts:
+                # Quitar un paso cambia la última respuesta: el aviso anterior ya no aplica.
+                db.execute("UPDATE project_why_analyses SET notice='' WHERE id=?", (analysis_id,))
+            for key, value in changes.items():
+                db.execute(
+                    f"UPDATE project_why_analyses SET {columns[key]}=? WHERE id=?",
+                    (json.dumps(value, ensure_ascii=False), analysis_id),
+                )
+            db.execute("UPDATE project_why_analyses SET updated_at=? WHERE id=?",
+                       (int(time.time()), analysis_id))
+            return self._why(self._why_row(db, project_id, analysis_id))
+
+    def set_why_status(self, project_id: str, analysis_id: str, *, reviewing: bool | None = None,
+                       status: str | None = None, candidate: str | None = None) -> dict:
+        with self._connect() as db:
+            db.execute("BEGIN IMMEDIATE")
+            row = self._why_row(db, project_id, analysis_id)
+            if row["status"] != "en_curso":
+                raise HTTPException(409, "El análisis ya terminó.")
+            if status == "cerrado" and not json.loads(row["steps_json"]):
+                raise HTTPException(409, "Registra al menos una respuesta antes de cerrar.")
+            if reviewing is not None:
+                db.execute("UPDATE project_why_analyses SET reviewing=?, notice='' WHERE id=?",
+                           (int(reviewing), analysis_id))
+            if candidate is not None:
+                db.execute("UPDATE project_why_analyses SET candidate=? WHERE id=?",
+                           (candidate, analysis_id))
+            if status is not None:
+                db.execute("UPDATE project_why_analyses SET status=? WHERE id=?",
+                           (status, analysis_id))
+            db.execute("UPDATE project_why_analyses SET updated_at=? WHERE id=?",
+                       (int(time.time()), analysis_id))
+            return self._why(self._why_row(db, project_id, analysis_id))
+
+    def incorporate_why_analysis(self, project_id: str, analysis_id: str, user_id: str) -> dict:
+        """Agrega la causa candidata como causa de fondo de la tarjeta de partida."""
+        with self._connect() as db:
+            db.execute("BEGIN IMMEDIATE")
+            row = self._why_row(db, project_id, analysis_id)
+            if row["status"] != "cerrado":
+                raise HTTPException(409, "Cierra el análisis y elige la causa candidata primero.")
+            if row["incorporated_node_id"]:
+                raise HTTPException(409, "Esta causa candidata ya está en el árbol.")
+            tree_row = db.execute(
+                "SELECT content, version FROM project_problem_trees WHERE project_id=?",
+                (project_id,),
+            ).fetchone()
+            if not tree_row:
+                raise HTTPException(404, "El proyecto ya no tiene árbol guardado.")
+            tree = json.loads(tree_row["content"])
+            origin = next(
+                (node for node in tree["causes"] if node["id"] == row["cause_id"]), None,
+            )
+            if origin is None:
+                raise HTTPException(409, "La causa de partida ya no está en el árbol.")
+            if origin.get("parent"):
+                raise HTTPException(409, (
+                    "La causa de partida ahora es una causa de fondo y no admite otra debajo."
+                ))
+            if len(tree["causes"]) >= MAX_NODES:
+                raise HTTPException(409, "El árbol ya tiene el máximo de causas.")
+            steps = json.loads(row["steps_json"])
+            evidence = steps[-1]["evidence"] if steps and steps[-1]["evidence"] else ""
+            node_id = f"w{uuid.uuid4().hex[:12]}"
+            tree["causes"].append({
+                "id": node_id, "text": row["candidate"][:240], "parent": row["cause_id"],
+                "source": (f"{evidence} · " if evidence else "") + "Análisis de 5 porqués",
+            })
+            # Misma validación que al guardar el árbol desde el tablero.
+            ProblemTreeUpdate(version=tree_row["version"], **tree)
+            now = int(time.time())
+            db.execute(
+                "UPDATE project_problem_trees SET content=?, version=?, updated_by=?, updated_at=? "
+                "WHERE project_id=?",
+                (json.dumps(tree, ensure_ascii=False), tree_row["version"] + 1, user_id, now,
+                 project_id),
+            )
+            db.execute(
+                "UPDATE project_why_analyses SET incorporated_node_id=?, updated_at=? WHERE id=?",
+                (node_id, now, analysis_id),
+            )
+            return {"node_id": node_id, "tree_version": tree_row["version"] + 1}
+
     def save_problem_tree(self, project_id: str, user_id: str, content: dict,
                           version: int) -> dict:
         with self._connect() as db:
@@ -166,6 +426,74 @@ class SharingStore:
                 db.execute("INSERT INTO project_problem_trees VALUES (?, ?, 1, ?, ?)",
                            (project_id, payload, user_id, now))
         return {**content, "version": version + 1, "updated_at": now}
+
+    # Tableros de una ficha (PESTEL, mapa de empatía): un documento por proyecto, guardado por
+    # versiones para que dos personas no se pisen. El nombre de la tabla nunca viene de fuera.
+    def _board(self, table: str, project_id: str, empty: dict) -> dict:
+        with self._connect() as db:
+            row = db.execute(
+                f"SELECT content, version, updated_at FROM {table} WHERE project_id=?",
+                (project_id,),
+            ).fetchone()
+        if not row:
+            return empty
+        return {**json.loads(row["content"]), "version": row["version"],
+                "updated_at": row["updated_at"]}
+
+    def _save_board(self, table: str, name: str, project_id: str, user_id: str,
+                    content: dict, version: int) -> dict:
+        with self._connect() as db:
+            db.execute("BEGIN IMMEDIATE")
+            access = db.execute("""
+                SELECT CASE WHEN p.owner_user_id=? THEN 'owner' ELSE m.role END AS role
+                FROM shared_projects p
+                LEFT JOIN project_members m ON m.project_id=p.id AND m.user_id=?
+                WHERE p.id=? AND (p.owner_user_id=? OR m.user_id=?)
+            """, (user_id, user_id, project_id, user_id, user_id)).fetchone()
+            if not access or access["role"] not in {"owner", "editor"}:
+                raise HTTPException(403, f"Tu permiso no permite editar este {name}.")
+            row = db.execute(
+                f"SELECT version FROM {table} WHERE project_id=?", (project_id,),
+            ).fetchone()
+            if (row["version"] if row else 0) != version:
+                raise HTTPException(
+                    409,
+                    f"Otra persona modificó el {name}. "
+                    "Actualiza la página para ver la versión actual.",
+                )
+            now = int(time.time())
+            payload = json.dumps(content, ensure_ascii=False)
+            if row:
+                db.execute(
+                    f"UPDATE {table} SET content=?, version=?, updated_by=?, updated_at=? "
+                    "WHERE project_id=?", (payload, version + 1, user_id, now, project_id),
+                )
+            else:
+                db.execute(f"INSERT INTO {table} VALUES (?, ?, 1, ?, ?)",
+                           (project_id, payload, user_id, now))
+        return {**content, "version": version + 1, "updated_at": now}
+
+    def pestel(self, project_id: str) -> dict:
+        return self._board("project_pestels", project_id, empty_pestel())
+
+    def save_pestel(self, project_id: str, user_id: str, content: dict, version: int) -> dict:
+        return self._save_board("project_pestels", "PESTEL", project_id, user_id, content,
+                                version)
+
+    def journey(self, project_id: str) -> dict:
+        return self._board("project_journeys", project_id, empty_journey())
+
+    def save_journey(self, project_id: str, user_id: str, content: dict, version: int) -> dict:
+        return self._save_board("project_journeys", "recorrido", project_id, user_id, content,
+                                version)
+
+    def empathy_map(self, project_id: str) -> dict:
+        return self._board("project_empathy_maps", project_id, empty_empathy_map())
+
+    def save_empathy_map(self, project_id: str, user_id: str, content: dict,
+                         version: int) -> dict:
+        return self._save_board("project_empathy_maps", "mapa de empatía", project_id, user_id,
+                                content, version)
 
     def accessible(self, user_id: str) -> list[dict]:
         with self._connect() as db:

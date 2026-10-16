@@ -2,10 +2,13 @@ from __future__ import annotations
 
 import hashlib
 import hmac
+import math
 import secrets
 import sqlite3
+import threading
 import time
 import uuid
+from collections import deque
 from dataclasses import dataclass
 from pathlib import Path
 
@@ -13,6 +16,39 @@ from fastapi import HTTPException
 
 SESSION_SECONDS = 12 * 60 * 60
 COOKIE_NAME = "hilo_session"
+# Cada hash reserva decenas de MB: sin este tope, muchos accesos a la vez agotan la memoria.
+_HASHING = threading.BoundedSemaphore(2)
+
+
+class AttemptLimiter:
+    """Ventana deslizante en memoria: `limit` intentos por clave cada `window` segundos."""
+
+    def __init__(self, limit: int, window: float = 60.0, clock=time.monotonic):
+        self.limit, self.window, self.clock = limit, window, clock
+        self._hits: dict[str, deque[float]] = {}
+        self._lock = threading.Lock()
+
+    def attempt(self, key: str) -> int:
+        """Anota el intento y devuelve 0; si ya no cabe, los segundos que faltan."""
+        now = self.clock()
+        expired = now - self.window
+        with self._lock:
+            for name in [name for name, hits in self._hits.items() if hits[-1] <= expired]:
+                del self._hits[name]
+            hits = self._hits.get(key)
+            if hits is None:
+                self._hits[key] = deque([now])
+                return 0
+            while hits[0] <= expired:
+                hits.popleft()
+            if len(hits) >= self.limit:
+                return max(1, math.ceil(hits[0] + self.window - now))
+            hits.append(now)
+            return 0
+
+    def forget(self, key: str) -> None:
+        with self._lock:
+            self._hits.pop(key, None)
 
 
 @dataclass(frozen=True)
@@ -53,8 +89,9 @@ class AuthStore:
 
     @staticmethod
     def _password(password: str, salt: bytes) -> bytes:
-        return hashlib.scrypt(password.encode("utf-8"), salt=salt, n=2**15, r=8, p=3,
-                              dklen=32, maxmem=64 * 1024 * 1024)
+        with _HASHING:
+            return hashlib.scrypt(password.encode("utf-8"), salt=salt, n=2**15, r=8, p=3,
+                                  dklen=32, maxmem=64 * 1024 * 1024)
 
     def register(self, username: str, display_name: str, password: str) -> User:
         username = username.strip().lower()

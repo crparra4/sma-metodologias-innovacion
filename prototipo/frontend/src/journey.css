@@ -1,0 +1,149 @@
+/* Customer Journey Map. La caja y el encabezado son los de pestel.css (la vista lleva las
+   clases `pestel-view journey-view`), y los post-its y la hoja emergente son los del tablero.
+   Por dentro es distinto a las otras herramientas, porque el recorrido se lee de izquierda a
+   derecha: una tarjeta con la persona y, al lado, una columna por etapa, como los días de
+   una agenda. Las filas quedan alineadas entre columnas (subgrid) y una línea punteada une
+   las caras para mostrar dónde cae la experiencia.
+   Colores: los de la página (azul y tinta). El papel de cada post-it sigue a su fila:
+   amarillo lo que hace, azul puntos de contacto, rosado dolores, verde oportunidades. */
+
+.journey-surface{display:grid;grid-template-columns:232px minmax(0,1fr);gap:18px;align-items:start;width:100%;max-width:1500px;margin:0 auto;padding:20px 24px 10px;
+  font-family:"Segoe UI",system-ui,sans-serif}
+
+/* ---------- La persona y el escenario ---------- */
+.journey-persona{display:grid;gap:10px;padding:20px 16px 18px;border-radius:26px;background:linear-gradient(165deg,#294eb8,#26324d);color:#fff;box-shadow:0 18px 26px -18px #26324dcc}
+.journey-avatar{justify-self:center;display:grid;place-items:center;width:78px;height:78px;border:5px solid #ffffff59;border-radius:50%;background:#fff;font-size:40px;line-height:1}
+.journey-persona label{display:block;margin:4px 0 -4px;font:800 10.5px/1.4 "Segoe UI",system-ui,sans-serif;letter-spacing:.1em;text-transform:uppercase;opacity:.85}
+.journey-persona textarea{display:block;width:100%;min-height:62px;resize:vertical;border:0;border-radius:14px;background:#ffffff24;color:#fff;
+  font:500 13.5px/1.4 "Segoe UI",system-ui,sans-serif;padding:9px 11px}
+.journey-persona textarea::placeholder{color:#ffffffb3;opacity:1}
+.journey-persona textarea:focus-visible{outline:2px solid #fff;outline-offset:1px;background:#ffffff33}
+.journey-persona-ask{margin-top:6px;padding:8px 12px;border:0;border-radius:999px;background:#fff;color:#294eb8;font:700 12.5px/1.3 "Segoe UI",system-ui,sans-serif;transition:translate .12s,background .15s}
+.journey-persona-ask:hover:not(:disabled){background:#ffe98f;color:#26324d;translate:0 -1px}
+
+/* ---------- El tablero de etapas ---------- */
+.journey-scroll{min-width:0;overflow-x:auto;padding:14px;border-radius:26px;background:#eef1f8;scrollbar-width:thin;scrollbar-color:#b9c3d8 transparent}
+.journey-board{position:relative;display:grid;grid-template-columns:var(--columnas,150px 92px);grid-template-rows:auto 128px repeat(4,minmax(92px,auto)) auto;column-gap:12px;min-width:min-content}
+.journey-labels,.journey-stage{display:grid;grid-row:1/-1;grid-template-rows:subgrid;min-width:0}
+.journey-label{display:flex;align-items:flex-start;gap:8px;padding:14px 2px 8px;font:800 10.5px/1.3 "Segoe UI",system-ui,sans-serif;letter-spacing:.07em;text-transform:uppercase;color:#3a4560}
+.journey-label>span:last-child{min-width:0}
+.journey-label.is-head{align-items:center;padding-top:16px;color:#5b6478}
+.journey-label-mark{flex:0 0 30px;display:grid;place-items:center;width:30px;height:30px;margin-top:-6px;border-radius:50%;background:#fff;font-size:15px;box-shadow:0 2px 5px -2px #26324d59}
+
+.journey-stage{position:relative;border-radius:20px;background:#fff;box-shadow:0 10px 18px -16px #26324d99}
+.journey-stage-head{position:relative;display:grid;gap:5px;padding:12px 12px 10px;border-radius:20px 20px 14px 14px}
+.journey-stage-number{font:800 10px/1.3 "Segoe UI",system-ui,sans-serif;letter-spacing:.11em;text-transform:uppercase;color:#7b8598}
+.journey-stage-name{width:100%;min-width:0;padding:1px 0 3px;border:0;border-bottom:1.5px dashed transparent;border-radius:0;background:transparent;color:#26324d;
+  font:800 15px/1.25 "Segoe UI",system-ui,sans-serif}
+.journey-stage-name:hover:not([readonly]){border-bottom-color:#26324d40}
+.journey-stage-name:focus-visible{outline:0;border-bottom-color:#294eb8}
+/* La flecha que encadena una etapa con la siguiente. */
+.journey-stage:not(:last-of-type) .journey-stage-head::after{content:"›";position:absolute;z-index:3;right:-19px;top:20px;display:grid;place-items:center;width:26px;height:26px;border:3px solid #eef1f8;border-radius:50%;
+  background:#294eb8;color:#fff;font:800 16px/1 "Segoe UI",system-ui,sans-serif}
+.journey-critical{justify-self:start;padding:2px 10px 3px;border:1.4px dashed #26324d59;border-radius:999px;background:transparent;color:#5b6478;font:700 10.5px/1.5 "Segoe UI",system-ui,sans-serif;transition:background .15s}
+.journey-critical:hover:not(:disabled){background:#eef1f8}
+.journey-critical[aria-pressed="true"]{border:1.4px solid #8a6a12;background:#ffe98f;color:#5c4508}
+.journey-critical[aria-pressed="false"]:disabled{display:none}
+/* Etapa crítica: la cabecera se oscurece, como el día marcado en una agenda. */
+.journey-stage.is-critical .journey-stage-head{background:#26324d}
+.journey-stage.is-critical :is(.journey-stage-number,.journey-stage-name){color:#fff}
+.journey-stage.is-critical .journey-stage-number{opacity:.75}
+.journey-stage.is-critical .journey-tool{color:#fff}
+.journey-stage-tools{display:flex;gap:2px;margin:0 -4px -4px}
+.journey-tool{display:grid;place-items:center;width:24px;height:24px;padding:0;border:0;border-radius:7px;background:transparent;color:#5b6478;font:800 16px/1 "Segoe UI",system-ui,sans-serif}
+.journey-tool .icon{width:13px;height:13px}
+.journey-tool:hover:not(:disabled){background:#294eb826}
+.journey-tool:last-child{margin-left:auto}
+
+/* ---------- Emoción: la altura de la cara es el nivel ---------- */
+.journey-emotion{position:relative;border-top:1.5px dashed #dfe4ef}
+.journey-face{position:absolute;z-index:2;left:50%;top:calc(12px + (5 - var(--nivel,3)) * ((100% - 68px) / 4));translate:-50% 0;display:grid;place-items:center;width:44px;height:44px;padding:0;
+  border:2.5px solid #294eb8;border-radius:50%;background:#fff;font-size:25px;line-height:1;transition:top .25s cubic-bezier(.3,1.4,.5,1),scale .15s}
+.journey-face:hover:not(:disabled){scale:1.1}
+.journey-face.is-empty{border:2px dashed #a9b3c6;color:#7b8598;font:700 20px/1 "Segoe UI",system-ui,sans-serif}
+.journey-face:disabled{opacity:1}
+.journey-faces{position:absolute;z-index:6;left:50%;top:50%;translate:-50% -50%;display:flex;align-items:center;gap:2px;padding:6px 8px;border-radius:999px;background:#fff;box-shadow:0 10px 24px -8px #26324d99,0 0 0 1.5px #26324d1f}
+.journey-faces button{display:grid;place-items:center;width:34px;height:34px;padding:0;border:0;border-radius:50%;background:transparent;font-size:22px;line-height:1;transition:scale .12s,background .12s}
+.journey-faces button:hover{scale:1.2;background:#eef1f8}
+.journey-faces button[aria-pressed="true"]{background:#ffe98f}
+.journey-faces .journey-faces-clear{width:auto;padding:0 9px;border-radius:999px;font:700 11px/1 "Segoe UI",system-ui,sans-serif;color:#5b6478}
+.journey-curve{position:absolute;inset:0;z-index:1;pointer-events:none;overflow:visible}
+.journey-curve path{fill:none;stroke:#294eb8;stroke-width:2.5;stroke-linecap:round;stroke-dasharray:1 8}
+
+/* ---------- Filas con post-its ---------- */
+.journey-cell{display:flex;flex-direction:column;gap:6px;min-width:0;padding:10px 10px 8px;border-top:1.5px dashed #dfe4ef}
+.notes-wall.journey-wall{grid-template-columns:minmax(0,1fr);gap:12px;padding:6px 2px 0}
+.journey-wall:empty{display:none}
+.journey-wall .sticky-note{min-height:0;padding:9px 10px 8px}
+.journey-wall .note-top{position:absolute;top:0;right:0;min-height:0}
+.journey-wall .note-body{display:block;-webkit-line-clamp:unset;overflow:visible;margin:0;font-size:14.5px;line-height:1.3}
+.journey-wall .note-body.is-editable{cursor:pointer}
+.journey-wall .note-delete-confirm{flex-direction:row;flex-wrap:wrap;align-items:center;gap:2px 8px;padding:6px 9px}
+.journey-wall .note-delete-confirm p{margin:0;flex-basis:100%}
+.journey-add{align-self:flex-start;display:grid;place-items:center;width:26px;height:26px;margin-top:auto;padding:0;border:1.6px dashed #a9b3c6;border-radius:50%;background:transparent;color:#5b6478;
+  font:800 16px/1 "Segoe UI",system-ui,sans-serif;transition:background .15s,color .15s,rotate .2s}
+.journey-add:hover:not(:disabled){border-style:solid;border-color:#294eb8;background:#294eb8;color:#fff;rotate:90deg}
+.journey-stage-foot{display:grid;gap:8px;padding:8px 10px 12px;border-top:1.5px dashed #dfe4ef}
+.journey-ask{justify-self:center;padding:4px 12px;border:0;border-radius:999px;background:transparent;color:#294eb8;font:700 11.5px/1.3 "Segoe UI",system-ui,sans-serif;white-space:nowrap;transition:background .15s,color .15s}
+.journey-ask:hover:not(:disabled){background:#294eb8;color:#fff}
+.journey-said{--g1:#294eb8;--g2:#5f88ec}
+.journey-said-actions{display:flex;flex-wrap:wrap;align-items:center;gap:4px 8px}
+.journey-said-skip{padding:2px 6px;border:0;background:transparent;color:#5b6478;font:600 11px/1.3 "Segoe UI",system-ui,sans-serif}
+.journey-said-skip:hover{text-decoration:underline}
+
+.journey-add-stage{grid-row:1/-1;display:grid;justify-items:center;align-content:center;gap:8px;padding:10px 6px;border:2px dashed #a9b3c6;border-radius:20px;background:#ffffff8c;color:#294eb8;
+  font:700 11.5px/1.25 "Segoe UI",system-ui,sans-serif;text-align:center;transition:background .15s,border-color .15s,translate .12s}
+.journey-add-stage .pestel-add-plus{background:#294eb8}
+.journey-add-stage:hover:not(:disabled){border-style:solid;border-color:#294eb8;background:#fff;translate:0 -2px}
+.journey-empty{grid-row:1/-1;align-self:center;margin:0;padding:0 14px;max-width:44ch;font:500 13.5px/1.5 "Segoe UI",system-ui,sans-serif;color:#5b6478}
+
+/* Con poco ancho (chat al lado en pantallas pequeñas o celular): la persona arriba y cada
+   etapa como una tarjeta, una debajo de otra. */
+@container pestel (max-width:860px){
+  .journey-surface{grid-template-columns:minmax(0,1fr);padding:16px 16px 8px}
+  .journey-persona{grid-template-columns:auto minmax(0,1fr);column-gap:12px;align-items:start}
+  .journey-avatar{grid-row:1/5;width:60px;height:60px;font-size:30px}
+  .journey-persona label{margin:0 0 -6px}
+  .journey-persona-ask{grid-column:1/-1}
+}
+@container pestel (max-width:620px){
+  .journey-scroll{padding:10px;overflow-x:visible}
+  .journey-board{grid-template-columns:minmax(0,1fr);grid-template-rows:none;row-gap:14px;min-width:0}
+  .journey-labels,.journey-curve{display:none}
+  .journey-stage{display:block;grid-row:auto}
+  .journey-stage:not(:last-of-type) .journey-stage-head::after{content:"↓";right:auto;left:50%;top:auto;bottom:-13px;translate:-50% 0;display:none}
+  .journey-emotion{height:70px}
+  .journey-face{top:13px}
+  .journey-cell::before{content:attr(data-label);font:800 10.5px/1.3 "Segoe UI",system-ui,sans-serif;letter-spacing:.07em;text-transform:uppercase;color:#5b6478}
+  .notes-wall.journey-wall{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .journey-add-stage,.journey-empty{grid-row:auto}
+  .journey-add-stage{grid-auto-flow:column;justify-content:center;padding:14px}
+}
+@container pestel (max-width:400px){.notes-wall.journey-wall{grid-template-columns:minmax(0,1fr)}}
+@media(prefers-reduced-motion:reduce){.journey-face{transition:none}}
+/* Sin puntero, los botones de editar quedan siempre visibles: el texto les deja sitio. */
+@media(hover:none){.journey-wall .note-body{padding-right:46px}}
+
+/* ---------- Notas de entrevista: revisar lo que Hilo encontró ---------- */
+.journey-persona-paste{padding:7px 12px;border:1.5px dashed #ffffff8c;border-radius:999px;background:transparent;color:#fff;font:700 12px/1.3 "Segoe UI",system-ui,sans-serif;transition:background .15s}
+.journey-persona-paste:hover:not(:disabled){border-style:solid;background:#ffffff26}
+#journey-notes-dialog.note-sheet{width:min(640px,calc(100% - 28px))}
+#journey-notes-dialog .note-sheet-text{min-height:190px;max-height:320px}
+#journey-notes-dialog .pestel-dialog-hint{display:flex;flex-wrap:wrap;justify-content:space-between;gap:4px 14px;margin-top:8px}
+#journey-notes-dialog #journey-notes-count{font-variant-numeric:tabular-nums;white-space:nowrap}
+#journey-notes-dialog .journey-notes-status{margin:0 0 12px;font-size:14px;font-weight:650;line-height:1.4}
+.journey-proposals{display:grid;gap:10px;margin:0;padding:0;list-style:none}
+/* Cada propuesta ya tiene el color del papel de su fila. */
+.journey-proposal{display:grid;gap:8px;padding:10px 12px;border-radius:3px 3px 14px 3px;background:var(--note-paper);color:var(--note-ink);box-shadow:0 1px 1px #1b233014,0 8px 12px -8px #1b233052}
+.journey-proposal blockquote{margin:0;font-size:14px;line-height:1.4;overflow-wrap:anywhere}
+.journey-proposal-controls{display:flex;flex-wrap:wrap;align-items:center;gap:6px}
+.journey-proposal select{flex:1 1 130px;min-width:0;padding:4px 6px;border:1.4px solid color-mix(in srgb,var(--note-ink) 34%,transparent);border-radius:8px;background:#ffffff99;color:var(--note-ink);font:inherit;font-size:12.5px}
+.journey-proposal button{padding:4px 12px;border-radius:999px;font:inherit;font-size:12.5px;font-weight:700}
+.journey-proposal-add{border:1.4px solid var(--note-ink);background:var(--note-ink);color:var(--note-paper)}
+.journey-proposal-add:hover{filter:brightness(1.2)}
+.journey-proposal-skip{border:0;background:transparent;color:var(--note-ink)}
+.journey-proposal-skip:hover{text-decoration:underline}
+.journey-proposal.is-added{opacity:.72}
+.journey-proposal-done{font-size:12.5px;font-weight:700}
+.journey-proposal :is(select,button):focus-visible{outline:2px solid var(--note-ink);outline-offset:2px}
+@container pestel (max-width:860px){.journey-persona-paste{grid-column:1/-1}}

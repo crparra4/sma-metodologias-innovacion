@@ -6,7 +6,7 @@ from datetime import UTC, datetime
 from pathlib import Path
 from uuid import uuid4
 
-from .contracts import NotebookColor, ProjectContext, ProjectState, TurnResult
+from .contracts import NotebookColor, ProjectContext, ProjectState, TurnResult, has_value
 from .notes import NoteRequest
 from .tasks import TaskRequest
 
@@ -445,6 +445,8 @@ class NotebookMemory:
                 ),
             )
             for update in result.accepted_updates:
+                if not has_value(update.value):
+                    continue  # un campo en blanco borraría el valor ya verificado
                 self.connection.execute(
                     """
                     INSERT INTO validated_fields (

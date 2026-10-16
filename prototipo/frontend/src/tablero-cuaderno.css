@@ -1,0 +1,170 @@
+/* Tablero del proyecto como cuaderno: Post-its, Agentes, Árbol de problemas y la barra de
+   5 porqués. El chat está en chat-cuaderno.css; colores, fuentes, botones y animaciones base
+   vienen de home-cuaderno.css.
+   Regla de letra, igual que en el chat: lo que escribe la persona (notas, tarjetas del árbol,
+   respuestas de los porqués) va a mano; lo que produce el sistema (memoria verificada,
+   diagnóstico, eventos) va en letra de imprenta.
+   Se conserva: el color de cada post-it, y hojas verdes, tronco naranja y raíces cafés del
+   árbol. Los estados del grafo mantienen su significado: en ejecución, completado, fallido. */
+
+@keyframes cuaderno-hormigas{to{stroke-dashoffset:-20}}
+
+/* ---------- Paneles ---------- */
+#app #project-workspace .inspector,
+#app #project-workspace .problem-tree-view{border:var(--borde);border-radius:18px;background-color:var(--hoja);box-shadow:var(--sombra);color:var(--tinta);
+  animation:cuaderno-entrar .45s cubic-bezier(.2,.9,.3,1.2) both}
+
+/* ---------- Post-its: hoja punteada donde se pegan las notas ---------- */
+#app #project-workspace .notes-board{background:var(--hoja) radial-gradient(#d3dbe9 1.1px,transparent 1.5px) 0 0/18px 18px}
+#app #project-workspace .notes-head h2{align-items:center;gap:10px;font-family:var(--mano);font-weight:700;font-size:32px;line-height:1;letter-spacing:0;color:var(--tinta)}
+#app #project-workspace .notes-count{display:grid;place-items:center;min-width:30px;height:30px;padding:0 6px;border:var(--borde);border-radius:52% 46% 55% 44%/46% 54% 44% 55%;
+  background:#fff7cf;font-family:var(--esfero-letra);font-size:16px;font-weight:400;color:var(--tinta);rotate:-4deg}
+#app #project-workspace .notes-new{min-height:38px;padding:4px 14px 5px;font-size:16px}
+#app #project-workspace .notes-capture{gap:6px 10px;margin:14px 0 20px;padding-bottom:16px;border-bottom:1.5px dashed #a9b3c6}
+#app #project-workspace .notes-board .selection-save{min-height:34px;padding:2px 13px 3px;border:var(--borde);border-radius:999px;background:#fff7cf;color:var(--tinta);
+  font-family:var(--esfero-letra);font-size:16px;font-weight:400;box-shadow:0 3px 0 #26324d2e;transition:translate .12s,box-shadow .12s,background .15s}
+#app #project-workspace .notes-board .selection-save:hover:not(:disabled){background:#ffef9f;translate:0 -1px;box-shadow:0 4px 0 #26324d2e}
+#app #project-workspace .notes-board .selection-save:active:not(:disabled){translate:0 2px;box-shadow:0 1px 0 #26324d2e}
+#app #project-workspace .notes-board .selection-save:disabled{border:1.5px dashed #a9b3c6;background:#ffffffb3;color:var(--lapiz);box-shadow:none}
+#app #project-workspace .notes-board .selection-hint{font-family:var(--esfero-letra);font-size:15px;line-height:1.3;color:var(--lapiz)}
+#app #project-workspace .notes-wall{gap:24px 16px;padding-top:12px}
+#app #project-workspace .notes-wall .sticky-note{animation:cuaderno-caer .45s cubic-bezier(.2,1.2,.4,1) both}
+#app #project-workspace .notes-wall .sticky-note:nth-child(2){animation-delay:.05s}
+#app #project-workspace .notes-wall .sticky-note:nth-child(3){animation-delay:.1s}
+#app #project-workspace .notes-wall .sticky-note:nth-child(n+4){animation-delay:.15s}
+/* Cada nota va pegada con un trozo de cinta. */
+#app #project-workspace .notes-wall .sticky-note::before{content:"";position:absolute;top:-9px;left:50%;width:50px;height:17px;margin-left:-25px;rotate:-3deg;
+  background:#ffffffa8;box-shadow:0 1px 2px #26324d24;pointer-events:none}
+#app #project-workspace .notes-wall .sticky-note:nth-child(even)::before{rotate:4deg;left:40%}
+#app #project-workspace .notes-wall .sticky-note h3{font-family:var(--esfero-letra);font-size:19px;font-weight:400;line-height:1.15}
+#app #project-workspace .notes-wall .note-body{font-family:var(--esfero-letra);font-size:16px;line-height:1.3}
+#app #project-workspace .notes-wall .note-category{font-family:var(--esfero-letra);font-size:13px;font-weight:400;letter-spacing:.06em}
+#app #project-workspace .note-author-name{font-family:var(--esfero-letra);font-size:14px;font-weight:400}
+#app #project-workspace .note-action{border-radius:50%;transition:scale .2s cubic-bezier(.3,1.6,.5,1),rotate .2s}
+#app #project-workspace .note-action:hover{scale:1.15;rotate:-10deg}
+#app #project-workspace .notes-empty-paper{animation:cuaderno-flotar 3.6s ease-in-out infinite}
+#app #project-workspace .notes-empty p{font-family:var(--esfero-letra);font-size:16px;line-height:1.3;color:#3d4a63}
+#app #project-workspace .notes-empty strong{font-family:var(--mano);font-size:26px;line-height:1.1;color:var(--tinta)}
+
+/* ---------- Agentes: el recorrido dibujado a mano ---------- */
+#app #project-workspace .agents-board h2{font-family:var(--mano);font-weight:700;font-size:28px;line-height:1.05;letter-spacing:0;color:var(--tinta)}
+#app #project-workspace .agents-board .small-badge{padding:0 8px 1px;border:1.5px dashed var(--esfero);border-radius:5px 9px 4px 10px;color:var(--esfero);
+  font-family:var(--esfero-letra);font-size:14px;letter-spacing:.05em;text-transform:uppercase;rotate:-3deg}
+#app #project-workspace .agents-board .panel-description{font-family:var(--esfero-letra);font-size:15.5px;line-height:1.3;color:var(--lapiz)}
+#app #project-workspace .graph-edge{stroke:#26324d99;stroke-width:1.4;stroke-linecap:round}
+#app #project-workspace .graph-edge.conditional{stroke-dasharray:5 4}
+#app #project-workspace .graph-edge.visited{stroke:var(--esfero);stroke-width:2.2}
+#app #project-workspace .graph-node :is(rect,circle){fill:#fff;stroke:var(--tinta);stroke-width:1.5}
+#app #project-workspace .graph-node rect{rx:12px}
+#app #project-workspace .node-title{font-family:var(--esfero-letra);font-size:17px;font-weight:400;fill:var(--tinta)}
+#app #project-workspace .node-title.small{font-size:14px}
+#app #project-workspace .node-status{font-family:var(--esfero-letra);font-size:12.5px;fill:var(--lapiz)}
+#app #project-workspace .edge-label{font-family:var(--esfero-letra);font-size:12px;fill:var(--lapiz)}
+#app #project-workspace .graph-node.running :is(rect,circle){fill:#fff7cf;stroke:var(--esfero);stroke-width:2.2;stroke-dasharray:6 4;animation:cuaderno-hormigas .7s linear infinite}
+#app #project-workspace .graph-node.running :is(.node-title,.node-status){fill:var(--esfero)}
+#app #project-workspace .graph-node.done :is(rect,circle){fill:#e1f4d8;stroke:#2f8a4a;stroke-width:1.8}
+#app #project-workspace .graph-node.done :is(.node-title,.node-status){fill:#1f5f33}
+#app #project-workspace .graph-node.failed :is(rect,circle){fill:#fde6e3;stroke:#c2372e;stroke-width:1.8}
+#app #project-workspace .graph-node.failed :is(.node-title,.node-status){fill:#8f2019}
+#app #project-workspace .graph-legend{gap:18px;font-family:var(--esfero-letra);font-size:14.5px;color:var(--lapiz)}
+#app #project-workspace .legend-dot{width:11px;height:11px;border:1.5px solid var(--tinta)}
+#app #project-workspace .legend-dot.active{background:#fff7cf;border-color:var(--esfero)}
+#app #project-workspace .legend-dot.done{background:#e1f4d8;border-color:#2f8a4a}
+#app #project-workspace .trace-details{border-top:1.5px dashed #a9b3c6}
+#app #project-workspace .trace-details summary{font-family:var(--esfero-letra);font-size:16px;color:var(--tinta)}
+#app #project-workspace .trace-details summary>span{min-width:24px;padding:0 7px;border:1.4px solid var(--tinta);border-radius:999px;background:#fff7cf;color:var(--tinta);font-size:14px;text-align:center}
+#app #project-workspace .trace-list{font-size:11px;color:#3d4a63}
+#app #project-workspace .trace-list .empty-trace{font-family:var(--esfero-letra);font-size:15px;color:var(--lapiz)}
+#app #project-workspace .agents-memory{border-top:1.5px dashed #a9b3c6}
+#app #project-workspace .memory-fields h3{font-family:var(--esfero-letra);font-size:17px;font-weight:400;color:var(--esfero)}
+#app #project-workspace .memory-fields dt{font-family:var(--esfero-letra);font-size:14.5px;font-weight:400;color:var(--lapiz)}
+#app #project-workspace .memory-fields dd{padding:2px 8px;border-left:3px solid var(--resaltador);font-size:12.5px;color:#2b3852}
+#app #project-workspace .empty-memory{font-family:var(--esfero-letra);font-size:15.5px;line-height:1.3;color:var(--lapiz)}
+
+/* ---------- Árbol de problemas ---------- */
+/* El árbol es una columna de alto fijo: sin esto, en pantallas angostas la cabecera se encoge
+   por debajo de su contenido y pisa lo que sigue. */
+#app #project-workspace .problem-tree-view>*{flex-shrink:0}
+#app #project-workspace .problem-tree-head{border-bottom:1.5px dashed #a9b3c6;background:var(--hoja);border-radius:16px 16px 0 0}
+#app #project-workspace .problem-tree-head h2{font-family:var(--mano);font-weight:700;font-size:30px;line-height:1.05;letter-spacing:0;color:var(--tinta)}
+#app #project-workspace .problem-tree-head p{margin-top:2px;font-family:var(--esfero-letra);font-size:15px;line-height:1.3;color:var(--lapiz)}
+#app #project-workspace .problem-tree-badge{border:1.6px solid var(--tinta);border-radius:52% 46% 55% 44%/46% 54% 44% 55%;background-color:#e1f4d8}
+#app #project-workspace .problem-tree-save-state{font-family:var(--esfero-letra);font-size:15px;color:var(--lapiz)}
+#app #project-workspace .problem-tree-head .button{min-height:38px;padding:4px 15px 5px;font-size:16px}
+#app #project-workspace .problem-tree-head .button.quiet{border:var(--borde);background:#fff;color:var(--tinta);box-shadow:0 3px 0 #26324d2e;transition:translate .12s,box-shadow .12s,background .15s}
+#app #project-workspace .problem-tree-head .button.quiet:hover:not(:disabled){background:#fff7cf;translate:0 -1px;box-shadow:0 4px 0 #26324d2e}
+#app #project-workspace .problem-tree-head .button.quiet:active:not(:disabled){translate:0 2px;box-shadow:0 1px 0 #26324d2e}
+#app #project-workspace .problem-tree-surface{background:transparent}
+#app #project-workspace .problem-tree-lane-head h3{font-family:var(--mano);font-weight:700;font-size:30px;line-height:1;letter-spacing:0}
+#app #project-workspace .problem-tree-lane-head p{font-family:var(--esfero-letra);font-size:15.5px;line-height:1.3;color:var(--lapiz)}
+#app #project-workspace .problem-tree-count{font-family:var(--esfero-letra);font-size:15px}
+#app #project-workspace .problem-tree-add{padding:3px 14px 4px;border:1.5px dashed currentColor;border-radius:999px;background:#fff;
+  font-family:var(--esfero-letra);font-size:16px;font-weight:400;transition:translate .12s,rotate .2s,background .15s,box-shadow .12s}
+#app #project-workspace .problem-tree-lane.effects .problem-tree-add{color:#2f6b45}
+#app #project-workspace .problem-tree-lane.causes .problem-tree-add{color:#74472d}
+#app #project-workspace .problem-tree-add:hover:not(:disabled){border-style:solid;background:#fff7cf;rotate:-1.5deg;translate:0 -1px}
+#app #project-workspace .problem-tree-add:active:not(:disabled){translate:0 2px;rotate:0deg}
+#app #project-workspace .problem-tree-list.drop-target{background:#fff6cf;outline:2px dashed var(--esfero)}
+#app #project-workspace .problem-tree-empty{border:1.5px dashed #a9b3c6;border-radius:var(--irregular);background:#ffffffb3;font-family:var(--esfero-letra);font-size:16px;color:var(--lapiz)}
+/* Tarjetas: borde completo del color de su carril, sin franja lateral. */
+#app #project-workspace .problem-tree-lane.effects .problem-tree-card{border:1.6px solid #3f7d52;box-shadow:0 2px 0 #315f3b14,0 14px 20px -18px #315f3b80;transition:translate .15s,box-shadow .15s}
+#app #project-workspace .problem-tree-lane.causes .problem-tree-card{border:1.6px solid #8b5b38;box-shadow:0 2px 0 #65412714,0 14px 20px -18px #65412780;transition:translate .15s,box-shadow .15s}
+#app #project-workspace .problem-tree-card:hover{translate:0 -2px}
+#app #project-workspace .problem-tree-card.is-child{border-style:dashed}
+#app #project-workspace .problem-tree-card-head{font-family:var(--esfero-letra);font-size:16px;font-weight:400}
+#app #project-workspace .problem-tree-evidence{padding:0 8px 1px;border:1.3px dashed currentColor;border-radius:5px 9px 4px 10px;font-family:var(--esfero-letra);font-size:13.5px;font-weight:400}
+#app #project-workspace .problem-tree-evidence.has-source{border-style:solid}
+#app #project-workspace :is(.problem-tree-card,.problem-tree-core) :is(textarea,input){border:1.5px solid #26324d73;border-radius:10px 14px 9px 15px/14px 9px 15px 10px;
+  font-family:var(--esfero-letra);font-size:17px;line-height:1.3;color:var(--tinta)}
+#app #project-workspace .problem-tree-card input{font-size:15.5px}
+#app #project-workspace .problem-tree-core textarea{font-size:19px}
+#app #project-workspace :is(.problem-tree-card,.problem-tree-core) :is(textarea,input):focus-visible{border-color:var(--esfero);outline:0;box-shadow:0 0 0 3px #294eb824}
+#app #project-workspace .problem-tree-card label:not(.sr-only),
+#app #project-workspace .problem-tree-core label{font-family:var(--esfero-letra);font-size:15px;font-weight:400}
+#app #project-workspace .problem-tree-card-actions button{padding:1px 9px 2px;border-radius:999px;font-family:var(--esfero-letra);font-size:14.5px;font-weight:400;transition:background .15s,rotate .2s}
+#app #project-workspace .problem-tree-card-actions button:hover:not(:disabled){background:#ffffffcc;rotate:-2deg}
+#app #project-workspace .tree-why{padding:3px 13px 4px;border:1.5px dashed #8b5b38;border-radius:999px;background:#fffaf5;color:#74472d;
+  font-family:var(--esfero-letra);font-size:15.5px;font-weight:400;transition:translate .12s,rotate .2s,background .15s}
+#app #project-workspace .tree-why:hover:not(:disabled){background:#fff7cf;rotate:-1.5deg;translate:0 -1px}
+#app #project-workspace .problem-tree-connector span{width:0;background:none;border-left:2px dashed #72a681}
+#app #project-workspace .problem-tree-core + .problem-tree-connector span{border-left-color:#956340}
+#app #project-workspace .problem-tree-core{border:1.8px solid #a8551d;border-radius:14px 12px 22px 20px/12px 14px 20px 22px}
+#app #project-workspace .problem-tree-core h3{font-family:var(--mano);font-weight:700;font-size:30px;line-height:1;letter-spacing:0}
+#app #project-workspace .problem-tree-core-heading span{padding:0 9px 1px;border:1.4px dashed #a8551d;border-radius:5px 9px 4px 10px;background:#fff0de;
+  font-family:var(--esfero-letra);font-size:14px;font-weight:400;letter-spacing:.05em;text-transform:uppercase;rotate:3deg}
+#app #project-workspace .problem-tree-finding{border-style:dashed;border-width:1.4px;border-radius:9px 13px 8px 14px/13px 8px 14px 9px}
+#app #project-workspace .problem-tree-finding .finding-label{font-family:var(--esfero-letra);font-size:14px;font-weight:400;letter-spacing:.04em;text-transform:uppercase}
+#app #project-workspace .problem-tree-diagnosis{border:1.6px solid var(--esfero);border-radius:var(--irregular);background:#f3f6fe;color:#2b3852}
+#app #project-workspace .problem-tree-diagnosis h3{font-family:var(--mano);font-weight:700;font-size:26px;line-height:1;color:var(--esfero)}
+#app #project-workspace .diagnosis-close{font-family:var(--esfero-letra);font-size:15px;font-weight:400}
+#app #project-workspace .diagnosis-stale-note{font-family:var(--esfero-letra);font-size:15px;font-weight:400}
+#app #project-workspace .problem-tree-error{border:1.5px dashed #c2372e;border-radius:var(--irregular);font-family:var(--esfero-letra);font-size:16px}
+#app #project-workspace .problem-tree-foot{font-family:var(--esfero-letra);font-size:14.5px;line-height:1.35;color:var(--lapiz)}
+
+/* ---------- Barra de 5 porqués (sobre el cuadro del chat) ---------- */
+#app #project-workspace .why-bar{border:1.6px solid #8b5b38;border-radius:14px 18px 12px 20px/18px 12px 20px 14px;box-shadow:0 2px 0 #65412714;animation:cuaderno-entrar .3s cubic-bezier(.2,.9,.3,1.2) both}
+#app #project-workspace .why-title strong{font-family:var(--esfero-letra);font-size:18px;font-weight:400;line-height:1.2}
+#app #project-workspace .why-chip{padding:0 8px 1px;border:1.3px dashed #8b5b38;border-radius:5px 9px 4px 10px;background:#fff0de;font-family:var(--esfero-letra);font-size:13.5px;font-weight:400;letter-spacing:.04em;rotate:-3deg}
+#app #project-workspace .why-state{font-family:var(--esfero-letra);font-size:14.5px;font-weight:400}
+#app #project-workspace .why-step{font-family:var(--esfero-letra);font-size:16.5px;line-height:1.3}
+#app #project-workspace .why-chain li::marker{font-family:var(--mano);font-size:20px}
+#app #project-workspace :is(.why-evidence,.why-close input){border:1.5px solid #8b5b3899;border-radius:10px 14px 9px 15px/14px 9px 15px 10px;font-family:var(--esfero-letra);font-size:15.5px}
+#app #project-workspace :is(.why-next,.why-hint,.why-skipped){font-family:var(--esfero-letra);font-size:15px;line-height:1.3}
+#app #project-workspace .why-doubts{border:1.3px dashed #d0a060;border-radius:9px 13px 8px 14px/13px 8px 14px 9px}
+#app #project-workspace .why-doubts span,
+#app #project-workspace .why-close label,
+#app #project-workspace .why-result span{font-family:var(--esfero-letra);font-size:14.5px;font-weight:400}
+#app #project-workspace .why-button{padding:2px 13px 3px;border-radius:999px;font-family:var(--esfero-letra);font-size:15.5px;font-weight:400;transition:translate .12s,box-shadow .12s,background .15s}
+#app #project-workspace .why-button.primary{border:1.6px solid #5a3820;box-shadow:0 3px 0 #5a3820}
+#app #project-workspace .why-button.primary:hover{translate:0 -1px;box-shadow:0 4px 0 #5a3820}
+#app #project-workspace .why-button.primary:active{translate:0 2px;box-shadow:0 1px 0 #5a3820}
+#app #project-workspace .why-button.quiet{border:1.5px dashed #8b5b38}
+#app #project-workspace .why-button.quiet:hover{border-style:solid}
+#app #project-workspace .why-remove{font-family:var(--esfero-letra);font-size:14.5px;font-weight:400}
+
+@media(max-width:700px){
+  #app #project-workspace .notes-head h2{font-size:28px}
+  #app #project-workspace .agents-board h2{font-size:25px}
+  #app #project-workspace .problem-tree-head h2{font-size:25px}
+  #app #project-workspace :is(.problem-tree-lane-head h3,.problem-tree-core h3){font-size:26px}
+}

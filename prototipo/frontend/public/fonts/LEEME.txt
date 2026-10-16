@@ -1,0 +1,7 @@
+Fuentes manuscritas del Inicio de Hilo, servidas localmente (sin conexion a internet).
+
+caveat-700.woff2        Caveat Bold, de The Caveat Project Authors.
+patrick-hand-400.woff2  Patrick Hand Regular, de Patrick Wagesreiter.
+
+Ambas bajo SIL Open Font License 1.1 (https://openfontlicense.org).
+Subconjunto latino tomado de Fontsource (https://fontsource.org) el 6 de octubre de 2026.

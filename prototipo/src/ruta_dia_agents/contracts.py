@@ -62,6 +62,9 @@ class ProjectState(StrictModel):
     completed_tools: list[str] = Field(default_factory=list)
     recent_turns: list[str] = Field(default_factory=list, max_length=8)
     shared_context: list[str] = Field(default_factory=list, max_length=40)
+    # Herramienta fijada por el sistema durante el turno (p. ej. un análisis de 5 porqués en
+    # curso). No se guarda con el cuaderno: se calcula en cada turno.
+    locked_tool: str = ""
     validated_fields: dict[str, dict[str, Any]] = Field(default_factory=dict)
     context: ProjectContext = Field(default_factory=ProjectContext)
     color: NotebookColor = NotebookColor.BLUE
@@ -72,6 +75,26 @@ class ToolRecommendation(StrictModel):
     reason: str
 
 
+# Qué pide el mensaje. Los cuatro últimos se responden sin Metodólogo ni Verificador, con un
+# texto fijo: un saludo, algo ajeno al proyecto, un concepto que no tiene ficha o un tema
+# sensible (este ni siquiera llega al Orquestador).
+RequestKind = Literal[
+    "trabajo", "explicacion", "recomendacion", "saludo", "fuera", "concepto", "sensible",
+]
+DIRECT_KINDS = frozenset({"saludo", "fuera", "concepto", "sensible"})
+
+
+def has_value(value: Any) -> bool:
+    """Falso para None, texto en blanco y colecciones vacías; el 0 y False sí son datos."""
+    if value is None:
+        return False
+    if isinstance(value, str):
+        return bool(value.strip())
+    if isinstance(value, (list, tuple, set, dict)):
+        return bool(value)
+    return True
+
+
 class HandoffContract(StrictModel):
     intent: str
     phase: str
@@ -80,6 +103,7 @@ class HandoffContract(StrictModel):
     recommendations: list[ToolRecommendation] = Field(default_factory=list, max_length=3)
     active_tool: str = ""
     context_summary: str
+    kind: RequestKind = "trabajo"
 
     @model_validator(mode="after")
     def active_tool_must_be_recommended(self) -> HandoffContract:

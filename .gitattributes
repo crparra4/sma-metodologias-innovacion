@@ -1,0 +1,2 @@
+# Los scripts de Linux deben conservar saltos de linea LF aunque se editen desde Windows.
+*.sh text eol=lf

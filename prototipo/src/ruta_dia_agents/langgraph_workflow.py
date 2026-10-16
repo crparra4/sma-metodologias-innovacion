@@ -10,7 +10,9 @@ from typing_extensions import TypedDict
 
 from .audit import NullRecorder, VerificationRecorder
 from .contracts import (
+    DIRECT_KINDS,
     CandidateResponse,
+    ExpertiseLevel,
     HandoffContract,
     ProjectState,
     Severity,
@@ -18,11 +20,25 @@ from .contracts import (
     Verdict,
     VerificationFinding,
     VerificationResult,
+    has_value,
 )
 from .guardrails import StructuralViolation, validate_candidate, validate_handoff
 from .knowledge import KnowledgeCatalog
-from .runtime import AgentRuntime
+from .runtime import AgentRuntime, is_thanks, next_step_hint
+from .sensitive import DISTRESS_OPENING, SENSITIVE_REPLIES, sensitive_topic, shows_distress
 from .service import SAFE_DEGRADATION
+
+# Respuestas fijas: no usan una ficha, así que no pasan por el Metodólogo ni el Verificador.
+OUT_OF_SCOPE = (
+    "Eso se sale de lo que puedo acompañar: aquí trabajo contigo tu proyecto, con las fichas "
+    "de la ruta de innovación. ¿Qué parte de tu proyecto quieres trabajar ahora?"
+)
+DIRECT_FINDINGS = {
+    "saludo": ("greeting", "Saludo: respuesta fija del sistema, sin ficha."),
+    "fuera": ("out_of_scope", "El mensaje no trata del proyecto: respuesta fija, sin ficha."),
+    "concepto": ("no_card", "No hay una ficha validada sobre ese tema."),
+    "sensible": ("sensitive_topic", "Tema sensible: respuesta fija del sistema, sin modelo."),
+}
 
 
 class RutaDiaGraphState(TypedDict, total=False):
@@ -158,26 +174,124 @@ class LangGraphRutaDia:
 
     def _orchestrate(self, graph_state: RutaDiaGraphState) -> dict:
         project_state = ProjectState.model_validate(graph_state["project_state"])
+        if sensitive_topic(graph_state["message"]):
+            # Un tema sensible no se le envía al modelo: lo decide y lo responde el código.
+            stage = self.catalog.stage(project_state.stage)
+            handoff = self._keep_place(
+                HandoffContract(
+                    intent="Tema sensible: respuesta fija del sistema.",
+                    phase=stage.phase,
+                    stage=stage.id,
+                    expertise=ExpertiseLevel.NOVEL,
+                    context_summary="El mensaje no se envió al modelo.",
+                    kind="sensible",
+                ),
+                project_state,
+            )
+            return {"handoff": handoff.model_dump(mode="json")}
         handoff = self.runtime.orchestrate(
             graph_state["message"],
             project_state,
             self.catalog.route_index(),
         )
+        if handoff.kind in DIRECT_KINDS:
+            handoff = self._keep_place(handoff, project_state)
         validate_handoff(handoff, self.catalog)
         update = {"handoff": handoff.model_dump(mode="json")}
         if handoff.active_tool:
-            update["tool_card"] = self.catalog.tool_card(handoff.active_tool)
+            update["tool_card"] = self.catalog.prompt_card(handoff.active_tool)
         return update
+
+    def _keep_place(self, handoff: HandoffContract, state: ProjectState) -> HandoffContract:
+        """Un saludo o un pedido ajeno no cambia la etapa ni la ficha en curso del cuaderno."""
+        stage = self.catalog.stage(state.stage)
+        tool = state.active_tool if state.active_tool in stage.tools else ""
+        return HandoffContract(
+            intent=handoff.intent,
+            phase=stage.phase,
+            stage=stage.id,
+            expertise=handoff.expertise,
+            recommendations=[{"tool_id": tool, "reason": "Ficha en curso."}] if tool else [],
+            active_tool=tool,
+            context_summary=handoff.context_summary,
+            kind=handoff.kind,
+        )
 
     @staticmethod
     def _after_orchestration(
         graph_state: RutaDiaGraphState,
     ) -> Literal["knowledge_gap", "guide"]:
         handoff = HandoffContract.model_validate(graph_state["handoff"])
-        return "guide" if handoff.active_tool else "knowledge_gap"
+        direct = handoff.kind in DIRECT_KINDS
+        return "guide" if handoff.active_tool and not direct else "knowledge_gap"
+
+    def _direct_reply(
+        self, handoff: HandoffContract, state: ProjectState, user_message: str = "",
+    ) -> dict:
+        """Respuesta fija para un saludo, un pedido ajeno, un concepto sin ficha o un tema
+        sensible."""
+        stage = self.catalog.stage(handoff.stage)
+        names = [self.catalog.tool(tool_id).name for tool_id in stage.tools]
+        listed = (
+            names[0] if len(names) == 1
+            else f"{', '.join(names[:-1])} y {names[-1]}" if names else ""
+        )
+        topic = sensitive_topic(user_message) if handoff.kind == "sensible" else ""
+        if topic:
+            message = SENSITIVE_REPLIES[topic]
+        elif handoff.kind == "saludo" and is_thanks(user_message):
+            message = (
+                "¡Con gusto! Aquí sigo cuando quieras. "
+                "¿Qué parte de tu proyecto trabajamos ahora?"
+            )
+        elif handoff.kind == "saludo":
+            reto = state.context.question.strip()
+            message = (
+                f"¡Hola! Soy Hilo y te acompaño en tu proyecto con una pregunta a la vez. "
+                f"Estás en la etapa {stage.id}, «{stage.name}». "
+                + (f"Tu reto es «{reto}». ¿Seguimos con eso?" if reto
+                   else "¿Qué reto o problema quieres trabajar hoy?")
+            )
+        elif handoff.kind == "fuera":
+            message = OUT_OF_SCOPE
+        elif listed:
+            message = (
+                "Todavía no tengo una ficha validada sobre eso y prefiero no explicarlo de "
+                f"memoria. En esta etapa, «{stage.name}», sí puedo explicarte: {listed}. "
+                "¿Cuál quieres ver?"
+            )
+        else:
+            message = (
+                "Todavía no tengo una ficha validada sobre eso y prefiero no explicarlo de "
+                f"memoria. La etapa {stage.id}, «{stage.name}», aún no tiene fichas habilitadas."
+            )
+        code, detail = DIRECT_FINDINGS[handoff.kind]
+        if topic:
+            detail = f"{detail} Categoría: {topic}."
+        verification = VerificationResult(
+            verdict=Verdict.OBSERVED,
+            severity=Severity.LOW,
+            findings=[VerificationFinding(code=code, detail=detail)],
+            source_tool_id=handoff.active_tool,
+        )
+        return {
+            "verification": verification.model_dump(mode="json"),
+            "attempts": 1,
+            "result": TurnResult(
+                message=message,
+                handoff=handoff,
+                verification=verification,
+                attempts=1,
+                # Un concepto sin ficha es una brecha de conocimiento, como una etapa sin fichas.
+                degraded=handoff.kind == "concepto",
+            ).model_dump(mode="json"),
+        }
 
     def _knowledge_gap(self, graph_state: RutaDiaGraphState) -> dict:
         handoff = HandoffContract.model_validate(graph_state["handoff"])
+        if handoff.kind in DIRECT_KINDS:
+            state = ProjectState.model_validate(graph_state["project_state"])
+            return self._direct_reply(handoff, state, graph_state["message"])
         stage = self.catalog.stage(handoff.stage)
         verification = VerificationResult(
             verdict=Verdict.OBSERVED,
@@ -217,7 +331,12 @@ class LangGraphRutaDia:
             handoff=handoff,
             tool_card=graph_state["tool_card"],
             retry_feedback=(VerificationResult.model_validate(previous) if previous else None),
-            allowed_fields=self.catalog.tool(handoff.active_tool).template_fields,
+            # Con un análisis en curso la cadena la registra el código; ofrecer los
+            # campos de la plantilla solo producía actualizaciones que el Verificador rechaza.
+            allowed_fields=(
+                [] if project_state.locked_tool == handoff.active_tool
+                else self.catalog.tool(handoff.active_tool).template_fields
+            ),
         )
         return {"candidate": candidate.model_dump(mode="json"), "attempts": attempt}
 
@@ -272,29 +391,109 @@ class LangGraphRutaDia:
             return "finalize"
         return "retry" if graph_state["attempts"] < 2 else "degrade"
 
-    @staticmethod
-    def _finalize(graph_state: RutaDiaGraphState) -> dict:
+    def _card_preface(self, handoff: HandoffContract) -> str:
+        """Texto literal de la ficha que se antepone cuando piden explicar o recomendar.
+
+        Sale de la ficha, no del modelo: por eso no necesita verificación.
+        """
+        if handoff.kind not in {"explicacion", "recomendacion"} or not handoff.active_tool:
+            return ""
+        name = self.catalog.tool(handoff.active_tool).name
+        what, when, how = (
+            self.catalog.card_section(handoff.active_tool, section)
+            for section in ("what", "when", "how")
+        )
+        # «Para elegir…», «Cuando necesitas…», «Al inicio…»: todas leen bien tras «Se usa».
+        usage = f"Se usa {when[0].lower()}{when[1:]}" if when else ""
+        if handoff.kind == "recomendacion":
+            return f"Te recomiendo la ficha **{name}**. {usage or what}".strip()
+        if not (what or how):
+            return ""
+        if what.startswith("-"):  # una ficha que abre con una lista de puntos
+            parts = [f"**{name}**", what, *([usage] if usage else [])]
+        else:
+            parts = [f"**{name}.** {' '.join(part for part in (what, usage) if part)}".strip()]
+        if how:
+            parts.append(f"**Cómo se usa**\n\n{how}")
+        return "\n\n".join(parts)
+
+    def _stage_notice(self, handoff: HandoffContract, state: ProjectState) -> str:
+        """Aviso cuando la ficha pedida es de una etapa posterior a la del cuaderno."""
+        if not handoff.active_tool or handoff.stage <= state.stage:
+            return ""
+        here, there = self.catalog.stage(state.stage), self.catalog.stage(handoff.stage)
+        name = self.catalog.tool(handoff.active_tool).name
+        return (
+            f"**{name}** es una ficha de la etapa {there.id}, «{there.name}», y tu cuaderno va "
+            f"en la etapa {here.id}, «{here.name}». Te acompaño con ella, pero lo que no se "
+            "haya resuelto en las etapas anteriores seguirá pendiente."
+        )
+
+    def _opening(self, graph_state: RutaDiaGraphState, handoff: HandoffContract) -> list[str]:
+        """Textos fijos del sistema que van antes de lo que escribió el modelo."""
+        state = ProjectState.model_validate(graph_state["project_state"])
+        return [
+            part
+            for part in (
+                DISTRESS_OPENING if shows_distress(graph_state["message"]) else "",
+                self._stage_notice(handoff, state),
+            )
+            if part
+        ]
+
+    def _finalize(self, graph_state: RutaDiaGraphState) -> dict:
         candidate = CandidateResponse.model_validate(graph_state["candidate"])
         verification = VerificationResult.model_validate(graph_state["verification"])
+        handoff = HandoffContract.model_validate(graph_state["handoff"])
+        parts = [*self._opening(graph_state, handoff), self._card_preface(handoff)]
         return {
             "result": TurnResult(
-                message=candidate.message,
-                handoff=graph_state["handoff"],
+                message="\n\n".join([*(part for part in parts if part), candidate.message]),
+                handoff=handoff,
                 verification=verification,
                 attempts=graph_state["attempts"],
                 accepted_updates=(
-                    candidate.template_updates
+                    [update for update in candidate.template_updates if has_value(update.value)]
                     if verification.verdict == Verdict.APPROVED
                     else []
                 ),
             ).model_dump(mode="json")
         }
 
-    @staticmethod
-    def _degrade(graph_state: RutaDiaGraphState) -> dict:
+    def _degrade(self, graph_state: RutaDiaGraphState) -> dict:
+        handoff = HandoffContract.model_validate(graph_state["handoff"])
+        steps = self.catalog.card_section(handoff.active_tool, "how") if handoff.active_tool else ""
+        message = SAFE_DEGRADATION
+        verification = VerificationResult.model_validate(graph_state["verification"])
+        if {finding.code for finding in verification.findings} == {"repeated_question"}:
+            # El modelo insistió en la misma pregunta: mejor decirlo y ofrecer el paso que
+            # sigue que soltarle a la persona la ficha entera.
+            candidate = CandidateResponse.model_validate(graph_state["candidate"])
+            following = next_step_hint(candidate.message, graph_state["tool_card"])
+            message = "Ya tengo tu respuesta y no quiero repetirte la pregunta. " + (
+                f"El paso que sigue en la ficha es: «{following}» ¿Seguimos con eso?"
+                if following else "¿Con qué parte de la ficha quieres seguir?"
+            )
+            message = "\n\n".join([*self._opening(graph_state, handoff), message])
+        elif preface := self._card_preface(handoff):
+            # Pidieron explicar la ficha y la pregunta del modelo no pasó: la explicación
+            # literal de la ficha sigue siendo válida y no depende del modelo. Cubre además las
+            # fichas sin «Cómo se usa», que antes caían en el mensaje genérico.
+            message = "\n\n".join([
+                *self._opening(graph_state, handoff), preface,
+                "¿Con qué parte de la ficha quieres que te acompañe?",
+            ])
+        elif steps:
+            name = self.catalog.tool(handoff.active_tool).name
+            message = (
+                "No logré formular una orientación que pasara la verificación, así que te dejo "
+                f"el paso a paso tal como está en la ficha **{name}**:\n\n{steps}\n\n"
+                "¿En cuál de estos pasos quieres que te acompañe?"
+            )
+            message = "\n\n".join([*self._opening(graph_state, handoff), message])
         return {
             "result": TurnResult(
-                message=SAFE_DEGRADATION,
+                message=message,
                 handoff=graph_state["handoff"],
                 verification=graph_state["verification"],
                 attempts=2,

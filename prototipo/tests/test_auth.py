@@ -1,11 +1,15 @@
+import os
+import stat
 from dataclasses import replace
 
+import pytest
 from fastapi.testclient import TestClient
 
+from ruta_dia_agents.auth import AttemptLimiter
 from ruta_dia_agents.config import Settings
 from ruta_dia_agents.contracts import ProjectState
 from ruta_dia_agents.memory import NotebookMemory
-from ruta_dia_agents.web import create_app
+from ruta_dia_agents.web import MAX_BODY_BYTES, create_app
 
 
 def client_for(tmp_path):
@@ -183,4 +187,105 @@ def test_existing_notes_are_claimed_by_the_storage_owner(tmp_path):
         notes = client.get("/api/notebooks/Previo").json()["notes"]
         me = client.get("/api/auth/me").json()
         assert [(n["title"], n["author_id"]) for n in notes] == [("Vieja", me["id"])]
+
+
+
+def login(client, username, password="una-clave-local-segura"):
+    return client.post("/api/auth/login", json={"username": username, "password": password})
+
+
+def test_attempt_limiter_frees_the_slot_when_the_window_passes():
+    now = [100.0]
+    limiter = AttemptLimiter(2, window=60, clock=lambda: now[0])
+    assert limiter.attempt("ana") == 0
+    now[0] += 20
+    assert limiter.attempt("ana") == 0
+    assert limiter.attempt("ana") == 40
+    # Un intento rechazado no alarga la espera ni afecta a otra clave.
+    assert limiter.attempt("ana") == 40
+    assert limiter.attempt("luis") == 0
+    now[0] += 40
+    assert limiter.attempt("ana") == 0
+    limiter.forget("ana")
+    assert limiter.attempt("ana") == 0
+    now[0] += 61
+    assert limiter.attempt("luis") == 0
+    assert set(limiter._hits) == {"luis"}
+
+
+def test_login_blocks_a_user_after_repeated_failures(tmp_path):
+    client, _ = client_for(tmp_path)
+    with client:
+        assert register(client, "ana", "Ana").status_code == 201
+        assert register(client, "luis", "Luis").status_code == 201
+        assert client.post("/api/auth/logout").status_code == 200
+        for _ in range(5):
+            assert login(client, " ANA ", "equivocada").status_code == 401
+        blocked = login(client, "ana")
+        assert blocked.status_code == 429
+        assert 1 <= int(blocked.headers["retry-after"]) <= 60
+        assert "Demasiados intentos" in blocked.json()["detail"]
+        # El bloqueo es de esa cuenta: las demás siguen entrando.
+        assert login(client, "luis").status_code == 200
+
+
+def test_successful_login_clears_the_failure_count(tmp_path):
+    client, _ = client_for(tmp_path)
+    with client:
+        assert register(client, "ana", "Ana").status_code == 201
+        for _ in range(3):
+            assert login(client, "ana", "equivocada").status_code == 401
+            assert login(client, "ana").status_code == 200
+        assert login(client, "ana", "equivocada").status_code == 401
+
+
+def test_access_attempts_share_a_quota_per_origin(tmp_path):
+    client, _ = client_for(tmp_path)
+    with client:
+        # Usuarios distintos: el tope por cuenta no interviene.
+        codes = [login(client, f"nadie{index}").status_code for index in range(21)]
+        assert codes == [401] * 20 + [429]
+        assert register(client, "ana", "Ana").status_code == 429
+        assert client.get("/api/auth/me").status_code == 401
+
+
+def test_oversized_login_fields_and_bodies_are_rejected(tmp_path):
+    client, _ = client_for(tmp_path)
+    with client:
+        assert login(client, "ana", "x" * 129).status_code == 422
+        big = b'{"username": "ana", "password": "' + b"x" * MAX_BODY_BYTES + b'"}'
+        declared = client.post(
+            "/api/auth/login", content=big, headers={"Content-Type": "application/json"}
+        )
+        assert declared.status_code == 413
+
+        def pieces():
+            for start in range(0, len(big), 64 * 1024):
+                yield big[start:start + 64 * 1024]
+
+        chunked = client.post(
+            "/api/auth/login", content=pieces(), headers={"Content-Type": "application/json"}
+        )
+        assert "content-length" not in chunked.request.headers
+        assert chunked.status_code == 413
+        # Ninguno de los rechazos gastó un intento de acceso.
+        assert register(client, "ana", "Ana").status_code == 201
+
+
+@pytest.mark.skipif(os.name != "posix", reason="permisos POSIX")
+def test_the_data_folder_is_private_to_the_account_running_hilo(tmp_path):
+    data = tmp_path / "datos"
+    (data / "users" / "abc").mkdir(parents=True)
+    (data / "notebooks.sqlite3").write_bytes(b"")
+    (data / "users" / "abc" / "notebooks.sqlite3").write_bytes(b"")
+    for item in (data, data / "users", data / "users" / "abc"):
+        item.chmod(0o775)
+    client, _ = client_for(data)
+    with client:
+        assert register(client, "ana", "Ana").status_code == 201
+    mode = lambda item: stat.S_IMODE(item.stat().st_mode)  # noqa: E731
+    assert mode(data) == 0o700
+    assert mode(data / "users") == 0o700
+    assert mode(data / "notebooks.sqlite3") == 0o600
+    assert mode(data / "users" / "abc" / "notebooks.sqlite3") == 0o600
 

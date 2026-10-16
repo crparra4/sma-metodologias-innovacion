@@ -1,0 +1,347 @@
+/* Inicio como cuaderno.
+   Solo afecta a #home-view: el encabezado y las demás vistas no cambian.
+   Los colores, las fuentes, los botones y las animaciones de aquí también los usan
+   calendario-cuaderno.css, chat-cuaderno.css y tablero-cuaderno.css.
+   Materiales: hoja cuadriculada (fondo), hoja rayada (portada y agenda), cartulina y cinta
+   (herramientas), argollas (calendario), resaltador y tinta de esfero (títulos).
+   Formas: se alternan óvalos, círculos, píldoras y rectángulos de esquina irregular.
+   Trazo fino y sombras suaves: el papel manda, la tinta acompaña. */
+
+@font-face{font-family:"Caveat";src:url("/fonts/caveat-700.woff2") format("woff2");font-weight:700;font-display:swap}
+@font-face{font-family:"Patrick Hand";src:url("/fonts/patrick-hand-400.woff2") format("woff2");font-weight:400;font-display:swap}
+
+#app :is(#home-view,#calendar-view,#project-workspace),.calv-dialog{
+  --tinta:#26324d;--esfero:#294eb8;--esfero-rojo:#c2372e;--lapiz:#5d6880;--hoja:#fffdf7;
+  --resaltador:#ffe98f;--violeta:#6b5b95;--violeta-hondo:#4d3f73;
+  --mano:"Caveat","Segoe Print","Ink Free","Comic Sans MS",cursive;
+  --esfero-letra:"Patrick Hand","Segoe Print","Ink Free","Comic Sans MS",cursive;
+  --borde:1.6px solid var(--tinta);
+  --sombra:0 1px 0 #26324d12,0 16px 30px -20px #26324d66;
+  --irregular:22px 16px 26px 14px/16px 24px 14px 22px;
+  --margen:clamp(30px,2.6vw,46px);
+}
+#app #home-view{
+  display:grid;grid-template-columns:minmax(0,1fr) clamp(350px,29vw,420px);gap:30px 34px;align-items:start;
+  padding:34px clamp(24px,3vw,56px) 44px calc(var(--margen) + clamp(20px,2vw,34px));
+  color:var(--tinta);
+  background-color:#fcfbf8;
+  background-image:
+    linear-gradient(90deg,transparent calc(var(--margen) - 1.5px),#f4cdc8 calc(var(--margen) - 1.5px),#f4cdc8 var(--margen),transparent var(--margen)),
+    linear-gradient(#e9eef6 1px,transparent 1px),linear-gradient(90deg,#e9eef6 1px,transparent 1px);
+  background-size:auto,26px 26px,26px 26px;background-attachment:local;
+}
+#app #home-view[hidden]{display:none}
+#app #home-view .home-main{min-width:0;display:flex;flex-direction:column;gap:30px}
+#app #home-view .home-rail{min-width:0}
+#app #home-view :is(.project-toolbar,.project-grid,.project-count,.home-empty,.home-storage,.home-block,.tool-tiles){max-width:none;margin-left:0;margin-right:0}
+
+/* ---------- Animaciones ---------- */
+@keyframes cuaderno-entrar{from{opacity:0;translate:0 16px;scale:.985}}
+@keyframes cuaderno-caer{from{opacity:0;translate:0 -20px;rotate:-4deg;scale:.94}}
+@keyframes cuaderno-trazo{from{stroke-dashoffset:100}}
+@keyframes cuaderno-escribir{from{left:0;opacity:1}85%{opacity:1}to{left:100%;opacity:0}}
+@keyframes cuaderno-flotar{50%{translate:0 -5px;rotate:2deg}}
+@keyframes cuaderno-parpadeo{0%,92%,100%{transform:scaleY(1)}95%{transform:scaleY(.1)}}
+@keyframes cuaderno-salto{30%{translate:0 -22px;rotate:-12deg}55%{translate:0 0;rotate:8deg}75%{translate:0 -7px;rotate:-3deg}}
+@keyframes cuaderno-pop{40%{scale:1.14}70%{scale:.95}}
+@keyframes cuaderno-encerrar{from{opacity:0;scale:.4;rotate:-60deg}}
+@keyframes cuaderno-tachar{from{background-size:0 2px}}
+@keyframes cuaderno-menear{25%{rotate:-9deg}60%{rotate:7deg}}
+@keyframes cuaderno-cinta{from{opacity:0;scale:.2 1}}
+
+#app #home-view .home-hero,
+#app #home-view .home-projects,
+#app #home-view #home-tools,
+#app #home-view .agenda-calendar,
+#app #home-view .agenda-tasks{animation:cuaderno-entrar .5s cubic-bezier(.2,.9,.3,1.2) both}
+#app #home-view .home-projects{animation-delay:.08s}
+#app #home-view #home-tools{animation-delay:.16s}
+#app #home-view .agenda-calendar{animation-delay:.12s}
+#app #home-view .agenda-tasks{animation-delay:.2s}
+
+/* ---------- Títulos a mano ---------- */
+#app #home-view h3{font-family:var(--mano);font-weight:700;font-size:32px;line-height:1.05;letter-spacing:0;color:var(--tinta);margin:0}
+#app #home-view :is(#home-projects-title,#home-tools-title){display:inline-block;padding-bottom:9px;
+  background:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='44' height='8'%3E%3Cpath d='M0 5c6-5 11 4 22 0s16-5 22 0' fill='none' stroke='%23294eb8' stroke-width='1.8' stroke-linecap='round'/%3E%3C/svg%3E") repeat-x 0 100%/44px 8px}
+
+/* ---------- Botones: se hunden al presionar ---------- */
+#app :is(#home-view,#calendar-view,#project-workspace) .button.primary{border:var(--borde);border-radius:999px;background:var(--esfero);color:#fff;
+  font-family:var(--esfero-letra);font-size:17px;font-weight:400;letter-spacing:.01em;padding:8px 18px 9px;min-height:44px;
+  box-shadow:0 3px 0 var(--tinta);transition:translate .12s,box-shadow .12s,background .15s}
+#app :is(#home-view,#calendar-view,#project-workspace) .button.primary:hover:not(:disabled){translate:0 -1px;box-shadow:0 4px 0 var(--tinta);background:#3159cc}
+#app :is(#home-view,#calendar-view,#project-workspace) .button.primary:active:not(:disabled){translate:0 2px;box-shadow:0 1px 0 var(--tinta)}
+#app :is(#home-view,#calendar-view,#project-workspace) .button.primary .icon{transition:rotate .3s cubic-bezier(.3,1.6,.5,1)}
+#app :is(#home-view,#calendar-view,#project-workspace) .button.primary:hover:not(:disabled) .icon{rotate:90deg}
+#app :is(#home-view,#calendar-view,#project-workspace) .button.quiet{font-family:var(--esfero-letra);font-size:16px;border-radius:999px}
+
+/* ---------- Portada: hoja rayada pegada con cinta ---------- */
+#app #home-view .home-hero{position:relative;display:flex;align-items:flex-end;justify-content:space-between;gap:20px;
+  padding:26px 28px 24px 32px;border:var(--borde);border-radius:26px 16px 30px 18px/18px 28px 16px 26px;
+  background:var(--hoja) repeating-linear-gradient(transparent 0 33px,#edf1f9 33px 34px);
+  box-shadow:var(--sombra)}
+#app #home-view .hero-tape{position:absolute;top:-12px;left:44%;width:104px;height:24px;rotate:-2deg;
+  background:repeating-linear-gradient(90deg,#f7e9a8c7 0 10px,#f2df8ec7 10px 20px);
+  clip-path:polygon(0 0,4% 18%,0 36%,4% 54%,0 72%,4% 90%,0 100%,100% 100%,96% 82%,100% 64%,96% 46%,100% 28%,96% 10%,100% 0);
+  animation:cuaderno-cinta .4s .35s cubic-bezier(.3,1.5,.5,1) both}
+/* Estrella garabateada junto al lápiz. */
+#app #home-view .home-hero::after{content:"";position:absolute;top:22px;right:112px;width:28px;height:28px;rotate:14deg;pointer-events:none;
+  background:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 48 48'%3E%3Cpath d='M24 5l5.6 12.2L43 18.6l-10 9.3L35.6 41 24 34.4 12.4 41 15 27.9l-10-9.3 13.4-1.4z' fill='%23ffe98f' stroke='%2326324d' stroke-width='2.2' stroke-linejoin='round'/%3E%3C/svg%3E") center/contain no-repeat;
+  animation:cuaderno-flotar 4.4s ease-in-out infinite reverse}
+#app #home-view .hero-text{min-width:0;flex:1}
+#app #home-view .hero-date{margin:0 0 2px;font-family:var(--esfero-letra);font-size:17px;color:var(--lapiz)}
+#app #home-view .hero-greeting{margin:0;font-family:var(--mano);font-weight:700;font-size:clamp(34px,3.2vw,48px);line-height:1.02;letter-spacing:0;color:var(--esfero);overflow-wrap:anywhere}
+#app #home-view .hero-name{color:var(--tinta);padding:0 .12em;
+  background:linear-gradient(transparent 52%,var(--resaltador) 52% 92%,transparent 92%);border-radius:6px 14px 8px 12px}
+#app #home-view .hero-underline{position:relative;display:block;width:min(330px,80%);height:16px;margin:2px 0 6px}
+#app #home-view .hero-underline svg{display:block;width:100%;height:100%;overflow:visible}
+#app #home-view .hero-underline path{fill:none;stroke:var(--esfero-rojo);stroke-width:2.2;stroke-linecap:round;stroke-dasharray:100;animation:cuaderno-trazo .9s .45s ease-out both;vector-effect:non-scaling-stroke}
+#app #home-view .hero-underline i{position:absolute;left:100%;top:-17px;font-style:normal;font-size:20px;opacity:0;rotate:8deg;animation:cuaderno-escribir .9s .45s ease-out both}
+#app #home-view .hero-note{margin:0 0 16px;font-family:var(--esfero-letra);font-size:18px;line-height:1.35;color:#3d4a63;max-width:46ch}
+#app #home-view .hero-stats{display:flex;flex-wrap:wrap;align-items:center;gap:14px}
+#app #home-view .hero-stat{display:grid;place-items:center;align-content:center;gap:0;width:112px;height:74px;padding:0;
+  border:var(--borde);border-radius:50%;background:#fff7cf;color:var(--tinta);rotate:-3deg;
+  box-shadow:0 3px 0 #26324d2e;transition:rotate .25s cubic-bezier(.3,1.6,.5,1),translate .15s,box-shadow .15s}
+#app #home-view .hero-stat:nth-child(2){width:84px;height:84px;background:#ffe1e8;rotate:2deg}
+#app #home-view .hero-stat:nth-child(3){width:104px;height:76px;background:#dff3d3;rotate:-1.5deg;border-radius:58% 42% 55% 45%/48% 60% 40% 52%}
+#app #home-view .hero-stat strong{font-family:var(--mano);font-size:32px;line-height:.9}
+#app #home-view .hero-stat span{font-family:var(--esfero-letra);font-size:14px;line-height:1}
+#app #home-view .hero-stat:hover{rotate:0deg;translate:0 -3px;box-shadow:0 6px 0 #26324d26}
+#app #home-view .hero-stat:active{translate:0 2px;box-shadow:0 1px 0 #26324d2e}
+#app #home-view .hero-stat.is-popped{animation:cuaderno-pop .4s}
+#app #home-view .hero-side{display:flex;flex-direction:column;align-items:flex-end;gap:14px;flex:none}
+#app #home-view .hero-mascot{position:relative;width:76px;height:98px;padding:0;border:0;background:none;cursor:pointer;rotate:14deg;
+  transform-origin:50% 100%;animation:cuaderno-flotar 3.6s ease-in-out infinite}
+#app #home-view .hero-mascot svg{display:block;width:100%;height:100%;overflow:visible;filter:drop-shadow(0 6px 6px #26324d26)}
+#app #home-view .hero-mascot .mascot-eyes{transform-box:fill-box;transform-origin:center;animation:cuaderno-parpadeo 4.2s infinite}
+#app #home-view .hero-mascot:hover{animation:cuaderno-menear .5s}
+#app #home-view .hero-mascot.is-jumping{animation:cuaderno-salto .6s}
+#app #home-view .hero-mascot:focus-visible{outline:3px solid var(--esfero);outline-offset:6px;border-radius:18px}
+#app #home-view .hero-bubble{position:absolute;right:calc(100% + 6px);top:2px;width:max-content;max-width:210px;padding:7px 13px 8px;
+  border:var(--borde);border-radius:18px 18px 4px 18px;background:#fff;color:var(--tinta);rotate:-14deg;transform-origin:100% 100%;
+  font-family:var(--esfero-letra);font-size:16px;line-height:1.2;text-align:left;
+  opacity:0;scale:.6;pointer-events:none;transition:opacity .18s,scale .25s cubic-bezier(.3,1.6,.5,1)}
+#app #home-view .hero-bubble.is-visible{opacity:1;scale:1}
+
+/* ---------- Proyectos ---------- */
+#app #home-view .home-projects-head{display:flex;align-items:baseline;gap:16px;flex-wrap:wrap;margin-bottom:16px}
+#app #home-view .project-count{width:auto;margin:0;font-family:var(--esfero-letra);font-size:17px;color:var(--lapiz)}
+#app #home-view .project-toolbar{gap:16px;flex-wrap:wrap}
+#app #home-view .project-search{max-width:380px;padding:9px 16px;border:var(--borde);border-radius:999px;background:#fff;color:var(--tinta);
+  box-shadow:0 2px 0 #26324d12;transition:box-shadow .15s,border-color .15s}
+#app #home-view .project-search:focus-within{border-color:var(--esfero);box-shadow:0 0 0 3px #294eb824}
+#app #home-view .project-search:focus-within .icon{animation:cuaderno-menear .5s}
+#app #home-view .project-search input{font-family:var(--esfero-letra);font-size:17px}
+#app #home-view .project-search input::placeholder{color:var(--lapiz)}
+#app #home-view .project-order{font-family:var(--esfero-letra);font-size:16px;color:var(--lapiz)}
+#app #home-view .project-order select{border:var(--borde);border-radius:14px 10px 16px 9px/10px 15px 9px 14px;font-family:var(--esfero-letra);font-size:16px;color:var(--tinta);background-color:#fff}
+#app #home-view .project-grid{grid-template-columns:repeat(auto-fill,minmax(min(320px,100%),1fr));gap:34px 26px;padding-top:28px}
+/* Carpetas apaisadas: más anchas que altas, a pedido del usuario. */
+#app #home-view :is(.project-folder,.project-add){height:245px}
+#app #home-view :is(.project-folder,.project-add){animation:cuaderno-caer .5s cubic-bezier(.2,1.2,.4,1) both;
+  transition:translate .25s cubic-bezier(.3,1.5,.5,1),rotate .25s cubic-bezier(.3,1.5,.5,1),box-shadow .2s;transform:none}
+#app #home-view :is(.project-folder,.project-add):nth-child(2){animation-delay:.05s}
+#app #home-view :is(.project-folder,.project-add):nth-child(3){animation-delay:.1s}
+#app #home-view :is(.project-folder,.project-add):nth-child(4){animation-delay:.15s}
+#app #home-view :is(.project-folder,.project-add):nth-child(5){animation-delay:.2s}
+#app #home-view :is(.project-folder,.project-add):nth-child(6){animation-delay:.25s}
+#app #home-view :is(.project-folder,.project-add):nth-child(n+7){animation-delay:.3s}
+#app #home-view .project-folder:hover:not(:disabled){transform:none;translate:0 -6px;rotate:-.8deg;box-shadow:0 22px 30px -18px #26324d80}
+#app #home-view .project-folder:nth-child(even):hover:not(:disabled){rotate:.8deg}
+#app #home-view .project-folder:active:not(:disabled){transform:none;translate:0 1px;rotate:0deg;scale:.985;box-shadow:0 6px 12px -8px #26324d66}
+/* Los folios asoman de la carpeta al pasar el cursor. */
+#app #home-view .folder-papers{overflow:visible}
+#app #home-view .folder-papers>span{transition:transform .35s cubic-bezier(.3,1.6,.5,1)}
+#app #home-view .folder-papers>span:last-child{
+  background:linear-gradient(90deg,transparent 17px,#f4cdc8 17px 18.2px,transparent 18.2px),repeating-linear-gradient(#fff 0 9px,#dfe7f4 9px 10px)}
+#app #home-view .project-folder:hover .folder-papers>span:first-child{transform:translateY(-9px) rotate(-9deg)}
+#app #home-view .project-folder:hover .folder-papers>span:nth-child(2){transform:translateY(-15px) rotate(7deg);transition-delay:.04s}
+#app #home-view .project-folder:hover .folder-papers>span:last-child{transform:translateY(-21px) rotate(-1.5deg);transition-delay:.08s}
+#app #home-view .folder-title{font-family:var(--esfero-letra);font-weight:400;font-size:21px;line-height:1.2;letter-spacing:0}
+#app #home-view .folder-stage{font-size:12.5px}
+#app #home-view .folder-last{top:25px;left:18px;padding:0 9px 1px;border-radius:3px;background:var(--resaltador);color:var(--tinta);
+  font-family:var(--esfero-letra);font-size:14px;line-height:1.3;rotate:-3deg}
+/* Tarjeta para crear un proyecto, junto a las carpetas. */
+#app #home-view .project-add{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:16px;width:100%;padding:20px;
+  border:1.6px dashed #8b96ad;border-radius:16px;background:#fffdf7b3;color:var(--tinta);cursor:pointer;
+  font-family:var(--esfero-letra);font-size:20px;line-height:1.2;text-align:center;
+  transition:translate .25s cubic-bezier(.3,1.5,.5,1),border-color .2s,background .2s,box-shadow .2s}
+#app #home-view .project-add-mark{display:grid;place-items:center;width:64px;height:64px;border:var(--borde);border-radius:50%;background:#fff;
+  box-shadow:0 3px 0 #26324d2e;transition:background .2s,color .2s,rotate .35s cubic-bezier(.3,1.6,.5,1),scale .25s cubic-bezier(.3,1.6,.5,1)}
+#app #home-view .project-add-mark .icon{width:26px;height:26px}
+#app #home-view .project-add small{display:block;margin-top:4px;font-family:inherit;font-size:15px;color:var(--lapiz)}
+#app #home-view .project-add:hover:not(:disabled){translate:0 -6px;border-style:solid;border-color:var(--esfero);background:#fff;box-shadow:0 22px 30px -18px #26324d80}
+#app #home-view .project-add:hover:not(:disabled) .project-add-mark{background:var(--esfero);border-color:var(--esfero);color:#fff;rotate:90deg;scale:1.08}
+#app #home-view .project-add:active:not(:disabled){translate:0 1px;scale:.985}
+#app #home-view .project-add:focus-visible{outline:3px solid var(--esfero);outline-offset:3px}
+#app #home-view .project-add:disabled{opacity:.55;cursor:default}
+#app #home-view .home-empty{padding:26px 28px;border:1.6px dashed var(--lapiz);border-radius:var(--irregular);background:#fffdf7cc;margin-top:22px}
+#app #home-view .home-empty h3{font-size:30px;margin-bottom:6px}
+#app #home-view .home-empty p{font-family:var(--esfero-letra);font-size:17px;line-height:1.4;color:#3d4a63}
+
+/* ---------- Herramientas: fichas de cartulina ---------- */
+#app #home-view .home-block{margin-top:0;padding-top:0;border-top:0}
+#app #home-view .home-block-head{gap:14px}
+#app #home-view .home-block-note{margin:10px 0 18px;font-family:var(--esfero-letra);font-size:16px;line-height:1.4;color:#3d4a63;max-width:60ch}
+#app #home-view .home-block-tag{border:var(--borde);border-radius:999px;background:#fff;color:var(--tinta);padding:4px 14px 5px;
+  font-family:var(--esfero-letra);font-size:16px;font-weight:400;box-shadow:0 3px 0 var(--tinta);transition:translate .12s,box-shadow .12s}
+#app #home-view .home-block-tag:hover:not(:disabled){background:#fff7cf;border-color:var(--tinta);translate:0 -1px;box-shadow:0 4px 0 var(--tinta)}
+#app #home-view .home-block-tag:active:not(:disabled){translate:0 2px;box-shadow:0 1px 0 var(--tinta)}
+#app #home-view .home-block-tag .icon{transition:translate .2s}
+#app #home-view .home-block-tag:hover .icon{translate:4px 0}
+#app #home-view .tool-tiles{gap:18px;padding-top:8px}
+#app #home-view .tool-tile{position:relative;border:var(--borde);border-radius:var(--irregular);box-shadow:var(--sombra);overflow:visible;
+  transition:flex-basis .32s cubic-bezier(.3,1,.4,1),rotate .25s cubic-bezier(.3,1.5,.5,1),translate .2s,box-shadow .2s}
+#app #home-view .tool-tile:nth-child(2){border-radius:16px 28px 14px 24px/26px 14px 24px 16px}
+#app #home-view .tool-tile:nth-child(3){border-radius:30px 14px 22px 18px/14px 26px 18px 28px}
+#app #home-view .tool-tile:nth-child(4){border-radius:14px 24px 30px 16px/24px 16px 18px 28px}
+#app #home-view .tool-tile::before{content:"";position:absolute;top:-11px;left:50%;width:64px;height:22px;margin-left:-32px;rotate:-4deg;
+  background:#ffffffa6;box-shadow:0 1px 2px #26324d1f}
+#app #home-view .tool-tile:nth-child(even)::before{rotate:5deg;left:38%}
+#app #home-view .tool-tile:hover:not(:disabled){rotate:-.8deg;translate:0 -5px;box-shadow:0 22px 30px -18px #26324d80}
+#app #home-view .tool-tile:nth-child(even):hover:not(:disabled){rotate:.8deg}
+#app #home-view .tool-tile:active:not(:disabled){translate:0 1px;scale:.98}
+#app #home-view .tool-tile-name{font-family:var(--esfero-letra);font-weight:400;font-size:20px;line-height:1.15}
+#app #home-view .tool-tile-art img{transition:scale .35s cubic-bezier(.3,1.6,.5,1),rotate .35s cubic-bezier(.3,1.6,.5,1)}
+#app #home-view .tool-tile:hover .tool-tile-art img{scale:1.08;rotate:-4deg}
+#app #home-view .tool-tile-note-text{font-family:var(--esfero-letra);font-size:15px;line-height:1.3}
+#app #home-view .home-storage{margin:0;font-family:var(--esfero-letra);font-size:15px;color:var(--lapiz)}
+
+/* ---------- Columna lateral ---------- */
+#app #home-view .home-rail .agenda{display:flex;flex-direction:column;gap:30px;margin:0;padding:0;border:0}
+#app #home-view .agenda-caption{font-family:var(--esfero-letra);font-size:16px;line-height:1.3;color:#3d4a63;margin:4px 0 14px}
+
+/* Calendario de argollas */
+#app #home-view .agenda-calendar{position:relative;width:auto;max-width:none;margin:8px 0 0;padding:26px 18px 18px;
+  border:var(--borde);border-radius:18px 24px 16px 26px/22px 16px 26px 18px;box-shadow:var(--sombra)}
+#app #home-view .agenda-calendar::before{content:"";position:absolute;z-index:1;top:-13px;left:26px;right:26px;height:26px;pointer-events:none;
+  background:radial-gradient(circle at 50% 50%,transparent 0 5px,var(--tinta) 5.4px 6.9px,transparent 7.3px) 50% 0/36px 26px repeat-x}
+#app #home-view .agenda-today{border:var(--borde);border-radius:50%;width:62px;height:40px;padding:0;background:#fff7cf;color:var(--tinta);
+  font-family:var(--esfero-letra);font-size:17px;font-weight:400;box-shadow:0 3px 0 var(--tinta);transition:translate .12s,box-shadow .12s,rotate .2s}
+#app #home-view .agenda-today:hover{rotate:-6deg;translate:0 -1px;box-shadow:0 4px 0 var(--tinta)}
+#app #home-view .agenda-today:active{translate:0 2px;box-shadow:0 1px 0 var(--tinta)}
+#app #home-view .calendar-month{padding:16px 10px 14px;border:var(--borde);border-radius:16px 22px 14px 20px/20px 14px 22px 16px}
+#app #home-view .calendar-nav strong{font-family:var(--mano);font-weight:700;font-size:26px;line-height:1;letter-spacing:0}
+#app #home-view .calendar-nav .icon-button{border-radius:50%;transition:scale .15s,rotate .2s}
+#app #home-view .calendar-nav .icon-button:hover{scale:1.15}
+#app #home-view .calendar-nav .icon-button:active{scale:.9}
+#app #home-view .cal-head{font-family:var(--esfero-letra);font-size:14px;font-weight:400;letter-spacing:.02em}
+#app #home-view .cal-day,#app #home-view .cal-blank{height:44px}
+#app #home-view .cal-day{position:relative;font-family:var(--esfero-letra);font-size:17px}
+#app #home-view .cal-day>span:first-child{width:34px;height:34px;transition:scale .2s cubic-bezier(.3,1.6,.5,1)}
+#app #home-view .cal-day:hover>span:first-child{scale:1.18}
+#app #home-view .cal-day:active>span:first-child{scale:.9}
+/* El día elegido queda encerrado con un trazo a mano. */
+#app #home-view .cal-day.picked::after{content:"";position:absolute;left:50%;top:1px;width:42px;height:38px;margin-left:-21px;pointer-events:none;
+  border:2px solid var(--resaltador);border-radius:52% 46% 55% 44%/46% 54% 44% 55%;rotate:-8deg;animation:cuaderno-encerrar .35s cubic-bezier(.3,1.5,.5,1)}
+#app #home-view .cal-day.picked>span:first-child{animation:cuaderno-pop .35s}
+#app #home-view .calendar-key{font-family:var(--esfero-letra);font-size:14px;gap:14px}
+#app #home-view .calendar-detail{font-family:var(--esfero-letra);font-size:15px;line-height:1.35;border-radius:12px 16px 10px 18px/16px 10px 18px 12px}
+
+/* Agenda: bloc rayado con gancho */
+#app #home-view .agenda-tasks{position:relative;min-height:0;margin:6px 0 0;padding:30px 18px 18px 20px;
+  border:var(--borde);border-radius:14px 14px 22px 18px/14px 14px 18px 24px;box-shadow:var(--sombra);
+  background:var(--hoja) repeating-linear-gradient(transparent 0 31px,#edf1f9 31px 32px)}
+#app #home-view .agenda-tasks::before{content:"";position:absolute;top:-12px;left:50%;width:72px;height:24px;margin-left:-36px;
+  border:var(--borde);border-radius:9px 9px 14px 14px;background:linear-gradient(#56617a,#2d3852);box-shadow:inset 0 2px 0 #ffffff33,0 2px 0 #26324d26}
+#app #home-view .agenda-tasks::after{content:"";position:absolute;top:-21px;left:50%;width:26px;height:15px;margin-left:-13px;
+  border:2px solid var(--tinta);border-bottom:0;border-radius:14px 14px 0 0}
+#app #home-view .agenda-tasks .home-block-head{align-items:center}
+#app #home-view .agenda-tasks #new-task{background:var(--violeta);box-shadow:0 3px 0 var(--violeta-hondo);border-color:var(--violeta-hondo);font-size:16px;padding:6px 15px 7px;min-height:40px}
+#app #home-view .agenda-tasks #new-task:hover:not(:disabled){background:#7a69a8;box-shadow:0 4px 0 var(--violeta-hondo)}
+#app #home-view .agenda-tasks #new-task:active:not(:disabled){box-shadow:0 1px 0 var(--violeta-hondo)}
+#app #home-view .task-tabs{display:flex;gap:8px;padding:0;border:0;background:none;margin-bottom:10px}
+#app #home-view .task-tabs button{flex:1;min-height:36px;padding:3px 10px 4px;border:1.5px dashed #a9b3c6;border-radius:999px;background:#fff;color:var(--lapiz);
+  font-family:var(--esfero-letra);font-size:16px;font-weight:400;transition:translate .12s,box-shadow .12s,background .15s,rotate .2s}
+#app #home-view .task-tabs button:hover{rotate:-2deg;color:var(--tinta)}
+#app #home-view .task-tabs button[aria-pressed="true"]{border:1.6px solid var(--violeta-hondo);background:var(--violeta);color:#fff;box-shadow:0 3px 0 var(--violeta-hondo)}
+#app #home-view .task-tabs button:active{translate:0 2px;box-shadow:0 1px 0 var(--violeta-hondo)}
+#app #home-view .task-status{font-family:var(--esfero-letra);font-size:15px;color:var(--lapiz);margin:0 0 10px}
+#app #home-view .task-list{display:flex;flex-direction:column;gap:12px}
+#app #home-view .task-row{display:grid;grid-template-columns:34px auto minmax(0,1fr) 30px;grid-template-areas:"marca texto texto editar" "marca prioridad estado estado";
+  align-items:center;gap:6px 10px;padding:10px 10px 10px 12px;margin:0;
+  border:1.4px solid #26324dbf;border-radius:14px 18px 12px 20px/18px 12px 20px 14px;background:#fff;box-shadow:0 2px 0 #26324d0f;
+  animation:cuaderno-entrar .35s cubic-bezier(.2,.9,.3,1.2) both;transition:translate .15s,box-shadow .15s,rotate .2s}
+#app #home-view .task-row:nth-child(even){border-radius:18px 12px 20px 14px/12px 20px 14px 18px}
+#app #home-view .task-row:nth-child(2){animation-delay:.04s}
+#app #home-view .task-row:nth-child(3){animation-delay:.08s}
+#app #home-view .task-row:nth-child(n+4){animation-delay:.12s}
+#app #home-view .task-row:hover{translate:0 -2px;box-shadow:0 12px 18px -14px #26324d80}
+#app #home-view .task-row .task-toggle{grid-area:marca;align-self:start;margin-top:2px}
+#app #home-view .task-row .task-content{grid-area:texto;min-width:0}
+#app #home-view .task-row>.icon-button{grid-area:editar;align-self:start;width:30px;height:30px;border-radius:50%;transition:rotate .2s,scale .15s}
+#app #home-view .task-row>.icon-button:hover:not(:disabled){rotate:-14deg;scale:1.15}
+#app #home-view .task-row .task-priority{grid-area:prioridad;justify-self:start;width:auto;min-width:0;padding:1px 9px 2px;border-radius:4px 9px 5px 10px;
+  font-family:var(--esfero-letra);font-size:14px;font-weight:400;line-height:1.3;white-space:nowrap;text-align:left}
+#app #home-view .task-row .task-state{grid-area:estado;justify-self:start;padding:1px 11px 2px;border-radius:999px;border:1px solid #26324d33;
+  font-family:var(--esfero-letra);font-size:14px;font-weight:400;line-height:1.3;white-space:nowrap}
+#app #home-view .task-mark{width:30px;height:30px;border:1.8px solid var(--tinta);border-radius:52% 46% 55% 44%/46% 54% 44% 55%;background:#fff;color:#9aa5bb;
+  transition:scale .2s cubic-bezier(.3,1.6,.5,1),rotate .2s,background .15s}
+#app #home-view .task-toggle:hover .task-mark{scale:1.12;rotate:-8deg;background:#fff7cf;color:var(--tinta)}
+#app #home-view .task-row.completed .task-mark{background:#d3efc4;color:#1f5a2c;animation:cuaderno-pop .4s}
+#app #home-view .task-content h4{font-family:var(--esfero-letra);font-weight:400;font-size:19px;line-height:1.2;letter-spacing:0;margin:0 0 2px;color:var(--tinta)}
+#app #home-view .task-row.completed .task-content h4{display:inline;text-decoration:none;color:var(--lapiz);
+  background:linear-gradient(var(--esfero-rojo),var(--esfero-rojo)) 0 58%/100% 2px no-repeat;animation:cuaderno-tachar .45s ease-out}
+#app #home-view .task-meta{margin:0;font-size:11.5px}
+#app #home-view .task-project{font-family:var(--esfero-letra);font-size:14px;color:var(--lapiz)}
+#app #home-view .tasks-empty{padding:16px 14px;border:1.5px dashed #a9b3c6;border-radius:var(--irregular);background:#fff}
+#app #home-view .tasks-empty h4{font-family:var(--mano);font-size:26px;line-height:1.05;margin:0 0 4px}
+#app #home-view .tasks-empty p{font-family:var(--esfero-letra);font-size:16px;line-height:1.35;margin:0;color:#3d4a63}
+#app #home-view .task-form{border:var(--borde);border-radius:var(--irregular);background:#fff;box-shadow:var(--sombra);animation:cuaderno-entrar .3s cubic-bezier(.2,.9,.3,1.2) both}
+#app #home-view .task-form h4{font-family:var(--mano);font-size:28px;line-height:1;margin:0 0 6px}
+#app #home-view .task-form label{font-family:var(--esfero-letra);font-size:16px;font-weight:400;color:var(--tinta)}
+#app #home-view .task-form :is(input,select){border:1.5px solid var(--tinta);border-radius:10px 14px 9px 15px/14px 9px 15px 10px}
+#app #home-view .task-form :is(input,select):focus{border-color:var(--esfero);outline:0;box-shadow:0 0 0 3px #294eb824}
+#app #home-view .task-color-key{font-family:var(--esfero-letra);font-size:14px;color:var(--lapiz);margin:12px 0 0}
+
+/* ---------- Plazo por color: rojo vencida, amarillo por vencer (3 días o menos), verde con tiempo ----------
+   El color nunca va solo: cada tarea conserva su etiqueta («Vencida», «Hoy», «En 5 días»). La
+   prioridad pasa a etiqueta neutra para que no compita con el color del plazo. */
+#app #home-view [data-tone="overdue"]{--plazo:#c2372e;--plazo-papel:#fde6e3;--plazo-tinta:#8f2019;--plazo-luz:#ff8f85}
+#app #home-view :is([data-tone="soon"],[data-tone="near"]){--plazo:#b98a00;--plazo-papel:#fff2b8;--plazo-tinta:#6b5000;--plazo-luz:#ffd84a}
+#app #home-view [data-tone="later"]{--plazo:#2f8a4a;--plazo-papel:#e1f4d8;--plazo-tinta:#1f5f33;--plazo-luz:#86e09a}
+#app #home-view [data-tone="done"]{--plazo:#9aa5bb;--plazo-papel:#f1f3f7;--plazo-tinta:#5d6880;--plazo-luz:#cfc6e6}
+#app #home-view .task-row[data-tone]{background:var(--plazo-papel);border-color:var(--plazo)}
+#app #home-view .task-row[data-tone] .task-mark{border-color:var(--plazo)}
+#app #home-view .task-row[data-tone] .task-deadline{padding:0 7px 1px;border:1px solid var(--plazo);border-radius:4px 8px 4px 9px;background:#fff;color:var(--plazo-tinta);
+  font-family:var(--esfero-letra);font-size:14px;font-weight:400;line-height:1.3}
+#app #home-view .task-row[data-tone] .task-priority{border:1px dashed #26324d66;background:#ffffffb3;color:var(--tinta)}
+#app #home-view .task-row[data-tone] .task-state{border-color:var(--plazo);background:#fff;color:var(--plazo-tinta)}
+/* En el calendario, el recuadro del día toma el plazo más urgente de sus tareas. */
+#app #home-view .cal-day[data-tone]{border-radius:11px 13px 10px 14px/13px 10px 14px 11px;
+  background:color-mix(in srgb,var(--plazo-luz) 34%,transparent);box-shadow:inset 0 0 0 2px var(--plazo-luz)}
+#app #home-view .cal-day[data-tone="done"]{background:color-mix(in srgb,var(--plazo-luz) 18%,transparent);box-shadow:inset 0 0 0 1.5px color-mix(in srgb,var(--plazo-luz) 70%,transparent)}
+#app #home-view .cal-day[data-tone] .cal-task-dot{display:none}
+#app #home-view .key-box{display:block;width:14px;height:14px;border-radius:4px 5px 4px 6px;
+  background:color-mix(in srgb,var(--plazo-luz) 34%,var(--violeta));box-shadow:inset 0 0 0 2px var(--plazo-luz)}
+#app #home-view .calendar-key{gap:8px 14px}
+#app #home-view .task-color-key span{padding:0 5px;border-radius:3px 7px 4px 8px;background:var(--plazo-papel);color:var(--plazo-tinta);box-shadow:inset 0 0 0 1px var(--plazo)}
+
+/* ---------- Estallidos (los crea home-fx.ts fuera de #home-view) ---------- */
+.fx-layer{position:fixed;inset:0;z-index:9999;overflow:hidden;pointer-events:none}
+.fx-piece{position:absolute;font-size:24px;line-height:1;will-change:transform,opacity;user-select:none}
+.fx-sheet{width:18px;height:23px;border:1.2px solid #26324d;border-radius:2px 5px 2px 2px;
+  background:linear-gradient(90deg,transparent 4px,#f2b9b2 4px 5px,transparent 5px),repeating-linear-gradient(#fff 0 4px,#c9d8f2 4px 5px)}
+
+/* ---------- Tamaños ---------- */
+@media(max-width:1239px){
+  #app #home-view{grid-template-columns:minmax(0,1fr)}
+  #app #home-view .home-rail .agenda{display:grid;grid-template-columns:minmax(300px,.85fr) minmax(0,1.15fr);gap:28px;align-items:start}
+}
+@media(max-width:900px){
+  #app #home-view{--margen:0px;padding:24px 20px 34px;background-size:auto,24px 24px,24px 24px}
+  #app #home-view .home-rail .agenda{display:flex}
+  #app #home-view .home-hero{flex-direction:column;align-items:stretch;padding:24px 20px 20px}
+  #app #home-view .hero-side{flex-direction:row;align-items:center;justify-content:space-between}
+  #app #home-view .hero-mascot{width:58px;height:76px}
+  #app #home-view .home-hero::after{top:16px;right:20px;width:32px;height:32px}
+  #app #home-view .hero-bubble{right:auto;left:calc(100% + 4px);rotate:-14deg;transform-origin:0 100%;border-radius:18px 18px 18px 4px}
+}
+@media(max-width:480px){
+  #app #home-view h3{font-size:28px}
+  #app #home-view .hero-stats{gap:10px}
+  #app #home-view .hero-stat{width:96px;height:66px}
+  #app #home-view .hero-stat:nth-child(2){width:74px;height:74px}
+  #app #home-view .hero-stat:nth-child(3){width:92px;height:68px}
+  #app #home-view .hero-stat strong{font-size:27px}
+  #app #home-view .project-grid{grid-template-columns:minmax(0,1fr)}
+}

@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import re
 
-from .contracts import CandidateResponse, HandoffContract
+from .contracts import DIRECT_KINDS, CandidateResponse, HandoffContract
 from .knowledge import KnowledgeCatalog
 
 
@@ -16,7 +16,7 @@ def validate_handoff(contract: HandoffContract, catalog: KnowledgeCatalog) -> No
         raise StructuralViolation(
             f"La fase {contract.phase!r} no corresponde a la etapa {contract.stage}"
         )
-    if not contract.recommendations and stage.tools:
+    if not contract.recommendations and stage.tools and contract.kind not in DIRECT_KINDS:
         raise StructuralViolation(
             f"La etapa {contract.stage} tiene herramientas disponibles, pero no se eligió ninguna"
         )
