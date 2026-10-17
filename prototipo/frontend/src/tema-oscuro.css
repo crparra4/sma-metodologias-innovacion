@@ -1,0 +1,6 @@
+/* Ajustes a mano del tema oscuro. Lo grueso lo genera tema.ts a partir de las demás hojas;
+   aquí solo va lo que la conversión automática no resuelve bien. El prefijo
+   [data-theme-ready] hace que estas reglas pesen más que las generadas. */
+
+/* Logos negros de ChatGPT y Apple en el acceso: son imágenes, se invierten para verse en blanco. */
+:root[data-theme="oscuro"][data-theme-ready] .auth-provider-icon:is([src$="chatgpt.svg"],[src$="apple.svg"]){filter:invert(1)}

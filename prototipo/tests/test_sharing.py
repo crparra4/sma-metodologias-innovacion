@@ -234,3 +234,35 @@ def test_owner_can_change_revoke_and_cancel_access(tmp_path):
         logout(client)
         login(client, "member")
         assert client.get(f"/api/notebooks/{project_id}").status_code == 404
+
+
+def test_profile_photo_is_visible_only_to_people_who_share_a_project(tmp_path):
+    photo = b"\xff\xd8\xff\xe0" + b"\x00" * 64
+    client = sharing_client(tmp_path)
+    with client:
+        owner = register(client, "owner", "Propietaria")
+        project_id = client.post("/api/notebooks", json={"notebook_id": "Proyecto"}).json()[
+            "project_id"
+        ]
+        assert client.put("/api/auth/avatar", content=photo).json()["avatar"] == 1
+        logout(client)
+        register(client, "member", "Integrante")
+        logout(client)
+        stranger = register(client, "stranger", "Ajena")
+        assert client.put("/api/auth/avatar", content=photo).status_code == 200
+        assert client.get(f"/api/users/{owner['id']}/avatar").status_code == 404
+        logout(client)
+
+        login(client, "owner")
+        assert client.get(f"/api/users/{stranger['id']}/avatar").status_code == 404
+        client.post(f"/api/projects/{project_id}/invitations",
+                    json={"username": "member", "role": "viewer"})
+        logout(client)
+
+        login(client, "member")
+        accept_first_invitation(client)
+        members = client.get(f"/api/projects/{project_id}/members").json()
+        assert {item["username"]: item["avatar"] for item in members} == {"owner": 1, "member": 0}
+        image = client.get(f"/api/users/{owner['id']}/avatar?v=1")
+        assert image.status_code == 200 and image.headers["content-type"] == "image/jpeg"
+        assert client.get(f"/api/users/{stranger['id']}/avatar").status_code == 404

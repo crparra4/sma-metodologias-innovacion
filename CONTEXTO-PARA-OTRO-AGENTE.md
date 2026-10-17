@@ -840,3 +840,82 @@ correo noreply. La carpeta `proyecto` quedó alineada con `git reset --hard orig
 - GitHub puede mantener un tiempo los commits viejos accesibles por su identificador; para borrarlos
   del todo hay que pedirlo al soporte de GitHub.
 
+
+## Configuración de la cuenta (16 oct 2026, Linux)
+
+El usuario pidió una pantalla de perfil «donde estén todos los datos y se configure el perfil», con
+una referencia de la ventana de configuración de Notion (menú lateral y contenido a la derecha),
+«pero con colores». Reemplaza el diálogo pequeño que solo cambiaba el nombre.
+
+**Implementado** (395 pruebas pasan, ruff limpio, pruebas de frontend pasan):
+
+- `frontend/src/ajustes.ts` + `ajustes.css` (`SettingsController`) y `#settings-dialog` en
+  `index.html`. Se abre desde «Perfil» y «Configuración de la cuenta» del menú de la cuenta; el
+  encabezado no cambió. Secciones: **Perfil** (tarjeta con iniciales, @usuario y «En Hilo desde…»,
+  nombre visible editable, usuario fijo), **Seguridad** (cambiar contraseña y datos de la sesión),
+  **Preferencias** (tema claro; oscuro marcado «Próximamente», como ya estaba en el menú; guía de
+  inicio), **Mis proyectos** (cifras de propios, compartidos, invitaciones y tareas pendientes, y
+  lista con rol y botón Abrir), **Datos y privacidad** (qué se guarda y dónde). Cambiar de cuenta y
+  cerrar sesión quedan al pie del menú lateral. En celular el menú pasa a una fila de pestañas.
+- Colores de la página (azul `#294eb8`, tinta) y la letra de mano en los títulos; color por tipo
+  solo en cifras y etiquetas de rol, con la paleta de las carpetas.
+- Backend: `GET /api/auth/account` (perfil + `created_at` + duración de la sesión) y
+  `PUT /api/auth/password` (contraseña actual, nueva de 10 a 128 caracteres y confirmación). Cierra
+  las demás sesiones y conserva la actual; comparte el cupo de 5 intentos por minuto del login.
+  `AuthStore.created_at` y `AuthStore.change_password`.
+- Se quitó el diálogo `#profile-dialog` y su código; sus estilos en `style.css` quedaron sin uso.
+
+**No implementado (en ese momento):** tema oscuro y foto de perfil (hechos después, ver la sección
+siguiente), borrar la cuenta, exportar datos, ver las sesiones abiertas.
+Probado en una instancia aparte con datos temporales y una cuenta de prueba (escritorio y celular);
+no se probó con la cuenta real ni en Windows.
+
+## Perfil por campos, foto de perfil y tema oscuro (16 oct 2026, Linux)
+
+Pedido del usuario: «modo oscuro», «que la persona pueda subir su foto de perfil» y dividir el
+perfil en nombre, apellido, teléfono y correo.
+
+**Implementado** (405 pruebas pasan, 10 nuevas; ruff limpio; pruebas de frontend pasan; revisado
+en navegador con una instancia aparte y cuentas desechables, escritorio y celular):
+
+- **Campos del perfil.** `users` gana `first_name`, `last_name`, `phone`, `email` (y las columnas de
+  la foto). Se agregan con `ALTER TABLE` al abrir la base: una base anterior sigue sirviendo. Una
+  cuenta vieja muestra su `display_name` completo como «Nombre» hasta que la persona lo divida.
+  `display_name` se recompone como «nombre apellido», porque es lo que ven los demás en todo Hilo.
+  `GET/PUT /api/auth/profile` (el PUT ya no recibe `display_name`). Nombre obligatorio; teléfono
+  opcional, de 7 a 15 dígitos con `+ ( ) -` y espacios; correo opcional, se guarda en minúsculas.
+  La validación está en `profile_fields()` de `web.py` y no en validadores de Pydantic: Pydantic
+  antepone «Value error,» al mensaje. El teléfono y el correo solo los ve la propia cuenta.
+- **Foto de perfil.** El navegador recorta al centro, reduce a 320 px y comprime a WebP (o JPG)
+  antes de subir (`avatar.ts`, `preparePhoto`), así no viaja la original ni su EXIF.
+  `PUT /api/auth/avatar` (cuerpo binario, máx. 512 KB; el tipo sale de los bytes: JPEG, PNG o WebP;
+  un SVG se rechaza) y `DELETE /api/auth/avatar`. Se guarda como BLOB en `auth.sqlite3`.
+  `GET /api/users/{id}/avatar?v=N` la sirve solo a la propia cuenta y a quien comparte un proyecto
+  con ella (dueño, miembro o invitación pendiente: `SharingStore.shares_project`); si no, 404. Va con
+  `nosniff`, `Content-Security-Policy: default-src 'none'` y caché larga, porque la versión va en
+  la URL. `User.avatar` es esa versión (0 = sin foto) y viaja en `/auth/me` y en los miembros.
+  `paintAvatar()` pone la foto o las iniciales en: cabecera, menú de la cuenta, configuración,
+  turnos propios del chat, carpetas, Compartir, miembros del proyecto, post-its y firma de la nota.
+- **Tema oscuro.** Claro, Oscuro o Automático (sigue al sistema), en Preferencias y en el menú de la
+  cuenta. Se guarda en `localStorage` (`hilo-tema`), es decir por navegador y no por cuenta. Por
+  defecto, claro. Un script en `<head>` fija el tema antes de pintar y deja la página oculta hasta
+  que el tema está listo (máximo 1,5 s), para que no haya un destello blanco.
+  Decisión: las hojas tienen más de 1.600 colores escritos a mano, así que en vez de duplicar
+  reglas, `tema.ts` genera la versión oscura al activar el tema: recorre las reglas cargadas y
+  convierte cada color en OKLab según su papel (fondo claro → oscuro, texto oscuro → claro,
+  borde → gris medio; los colores intermedios, como el azul de Hilo, se quedan). Las variables se
+  clasifican por su nombre (`--note-paper` es fondo, `--tinta` es texto, `--folder-*` se conserva,
+  `--resaltador` se apaga y las demás se tratan como acento y se aclaran un poco). Una regla que
+  ya nombra `data-theme=` no se toca. Un atajo que mezcla `var()` con colores literales se traduce
+  entero, porque el navegador deja vacías sus propiedades sueltas. Tarda ~30 ms y genera ~830 reglas.
+  Los ajustes manuales van en `tema-oscuro.css` con el prefijo
+  `:root[data-theme="oscuro"][data-theme-ready]`, que pesa más que lo generado (hoy solo invierte
+  los logos negros de ChatGPT y Apple del acceso).
+- Revisado en oscuro: acceso, Inicio, proyecto con chat, Post-its, Árbol, PESTEL, Empatía, Journey,
+  Compartir, menú de la cuenta, configuración y calendario.
+
+**No implementado / límites:** el tema no se sincroniza entre navegadores ni cuentas; los colores
+que el código pone en línea (los tonos de los avatares sin foto) no pasan por el tema; el
+registro sigue pidiendo un solo nombre (se divide después en el perfil); no se probó en Windows ni
+con la cuenta real. La instancia en 8787 seguía corriendo con el código anterior: hay que
+reiniciarla para que tome el backend nuevo y migre la base.

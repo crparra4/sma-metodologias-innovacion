@@ -988,3 +988,10 @@
   .welcome-mark{width:72px;height:72px;margin-bottom:14px}
   .welcome-mark img{width:52px;height:52px}
 }
+/* Avatar con foto (avatar.ts): la imagen tapa el color de fondo y las iniciales. */
+.has-photo{overflow:hidden;background:#dfe5ef!important;padding:0}
+.has-photo>img{display:block;width:100%;height:100%;object-fit:cover;border-radius:inherit}
+/* Tema en el menú de la cuenta: tres opciones, la elegida con su marca. */
+.account-theme-options button{min-height:36px;padding:6px 10px}
+.account-theme-options button::before{content:"";flex:0 0 14px;height:14px;border:2px solid #ffffffa6;border-radius:50%}
+.account-theme-options button[aria-checked="true"]::before{border-color:#fff;background:radial-gradient(circle,#fff 0 3px,transparent 3.5px)}

@@ -12,7 +12,15 @@ import { JourneyController } from './journey';
 import { PestelController } from './pestel';
 import { ProblemTreeController } from './problem-tree';
 import { WhyAnalysisController } from './why-analysis';
+import { SettingsController } from './ajustes';
+import './ajustes.css';
+import './tema-oscuro.css';
 import { initBoardFx, initCalendarFx, initChatFx, initHomeFx, renderHomeHero } from './home-fx';
+import { paintAvatar } from './avatar';
+import { initTheme } from './tema';
+
+// Primero el tema: las hojas de estilo ya están cargadas y la página espera oculta hasta aquí.
+initTheme();
 let tasks: Task[] = [];
 let taskFilter: 'today' | 'upcoming' | 'all' = 'upcoming';
 let editingTask: Task | null = null;
@@ -36,7 +44,7 @@ type Turn = { role: string; content: string; created_at?: string; metadata?: Res
 type NoteColor = 'yellow' | 'pink' | 'blue' | 'green' | 'purple' | 'orange';
 type Note = { id: string; title: string; text: string; color: NoteColor; category: string; source_text: string; created_at: string; updated_at: string; author_id?: string; author_name?: string };
 type Advance = { id: string; content: string; kind: 'decision' | 'finding' | 'hypothesis' | 'next_step' | 'other'; author_id: string; author_name: string; created_at: number; version: number };
-type SharingMember = { user_id?: string; id?: string; username: string; display_name: string; role: MemberRole; status?: 'pending'; invitation_id?: string };
+type SharingMember = { user_id?: string; id?: string; username: string; display_name: string; role: MemberRole; status?: 'pending'; invitation_id?: string; avatar?: number };
 type Invitation = { id: string; role: 'viewer' | 'editor'; notebook_id: string; project_id: string; owner_name: string; owner_username: string; created_at: number };
 const categoryNames: Record<string, string> = { idea: 'Idea', prototipo: 'Prototipo', observacion: 'Observación', pregunta: 'Pregunta', decision: 'Decisión', otro: 'Otro' };
 let notes: Note[] = [];
@@ -65,7 +73,7 @@ let currentView: 'home' | 'project' | 'tools' | 'calendar' | 'tree' | 'pestel' |
 const inProject = () => ['project', 'tree', 'pestel', 'empathy', 'journey'].includes(currentView);
 const inTool = () => ['tree', 'pestel', 'empathy', 'journey'].includes(currentView);
 const methodologyNames: Record<string, string> = { transversal: 'Transversal', 'design-thinking': 'Design Thinking', 'lean-startup': 'Lean Startup', sit: 'SIT' };
-type Account = { id: string; username: string; display_name: string };
+type Account = { id: string; username: string; display_name: string; avatar: number };
 let account: Account | null = null;
 const notebookStorageKey = () => `hilo-notebook-${account?.id || 'local'}`;
 let authMode: 'login' | 'register' = 'login';
@@ -274,7 +282,7 @@ function scrollChat() {
 function turnHeader(role: string, createdAt?: string): HTMLElement {
   const header = document.createElement('div'); header.className = 'turn-label';
   const avatar = document.createElement('span'); avatar.className = 'turn-avatar'; avatar.setAttribute('aria-hidden', 'true');
-  if (role === 'user') avatar.textContent = profileName().split(/\s+/).filter(Boolean).slice(0, 2).map(word => word[0]).join('').toLocaleUpperCase('es');
+  if (role === 'user') paintAvatar(avatar, profileName(), account?.id, account?.avatar);
   else avatar.innerHTML = '<img src="/hilo-mark.png" alt="" width="24" height="24" />';
   const name = document.createElement('span'); name.className = 'turn-name'; name.textContent = role === 'user' ? 'Tú' : 'Hilo';
   header.append(avatar, name);
@@ -483,7 +491,7 @@ function renderProjects() {
       for (const member of collaborators.slice(0, 3)) {
         const avatar = document.createElement('span'); avatar.className = 'folder-collaborator';
         if (member.status === 'pending') avatar.classList.add('is-pending');
-        avatar.textContent = initialsOf(member.display_name);
+        paintAvatar(avatar, member.display_name, member.user_id, member.avatar);
         avatar.style.background = memberTone({ id: member.user_id || member.username, name: member.display_name, role: member.role });
         avatar.title = member.status === 'pending' ? `${member.display_name} · invitación pendiente` : `${member.display_name} · ${memberRoles[member.role]}`;
         group.append(avatar);
@@ -959,7 +967,7 @@ function renderSharingDialog() {
   el('sharing-people-count').textContent = `${visible.length} ${visible.length === 1 ? 'persona' : 'personas'}`;
   for (const member of sharedMembers) {
     const row = document.createElement('div'); row.className = 'sharing-person';
-    const avatar = document.createElement('span'); avatar.className = 'sharing-avatar'; avatar.textContent = initialsOf(member.display_name); avatar.style.background = memberTone({ id: member.user_id || member.id || member.username, name: member.display_name, role: member.role });
+    const avatar = document.createElement('span'); avatar.className = 'sharing-avatar'; paintAvatar(avatar, member.display_name, member.user_id, member.avatar); avatar.style.background = memberTone({ id: member.user_id || member.id || member.username, name: member.display_name, role: member.role });
     const identity = document.createElement('span'); identity.className = 'sharing-identity';
     const name = document.createElement('strong'); name.textContent = `${member.display_name}${member.user_id === account?.id ? ' (tú)' : ''}`;
     const username = document.createElement('small'); username.textContent = `@${member.username}${member.status === 'pending' ? ' · invitación pendiente' : ''}`;
@@ -1192,7 +1200,7 @@ function renderNotes() {
     const footer = document.createElement('div'); footer.className = 'note-footer';
     const who = document.createElement('span'); who.className = 'note-author'; who.title = `Creado por ${author.name}`;
     const avatar = document.createElement('span'); avatar.className = 'note-avatar'; avatar.setAttribute('aria-hidden', 'true');
-    avatar.textContent = initialsOf(author.name); avatar.style.background = memberTone(author);
+    paintAvatar(avatar, author.name, author.id, avatarVersion(author.id)); avatar.style.background = memberTone(author);
     const name = document.createElement('span'); name.className = 'note-author-name';
     name.textContent = author.name.split(/\s+/)[0] || author.name;
     const whoText = document.createElement('span'); whoText.className = 'sr-only'; whoText.textContent = `Creado por ${author.name}`;
@@ -1230,7 +1238,7 @@ function openNote(note?: Note, excerpt = '') {
   el('note-form').querySelector<HTMLInputElement>(`input[name="note-category"][value="${note?.category || 'idea'}"]`)!.checked = true;
   // La hoja firma con quien escribio la nota; una nota nueva la firma la cuenta actual.
   const signer = note ? noteAuthor(note) : { id: account?.id || '', name: profileName(), role: 'owner' as const };
-  el('note-sign-avatar').textContent = initialsOf(signer.name);
+  paintAvatar(el('note-sign-avatar'), signer.name, signer.id, avatarVersion(signer.id));
   el('note-sign-avatar').style.background = memberTone(signer);
   el('note-sign-name').textContent = signer.name;
   el('note-sign-date').textContent = note
@@ -1422,8 +1430,11 @@ function renderHero() {
   });
 }
 
-const initialsOf = (name: string) => name.split(/\s+/).filter(Boolean).slice(0, 2)
-  .map(word => word[0]).join('').toLocaleUpperCase('es');
+// Versión de la foto de una cuenta: la propia, o la de alguien del proyecto abierto.
+function avatarVersion(id: string): number {
+  if (id && id === account?.id) return account.avatar;
+  return sharedMembers.find(member => member.user_id === id)?.avatar || 0;
+}
 
 type Member = { id: string; name: string; role: MemberRole };
 const memberRoles: Record<MemberRole, string> = { owner: 'propietario', editor: 'puede editar', viewer: 'puede ver' };
@@ -1452,7 +1463,7 @@ function renderMembers() {
     const label = `${member.name}${member.id === account?.id ? ' (tú)' : ''} · ${memberRoles[member.role]}`;
     item.title = label;
     const avatar = document.createElement('span'); avatar.className = 'project-member-avatar';
-    avatar.setAttribute('aria-hidden', 'true'); avatar.textContent = initialsOf(member.name);
+    avatar.setAttribute('aria-hidden', 'true'); paintAvatar(avatar, member.name, member.id, avatarVersion(member.id));
     avatar.style.background = memberTone(member);
     const text = document.createElement('span'); text.className = 'sr-only'; text.textContent = label;
     item.append(avatar, text); list.append(item);
@@ -1470,13 +1481,13 @@ function renderMembers() {
 function renderProfile() {
   const name = profileName();
   el('profile-name').textContent = name;
-  el('profile-initials').textContent = initialsOf(name);
+  for (const node of [el('profile-initials'), el('account-menu-initials'), ...document.querySelectorAll<HTMLElement>('.user-turn .turn-avatar')]) {
+    paintAvatar(node, name, account?.id, account?.avatar);
+  }
   renderMembers();
-  document.querySelectorAll('.user-turn .turn-avatar').forEach(avatar => { avatar.textContent = el('profile-initials').textContent; });
   el('profile').setAttribute('aria-label', `Abrir tu cuenta: ${name}`);
   el('account-menu-name').textContent = name;
   el('account-menu-username').textContent = account ? `@${account.username}` : '';
-  el('account-menu-initials').textContent = el('profile-initials').textContent;
   renderHero();
 }
 
@@ -1501,36 +1512,25 @@ el('profile').addEventListener('click', () => {
   for (const id of ['header-help', 'header-notifications']) el<HTMLDetailsElement>(id).open = false;
   setAccountMenu(open);
 });
-function openAccountProfile(settings = false) {
-  setAccountMenu(false);
-  el('profile-dialog-title').textContent = settings ? 'Configuración de la cuenta' : 'Tu perfil';
-  el('profile-dialog-description').textContent = settings
-    ? 'Administra el nombre de tu cuenta local. Tus proyectos permanecen vinculados a esta cuenta.'
-    : 'Tu nombre aparecerá en tus mensajes. Tus proyectos están vinculados a esta cuenta local.';
-  el('account-settings-username').hidden = !settings;
-  el('account-settings-username').textContent = `Usuario: ${account?.username || ''}`;
-  el<HTMLInputElement>('profile-input').value = profileName();
-  el('profile-error').hidden = true; el('profile-input').removeAttribute('aria-invalid');
-  el<HTMLDialogElement>('profile-dialog').showModal(); el<HTMLInputElement>('profile-input').select();
-}
-el('cancel-profile').addEventListener('click', () => { el<HTMLDialogElement>('profile-dialog').close(); });
-el('profile-form').addEventListener('submit', async event => {
-  event.preventDefault();
-  const value = el<HTMLInputElement>('profile-input').value.trim();
-  if (!value) {
-    el('profile-error').textContent = 'Escribe un nombre para tu perfil.';
-    el('profile-error').hidden = false; el('profile-input').setAttribute('aria-invalid', 'true');
-    el('profile-input').focus(); return;
-  }
-  try {
-    account = await api<Account>('/auth/profile', { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ display_name: value }) });
-    renderProfile(); el<HTMLDialogElement>('profile-dialog').close(); el('profile').focus();
-  } catch (error) {
-    el('profile-error').textContent = (error as Error).message; el('profile-error').hidden = false;
-  }
+const settings = new SettingsController({
+  api,
+  account: () => account,
+  projects: () => notebooks.map(item => ({ project_id: item.project_id, notebook_id: item.notebook_id, role: item.role, stage: item.stage, color: item.color, owner_name: item.owner_name })),
+  invitations: () => invitations,
+  pendingTasks: () => tasks.filter(task => !task.completed).length,
+  // Nombre o foto nuevos: se repintan la cabecera, el chat y las listas de miembros.
+  onAccountChanged: changed => {
+    account = changed;
+    sharedMembers = sharedMembers.map(member => member.user_id === changed.id ? { ...member, display_name: changed.display_name, avatar: changed.avatar } : member);
+    renderProfile(); renderNotes();
+  },
+  openProject: id => { void loadNotebook(id); },
+  openNotifications: () => { el<HTMLDetailsElement>('header-notifications').open = true; el('header-notifications').querySelector('summary')!.focus(); },
+  openGuide: () => { el<HTMLDetailsElement>('header-help').open = true; el('header-help').querySelector('summary')!.focus(); },
+  endSession: endAccountSession,
 });
-el('account-open-profile').addEventListener('click', () => openAccountProfile());
-el('account-open-settings').addEventListener('click', () => openAccountProfile(true));
+el('account-open-profile').addEventListener('click', () => { setAccountMenu(false); void settings.open('perfil'); });
+el('account-open-settings').addEventListener('click', () => { setAccountMenu(false); void settings.open('perfil'); });
 el('account-quick-guide').addEventListener('click', () => {
   setAccountMenu(false);
   el<HTMLDetailsElement>('header-help').open = true;
@@ -1542,8 +1542,9 @@ for (const id of ['header-help', 'header-notifications']) el<HTMLDetailsElement>
     if (id === 'header-notifications') el('toast-region').querySelectorAll<HTMLElement>('.toast').forEach(removeToast);
   }
 });
+const SESSION_BUTTONS = ['settings-switch', 'settings-logout', 'account-switch', 'account-logout'];
 async function endAccountSession() {
-  for (const id of ['logout', 'account-switch', 'account-logout']) el<HTMLButtonElement>(id).disabled = true;
+  for (const id of SESSION_BUTTONS) el<HTMLButtonElement>(id).disabled = true;
   el('account-menu-error').hidden = true;
   try {
     await api('/auth/logout', { method: 'POST' });
@@ -1551,11 +1552,11 @@ async function endAccountSession() {
     window.location.reload();
   }
   catch (error) {
-    for (const id of ['profile-error', 'account-menu-error']) { el(id).textContent = (error as Error).message; el(id).hidden = false; }
-    for (const id of ['logout', 'account-switch', 'account-logout']) el<HTMLButtonElement>(id).disabled = false;
+    for (const id of ['settings-session-error', 'account-menu-error']) { el(id).textContent = (error as Error).message; el(id).hidden = false; }
+    for (const id of SESSION_BUTTONS) el<HTMLButtonElement>(id).disabled = false;
   }
 }
-for (const id of ['logout', 'account-switch', 'account-logout']) el(id).addEventListener('click', () => { void endAccountSession(); });
+for (const id of ['account-switch', 'account-logout']) el(id).addEventListener('click', () => { void endAccountSession(); });
 
 const dayKey = (value: string | Date) => {
   const date = typeof value === 'string' ? new Date(value) : value;

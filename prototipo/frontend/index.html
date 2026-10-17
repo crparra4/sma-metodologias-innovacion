@@ -6,6 +6,18 @@
   <meta name="theme-color" content="#f3f5f9" />
   <title>Hilo · Cuaderno de proyectos</title>
   <link rel="icon" type="image/png" href="/hilo-mark.png" />
+  <!-- Tema: se fija antes de pintar para que el modo oscuro no arranque con un destello blanco.
+       La página espera oculta hasta que tema.ts arma los colores (máximo 1,5 s). -->
+  <style>:root[data-theme="oscuro"]{background:#121822;color-scheme:dark}:root[data-theme="oscuro"]:not([data-theme-ready]) body{visibility:hidden}</style>
+  <script>
+    (function () {
+      var theme = 'claro';
+      try { theme = localStorage.getItem('hilo-tema') || 'claro'; } catch (error) { /* sin almacenamiento */ }
+      var dark = theme === 'oscuro' || (theme === 'sistema' && window.matchMedia('(prefers-color-scheme: dark)').matches);
+      document.documentElement.setAttribute('data-theme', dark ? 'oscuro' : 'claro');
+      setTimeout(function () { document.documentElement.setAttribute('data-theme-ready', ''); }, 1500);
+    })();
+  </script>
 </head>
 <body>
   <!-- THESIS: Un espacio de proyecto con conversación y anotaciones en paneles separados.
@@ -46,8 +58,12 @@
     <symbol id="i-edit" viewBox="0 0 24 24"><path d="m14 5 5 5M4 20l1-6L16 3l5 5L10 19z"/></symbol>
     <symbol id="i-person" viewBox="0 0 24 24"><circle cx="12" cy="7" r="4"/><path d="M5 21v-3a7 7 0 0 1 14 0v3"/></symbol>
     <symbol id="i-settings" viewBox="0 0 24 24"><path d="m10 3-1 3-3 1-3 3 2 2-1 3 3 3 3-1 2 2 3-1 1-3 3-1 1-3-2-2 1-3-3-2-3 1z"/><circle cx="12" cy="12" r="3"/></symbol>
+    <symbol id="i-camera" viewBox="0 0 24 24"><path d="M4 8h3l2-3h6l2 3h3v11H4z"/><circle cx="12" cy="13" r="3.5"/></symbol>
     <symbol id="i-theme" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 3v18"/></symbol>
     <symbol id="i-switch-account" viewBox="0 0 24 24"><circle cx="9" cy="7" r="3"/><path d="M3 21v-3a6 6 0 0 1 9-5M16 4h5l-2-2M21 4l-2 2M21 20h-5l2 2M16 20l2-2"/></symbol>
+    <symbol id="i-lock" viewBox="0 0 24 24"><rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/></symbol>
+    <symbol id="i-folder" viewBox="0 0 24 24"><path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/></symbol>
+    <symbol id="i-shield" viewBox="0 0 24 24"><path d="M12 3 5 6v6c0 4.5 3 7.5 7 9 4-1.5 7-4.5 7-9V6z"/><path d="m9 12 2 2 4-4"/></symbol>
     <symbol id="i-logout" viewBox="0 0 24 24"><path d="M9 4H4v16h5M10 12h11m-4-4 4 4-4 4"/></symbol>
     <symbol id="m-ficha" viewBox="0 0 64 64">
       <linearGradient id="ge" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#8ea6d6"/><stop offset="1" stop-color="#435d94"/></linearGradient>
@@ -108,7 +124,7 @@
           <div class="account-menu-actions">
             <button id="account-open-profile" type="button"><svg class="icon" aria-hidden="true"><use href="#i-person"/></svg>Perfil</button>
             <button id="account-open-settings" type="button"><svg class="icon" aria-hidden="true"><use href="#i-settings"/></svg>Configuración de la cuenta</button>
-            <details class="account-theme" id="account-theme"><summary><svg class="icon" aria-hidden="true"><use href="#i-theme"/></svg>Tema<svg class="icon account-menu-chevron" aria-hidden="true" viewBox="0 0 24 24"><path d="m9 5 7 7-7 7"/></svg></summary><div class="account-theme-options"><p>Claro · Tema actual</p><p>Oscuro · Próximamente</p></div></details>
+            <details class="account-theme" id="account-theme"><summary><svg class="icon" aria-hidden="true"><use href="#i-theme"/></svg>Tema<svg class="icon account-menu-chevron" aria-hidden="true" viewBox="0 0 24 24"><path d="m9 5 7 7-7 7"/></svg></summary><div class="account-theme-options" role="radiogroup" aria-label="Tema"><button type="button" role="radio" data-theme-choice="claro" aria-checked="false">Claro</button><button type="button" role="radio" data-theme-choice="oscuro" aria-checked="false">Oscuro</button><button type="button" role="radio" data-theme-choice="sistema" aria-checked="false">Automático</button></div></details>
             <button id="account-quick-guide" type="button"><svg class="icon" aria-hidden="true"><use href="#i-expand"/></svg>Abrir la guía de inicio rápido</button>
           </div>
           <div class="account-menu-session"><button id="account-switch" type="button"><svg class="icon" aria-hidden="true"><use href="#i-switch-account"/></svg>Cambiar de cuenta</button><button id="account-logout" type="button"><svg class="icon" aria-hidden="true"><use href="#i-logout"/></svg>Finalizar la sesión</button></div>
@@ -608,17 +624,130 @@
     <section class="sharing-section" aria-labelledby="sharing-advances-title"><div class="sharing-section-head"><div><h3 id="sharing-advances-title">Avances compartidos</h3><p>Hallazgos y decisiones que darán contexto a cada agente.</p></div></div><div class="sharing-advances" id="sharing-advances"></div><form class="advance-form" id="advance-form"><select id="advance-kind" aria-label="Tipo de avance"><option value="decision">Decisión</option><option value="finding">Hallazgo</option><option value="hypothesis">Hipótesis</option><option value="next_step">Próximo paso</option><option value="other">Otro</option></select><textarea id="advance-content" required maxlength="1500" rows="2" placeholder="Escribe el avance más importante…"></textarea><button class="button primary" type="submit">Guardar avance</button></form></section>
     <button class="button quiet sharing-leave" id="leave-project" type="button" hidden>Dejar de compartir conmigo</button>
   </dialog>
-  <dialog class="profile-dialog" id="profile-dialog" aria-labelledby="profile-dialog-title">
-    <form id="profile-form" novalidate>
-      <h2 id="profile-dialog-title">Tu perfil</h2>
-      <p class="profile-dialog-description" id="profile-dialog-description">Tu nombre aparecerá en tus mensajes. Tus proyectos están vinculados a esta cuenta local.</p>
-      <p class="account-settings-username" id="account-settings-username" hidden></p>
-      <label for="profile-input">Nombre</label>
-      <input id="profile-input" maxlength="60" autocomplete="name" placeholder="Tu nombre" aria-describedby="profile-error" />
-      <p class="field-error" id="profile-error" role="alert" hidden></p>
-      <div class="form-actions"><button class="button quiet" id="cancel-profile" type="button">Cancelar</button><button class="button primary" type="submit">Guardar</button></div>
-      <button class="button quiet profile-logout" id="logout" type="button">Cerrar sesión</button>
-    </form>
+  <dialog class="settings-dialog" id="settings-dialog" aria-labelledby="settings-title">
+    <div class="settings-shell">
+      <nav class="settings-nav" aria-label="Secciones de la configuración">
+        <div class="settings-me"><span class="settings-avatar" id="settings-nav-avatar" aria-hidden="true"></span><div><strong id="settings-nav-name"></strong><span id="settings-nav-username"></span></div></div>
+        <p class="settings-group">Cuenta</p>
+        <button class="settings-tab" type="button" data-section="perfil"><svg class="icon" aria-hidden="true"><use href="#i-person"/></svg>Perfil</button>
+        <button class="settings-tab" type="button" data-section="seguridad"><svg class="icon" aria-hidden="true"><use href="#i-lock"/></svg>Seguridad</button>
+        <button class="settings-tab" type="button" data-section="preferencias"><svg class="icon" aria-hidden="true"><use href="#i-theme"/></svg>Preferencias</button>
+        <p class="settings-group">Espacio de trabajo</p>
+        <button class="settings-tab" type="button" data-section="proyectos"><svg class="icon" aria-hidden="true"><use href="#i-folder"/></svg>Mis proyectos</button>
+        <button class="settings-tab" type="button" data-section="datos"><svg class="icon" aria-hidden="true"><use href="#i-shield"/></svg>Datos y privacidad</button>
+        <div class="settings-session">
+          <button type="button" id="settings-switch"><svg class="icon" aria-hidden="true"><use href="#i-switch-account"/></svg>Cambiar de cuenta</button>
+          <button type="button" id="settings-logout"><svg class="icon" aria-hidden="true"><use href="#i-logout"/></svg>Cerrar sesión</button>
+          <p class="field-error" id="settings-session-error" role="alert" hidden></p>
+        </div>
+      </nav>
+      <div class="settings-main">
+        <button class="settings-close" id="settings-close" type="button" aria-label="Cerrar la configuración"><svg class="icon" aria-hidden="true"><use href="#i-close"/></svg></button>
+
+        <section class="settings-section" data-section="perfil" aria-labelledby="settings-title">
+          <h2 id="settings-title">Perfil</h2>
+          <p class="settings-lead">Tu foto y tu nombre son lo que ven las personas con las que compartes proyectos.</p>
+          <div class="settings-card settings-id-card">
+            <div class="settings-id-banner" aria-hidden="true"></div>
+            <span class="settings-avatar settings-avatar-big" id="settings-big-avatar" aria-hidden="true"></span>
+            <div class="settings-id-text"><strong id="settings-card-name"></strong><span id="settings-card-username"></span><span class="settings-since" id="settings-since"></span></div>
+            <div class="settings-photo">
+              <input id="settings-photo-input" type="file" accept="image/png,image/jpeg,image/webp" hidden />
+              <button class="button quiet" id="settings-photo-change" type="button"><svg class="icon" aria-hidden="true"><use href="#i-camera"/></svg><span>Subir foto</span></button>
+              <button class="button quiet settings-photo-remove" id="settings-photo-remove" type="button" hidden>Quitar foto</button>
+              <p class="settings-status" id="settings-photo-status" role="status"></p>
+            </div>
+          </div>
+          <form class="settings-card settings-form" id="settings-profile-form" novalidate>
+            <h3>Datos personales</h3>
+            <p class="settings-hint">Tu nombre completo aparece en tus mensajes, en tus post-its y en los proyectos que compartes. El teléfono y el correo solo los ves tú.</p>
+            <div class="settings-fields">
+              <div><label for="settings-first-name">Nombre</label><input id="settings-first-name" maxlength="30" autocomplete="given-name" required /></div>
+              <div><label for="settings-last-name">Apellido</label><input id="settings-last-name" maxlength="30" autocomplete="family-name" /></div>
+              <div><label for="settings-phone">Teléfono</label><input id="settings-phone" type="tel" maxlength="25" autocomplete="tel" inputmode="tel" placeholder="+57 300 123 4567" /></div>
+              <div><label for="settings-email">Correo</label><input id="settings-email" type="email" maxlength="120" autocomplete="email" inputmode="email" placeholder="nombre@correo.com" /></div>
+            </div>
+            <div class="settings-actions"><button class="button primary" id="settings-profile-save" type="submit" disabled>Guardar cambios</button></div>
+            <p class="settings-status" id="settings-profile-status" role="status"></p>
+          </form>
+          <div class="settings-card">
+            <h3>Usuario</h3>
+            <p class="settings-hint">Con este nombre te invitan a un proyecto. No se puede cambiar.</p>
+            <p class="settings-fixed" id="settings-username"></p>
+          </div>
+        </section>
+
+        <section class="settings-section" data-section="seguridad" aria-labelledby="settings-security-title" hidden>
+          <h2 id="settings-security-title">Seguridad</h2>
+          <p class="settings-lead">Protege el acceso a tu cuenta en este computador.</p>
+          <form class="settings-card settings-form" id="settings-password-form" novalidate>
+            <h3>Cambiar contraseña</h3>
+            <p class="settings-hint">Mínimo 10 caracteres. Al cambiarla se cierran tus otras sesiones abiertas.</p>
+            <label for="settings-password-current">Contraseña actual</label>
+            <input id="settings-password-current" type="password" autocomplete="current-password" maxlength="128" />
+            <label for="settings-password-new">Contraseña nueva</label>
+            <input id="settings-password-new" type="password" autocomplete="new-password" minlength="10" maxlength="128" />
+            <label for="settings-password-confirm">Repite la contraseña nueva</label>
+            <input id="settings-password-confirm" type="password" autocomplete="new-password" maxlength="128" />
+            <div class="settings-actions"><button class="button primary" type="submit">Cambiar contraseña</button></div>
+            <p class="settings-status" id="settings-password-status" role="status"></p>
+          </form>
+          <div class="settings-card settings-facts">
+            <h3>Tu sesión</h3>
+            <ul>
+              <li><span class="settings-fact-dot" data-tone="blue"></span><span id="settings-session-hours">La sesión dura 12 horas; después Hilo te pide entrar de nuevo.</span></li>
+              <li><span class="settings-fact-dot" data-tone="amber"></span>Tras 5 contraseñas equivocadas seguidas, la cuenta espera un minuto antes de otro intento.</li>
+              <li><span class="settings-fact-dot" data-tone="green"></span>La contraseña no se guarda tal cual, sino como una huella calculada con un método lento a propósito: nadie puede leerla, ni desde este computador.</li>
+            </ul>
+          </div>
+        </section>
+
+        <section class="settings-section" data-section="preferencias" aria-labelledby="settings-preferences-title" hidden>
+          <h2 id="settings-preferences-title">Preferencias</h2>
+          <p class="settings-lead">Ajusta cómo se ve y cómo te acompaña Hilo.</p>
+          <div class="settings-card">
+            <h3>Tema</h3>
+            <p class="settings-hint">Se guarda en este navegador.</p>
+            <div class="settings-themes" role="radiogroup" aria-label="Tema">
+              <button class="settings-theme" type="button" role="radio" data-theme-choice="claro" aria-checked="false"><span class="settings-theme-preview" data-theme="claro" aria-hidden="true"><i></i><i></i><i></i></span><strong>Claro</strong><span>Fondo claro, como el cuaderno</span></button>
+              <button class="settings-theme" type="button" role="radio" data-theme-choice="oscuro" aria-checked="false"><span class="settings-theme-preview" data-theme="oscuro" aria-hidden="true"><i></i><i></i><i></i></span><strong>Oscuro</strong><span>Descansa la vista de noche</span></button>
+              <button class="settings-theme" type="button" role="radio" data-theme-choice="sistema" aria-checked="false"><span class="settings-theme-preview" data-theme="sistema" aria-hidden="true"><i></i><i></i><i></i></span><strong>Automático</strong><span>Sigue al sistema operativo</span></button>
+            </div>
+          </div>
+          <div class="settings-card settings-inline">
+            <div><h3>Guía de inicio rápido</h3><p class="settings-hint">Repasa cómo empezar un proyecto, usar el chat y guardar post-its.</p></div>
+            <button class="button quiet" id="settings-guide" type="button">Abrir guía</button>
+          </div>
+        </section>
+
+        <section class="settings-section" data-section="proyectos" aria-labelledby="settings-projects-title" hidden>
+          <h2 id="settings-projects-title">Mis proyectos</h2>
+          <p class="settings-lead">Los proyectos de esta cuenta y los que otras personas comparten contigo.</p>
+          <div class="settings-stats">
+            <div class="settings-stat" data-tone="blue"><strong id="settings-stat-own">0</strong><span>Proyectos propios</span></div>
+            <div class="settings-stat" data-tone="green"><strong id="settings-stat-shared">0</strong><span>Compartidos contigo</span></div>
+            <div class="settings-stat" data-tone="amber"><strong id="settings-stat-invitations">0</strong><span>Invitaciones pendientes</span></div>
+            <div class="settings-stat" data-tone="purple"><strong id="settings-stat-tasks">0</strong><span>Tareas pendientes</span></div>
+          </div>
+          <div class="settings-card settings-invitations" id="settings-invitations" hidden>
+            <div class="settings-inline"><div><h3>Te invitaron</h3><p class="settings-hint" id="settings-invitations-text"></p></div><button class="button quiet" id="settings-open-notifications" type="button">Responder</button></div>
+          </div>
+          <ul class="settings-projects" id="settings-projects"></ul>
+          <p class="settings-empty" id="settings-projects-empty" hidden>Todavía no tienes proyectos. Crea el primero desde Inicio.</p>
+        </section>
+
+        <section class="settings-section" data-section="datos" aria-labelledby="settings-data-title" hidden>
+          <h2 id="settings-data-title">Datos y privacidad</h2>
+          <p class="settings-lead">Qué guarda Hilo y dónde lo guarda.</p>
+          <div class="settings-privacy">
+            <div class="settings-card settings-privacy-item" data-tone="blue"><h3>Todo queda en este computador</h3><p>Tus proyectos, chats, post-its y tareas se guardan en una carpeta local que solo tu usuario del sistema puede abrir. Nada se sube a internet.</p></div>
+            <div class="settings-card settings-privacy-item" data-tone="green"><h3>El asistente trabaja aquí</h3><p>El modelo de lenguaje corre en este equipo. Tus mensajes no salen hacia ningún servicio externo.</p></div>
+            <div class="settings-card settings-privacy-item" data-tone="purple"><h3>Compartir es local</h3><p>Solo puedes compartir con cuentas de esta misma instalación. Cada persona conserva su chat privado dentro del proyecto.</p></div>
+            <div class="settings-card settings-privacy-item" data-tone="amber"><h3>Para respaldar</h3><p>Detén Hilo y copia completa su carpeta de datos. Copiar un solo archivo no conserva las cuentas ni los proyectos compartidos.</p></div>
+          </div>
+        </section>
+      </div>
+    </div>
   </dialog>
   <script type="module" src="/src/main.ts"></script>
 </body>

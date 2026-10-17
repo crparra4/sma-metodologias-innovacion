@@ -594,7 +594,8 @@ class SharingStore:
     def members(self, project_id: str, requester_id: str) -> list[dict]:
         with self._connect() as db:
             project = db.execute("""
-                SELECT p.owner_user_id, u.username, u.display_name
+                SELECT p.owner_user_id, u.username, u.display_name,
+                       CASE WHEN u.avatar IS NULL THEN 0 ELSE u.avatar_version END AS avatar
                 FROM shared_projects p JOIN users u ON u.id=p.owner_user_id
                 LEFT JOIN project_members m ON m.project_id=p.id AND m.user_id=?
                 WHERE p.id=? AND (p.owner_user_id=? OR m.user_id=?)
@@ -602,20 +603,38 @@ class SharingStore:
             if not project:
                 raise HTTPException(403, "No tienes acceso a este proyecto.")
             members = db.execute("""
-                SELECT m.user_id, m.role, u.username, u.display_name
+                SELECT m.user_id, m.role, u.username, u.display_name,
+                       CASE WHEN u.avatar IS NULL THEN 0 ELSE u.avatar_version END AS avatar
                 FROM project_members m JOIN users u ON u.id=m.user_id
                 WHERE m.project_id=? ORDER BY m.joined_at
             """, (project_id,)).fetchall()
             pending = db.execute("""
-                SELECT i.id, i.role, u.username, u.display_name
+                SELECT i.id, i.role, u.username, u.display_name,
+                       CASE WHEN u.avatar IS NULL THEN 0 ELSE u.avatar_version END AS avatar
                 FROM project_invitations i JOIN users u ON u.id=i.invited_user_id
                 WHERE i.project_id=? AND i.status='pending'
                 ORDER BY i.created_at, i.rowid
             """, (project_id,)).fetchall() if project["owner_user_id"] == requester_id else []
         return [{"user_id": project["owner_user_id"], "username": project["username"],
-                 "display_name": project["display_name"], "role": "owner"},
+                 "display_name": project["display_name"], "avatar": project["avatar"],
+                 "role": "owner"},
                 *[dict(row) for row in members],
                 *[{**dict(row), "status": "pending"} for row in pending]]
+
+    def shares_project(self, user_id: str, other_id: str) -> bool:
+        """Si las dos cuentas coinciden en algún proyecto (dueño, miembro o invitación
+        pendiente). Es lo que decide quién puede ver la foto de perfil de quién."""
+        with self._connect() as db:
+            return db.execute("""
+                WITH people(project_id, user_id) AS (
+                    SELECT id, owner_user_id FROM shared_projects
+                    UNION SELECT project_id, user_id FROM project_members
+                    UNION SELECT project_id, invited_user_id FROM project_invitations
+                          WHERE status='pending'
+                )
+                SELECT 1 FROM people a JOIN people b ON a.project_id=b.project_id
+                WHERE a.user_id=? AND b.user_id=? LIMIT 1
+            """, (user_id, other_id)).fetchone() is not None
 
     def change_member(self, project_id: str, owner_id: str, user_id: str, role: str | None) -> None:
         with self._connect() as db:

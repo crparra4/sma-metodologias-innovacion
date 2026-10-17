@@ -4,6 +4,7 @@ import asyncio
 import json
 import logging
 import os
+import re
 import sqlite3
 import threading
 import time
@@ -14,7 +15,7 @@ from typing import Literal
 from urllib.parse import urlparse
 
 from fastapi import FastAPI, HTTPException, Request
-from fastapi.responses import JSONResponse, StreamingResponse
+from fastapi.responses import JSONResponse, Response, StreamingResponse
 from fastapi.staticfiles import StaticFiles
 from langgraph.checkpoint.serde.jsonplus import JsonPlusSerializer
 from langgraph.checkpoint.sqlite import SqliteSaver
@@ -23,7 +24,15 @@ from pydantic import BaseModel, Field, field_validator
 from starlette.middleware.trustedhost import TrustedHostMiddleware
 
 from .audit import JsonlVerificationRecorder
-from .auth import COOKIE_NAME, AttemptLimiter, AuthStore, User
+from .auth import (
+    AVATAR_MAX_BYTES,
+    COOKIE_NAME,
+    SESSION_SECONDS,
+    AttemptLimiter,
+    AuthStore,
+    User,
+    avatar_type,
+)
 from .config import PROJECT_ROOT, Settings
 from .contracts import NotebookColor, ProjectContext, ProjectState, TurnResult
 from .direct_runtime import DirectOpenAIRuntime
@@ -153,8 +162,32 @@ class LoginRequest(BaseModel):
     password: str = Field(max_length=128)
 
 
+class PasswordChangeRequest(BaseModel):
+    current_password: str = Field(max_length=128)
+    new_password: str = Field(min_length=10, max_length=128)
+    confirm_password: str = Field(max_length=128)
+
+
 class AccountProfileRequest(BaseModel):
-    display_name: str = Field(min_length=1, max_length=60)
+    first_name: str = Field(max_length=30)
+    last_name: str = Field(default="", max_length=30)
+    phone: str = Field(default="", max_length=25)
+    email: str = Field(default="", max_length=120)
+
+
+def profile_fields(body: AccountProfileRequest) -> tuple[str, str, str, str]:
+    """Limpia y revisa el perfil. Los mensajes van tal cual a la pantalla."""
+    first, last, phone, email = (" ".join(value.split()) for value in
+                                 (body.first_name, body.last_name, body.phone, body.email))
+    if not first:
+        raise HTTPException(400, "Escribe tu nombre.")
+    digits = sum(char.isdigit() for char in phone)
+    if phone and (not re.fullmatch(r"\+?[0-9 ()-]+", phone) or not 7 <= digits <= 15):
+        raise HTTPException(
+            400, "Escribe el teléfono con números (de 7 a 15); puede empezar con +.")
+    if email and not re.fullmatch(r"[^@\s]+@[^@\s]+\.[^@\s.]+", email):
+        raise HTTPException(400, "Ese correo no parece válido: revisa la @ y el dominio.")
+    return first, last, phone, email.lower()
 
 
 class InvitationRequest(BaseModel):
@@ -422,13 +455,78 @@ def create_app(
             raise HTTPException(401, "Inicia sesión para continuar.")
         return request.state.user.public()
 
-    @app.put("/api/auth/profile")
-    def account_profile(body: AccountProfileRequest, request: Request):
+    @app.get("/api/auth/account")
+    def account_details(request: Request):
+        user = request.state.user
+        if not user:
+            raise HTTPException(401, "Inicia sesión para continuar.")
+        return {**user.public(), "created_at": auth.created_at(user),
+                "session_hours": SESSION_SECONDS // 3600}
+
+    @app.put("/api/auth/password")
+    def change_password(body: PasswordChangeRequest, request: Request):
+        user = request.state.user
+        if not user:
+            raise HTTPException(401, "Inicia sesión para continuar.")
+        if body.new_password != body.confirm_password:
+            raise HTTPException(400, "Las contraseñas nuevas no coinciden.")
+        if body.new_password == body.current_password:
+            raise HTTPException(400, "Elige una contraseña distinta a la actual.")
+        # Comparte el cupo del inicio de sesión: si no, esta ruta serviría para adivinar
+        # la contraseña de una sesión abierta sin límite.
+        throttle(login_attempts, user.username)
+        if not auth.change_password(user, body.current_password, body.new_password,
+                                    request.cookies.get(COOKIE_NAME)):
+            raise HTTPException(400, "La contraseña actual no es correcta.")
+        login_attempts.forget(user.username)
+        return {"ok": True}
+
+    @app.get("/api/auth/profile")
+    def account_profile(request: Request):
         if not request.state.user:
             raise HTTPException(401, "Inicia sesión para continuar.")
-        if not body.display_name.strip():
-            raise HTTPException(400, "Escribe un nombre para tu perfil.")
-        return auth.rename(request.state.user, body.display_name).public()
+        return {**request.state.user.public(), **auth.profile(request.state.user)}
+
+    @app.put("/api/auth/profile")
+    def update_account_profile(body: AccountProfileRequest, request: Request):
+        if not request.state.user:
+            raise HTTPException(401, "Inicia sesión para continuar.")
+        user = auth.update_profile(request.state.user, *profile_fields(body))
+        return {**user.public(), **auth.profile(user)}
+
+    @app.put("/api/auth/avatar")
+    async def upload_avatar(request: Request):
+        if not request.state.user:
+            raise HTTPException(401, "Inicia sesión para continuar.")
+        data = await request.body()
+        if len(data) > AVATAR_MAX_BYTES:
+            raise HTTPException(413, "La foto pesa demasiado. Prueba con otra.")
+        kind = avatar_type(data)
+        if not kind:
+            raise HTTPException(400, "La foto debe ser JPG, PNG o WebP.")
+        return auth.set_avatar(request.state.user, data, kind).public()
+
+    @app.delete("/api/auth/avatar")
+    def delete_avatar(request: Request):
+        if not request.state.user:
+            raise HTTPException(401, "Inicia sesión para continuar.")
+        return auth.clear_avatar(request.state.user).public()
+
+    @app.get("/api/users/{user_id}/avatar")
+    def user_avatar(user_id: str, request: Request):
+        # Solo la propia cuenta y quienes comparten un proyecto con ella ven la foto.
+        user = request.state.user
+        if not user or (user.id != user_id and not sharing.shares_project(user.id, user_id)):
+            raise HTTPException(404, "No hay foto.")
+        image = auth.avatar_image(user_id)
+        if not image:
+            raise HTTPException(404, "No hay foto.")
+        # La URL lleva la versión (?v=), así que puede guardarse en caché sin quedar vieja.
+        return Response(image[0], media_type=image[1], headers={
+            "Cache-Control": "private, max-age=31536000, immutable",
+            "X-Content-Type-Options": "nosniff",
+            "Content-Security-Policy": "default-src 'none'",
+        })
 
     @app.post("/api/auth/logout")
     def logout(request: Request):

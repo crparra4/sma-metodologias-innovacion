@@ -48,8 +48,8 @@ def test_registration_login_logout_and_cookie_security(tmp_path):
         wrong = client.post("/api/auth/login", json={"username": "ana", "password": "equivocada"})
         assert wrong.status_code == 401
         assert (
-            client.put("/api/auth/profile", json={"display_name": "Ana P."}).json()["display_name"]
-            == "Ana P."
+            client.put("/api/auth/profile", json={"first_name": "Ana", "last_name": "P."})
+            .json()["display_name"] == "Ana P."
         )
         assert client.post("/api/auth/logout").status_code == 200
         assert client.get("/api/notebooks").status_code == 401
@@ -289,3 +289,141 @@ def test_the_data_folder_is_private_to_the_account_running_hilo(tmp_path):
     assert mode(data / "notebooks.sqlite3") == 0o600
     assert mode(data / "users" / "abc" / "notebooks.sqlite3") == 0o600
 
+
+def change_password(client, current, new, confirm=None):
+    return client.put("/api/auth/password", json={
+        "current_password": current, "new_password": new,
+        "confirm_password": new if confirm is None else confirm,
+    })
+
+
+def test_account_details_show_when_the_account_was_created(tmp_path):
+    client, _ = client_for(tmp_path)
+    with client:
+        assert client.get("/api/auth/account").status_code == 401
+        assert register(client, "ana", "Ana Gómez").status_code == 201
+        details = client.get("/api/auth/account").json()
+        assert details["username"] == "ana" and details["display_name"] == "Ana Gómez"
+        assert details["created_at"] > 0 and details["session_hours"] == 12
+
+
+def test_changing_the_password_keeps_this_session_and_closes_the_others(tmp_path):
+    client, settings = client_for(tmp_path)
+    with client:
+        assert register(client, "ana", "Ana").status_code == 201
+        other = TestClient(client.app)
+        assert login(other, "ana").status_code == 200
+        assert change_password(client, "equivocada-1", "otra-clave-segura").status_code == 400
+        mismatch = change_password(client, "una-clave-local-segura", "otra-clave-segura", "x" * 12)
+        assert mismatch.status_code == 400
+        same = change_password(client, "una-clave-local-segura", "una-clave-local-segura")
+        assert same.status_code == 400
+        assert change_password(client, "una-clave-local-segura", "corta").status_code == 422
+        ok = change_password(client, "una-clave-local-segura", "otra-clave-segura")
+        assert ok.status_code == 200
+        assert client.get("/api/auth/me").status_code == 200
+        assert other.get("/api/auth/me").status_code == 401
+        assert login(other, "ana").status_code == 401
+        assert login(other, "ana", "otra-clave-segura").status_code == 200
+
+
+def test_guessing_the_current_password_is_limited(tmp_path):
+    client, _ = client_for(tmp_path)
+    with client:
+        assert register(client, "ana", "Ana").status_code == 201
+        for index in range(5):
+            wrong = change_password(client, f"equivocada-{index}", "otra-clave-segura")
+            assert wrong.status_code == 400
+        blocked = change_password(client, "una-clave-local-segura", "otra-clave-segura")
+        assert blocked.status_code == 429
+
+
+
+def put_profile(client, **fields):
+    return client.put("/api/auth/profile", json={"first_name": "Ana", **fields})
+
+
+def test_profile_splits_name_and_keeps_phone_and_email(tmp_path):
+    client, _ = client_for(tmp_path)
+    with client:
+        assert register(client, "ana", "Ana María Gómez").status_code == 201
+        # Antes de dividirlo, el nombre completo de la cuenta se muestra como nombre.
+        before = client.get("/api/auth/profile").json()
+        assert (before["first_name"], before["last_name"]) == ("Ana María Gómez", "")
+        saved = put_profile(client, first_name="  Ana  María ", last_name="Gómez",
+                            phone="+57 300 123 4567", email="Ana@Correo.CO")
+        assert saved.status_code == 200
+        assert saved.json()["display_name"] == "Ana María Gómez"
+        profile = client.get("/api/auth/profile").json()
+        assert profile["first_name"] == "Ana María" and profile["last_name"] == "Gómez"
+        assert profile["phone"] == "+57 300 123 4567" and profile["email"] == "ana@correo.co"
+        assert client.get("/api/auth/me").json()["display_name"] == "Ana María Gómez"
+
+
+@pytest.mark.parametrize("fields, message", [
+    ({"first_name": "   "}, "Escribe tu nombre."),
+    ({"phone": "300-abc-1234"}, "teléfono"),
+    ({"phone": "12345"}, "teléfono"),
+    ({"email": "ana@correo"}, "correo"),
+    ({"email": "ana correo.co"}, "correo"),
+])
+def test_profile_rejects_invalid_fields_with_a_readable_message(tmp_path, fields, message):
+    client, _ = client_for(tmp_path)
+    with client:
+        assert register(client, "ana", "Ana").status_code == 201
+        response = put_profile(client, **fields)
+        assert response.status_code == 400 and message in response.json()["detail"]
+        assert client.get("/api/auth/me").json()["display_name"] == "Ana"
+
+
+def test_an_account_database_from_before_the_profile_fields_still_opens(tmp_path):
+    import sqlite3
+    with sqlite3.connect(tmp_path / "auth.sqlite3") as db:
+        db.execute("""CREATE TABLE users (id TEXT PRIMARY KEY, username TEXT NOT NULL UNIQUE,
+            display_name TEXT NOT NULL, salt BLOB NOT NULL, password_hash BLOB NOT NULL,
+            legacy INTEGER NOT NULL, created_at INTEGER NOT NULL)""")
+    client, _ = client_for(tmp_path)
+    with client:
+        assert register(client, "ana", "Ana").status_code == 201
+        assert client.get("/api/auth/me").json()["avatar"] == 0
+
+
+PNG = b"\x89PNG\r\n\x1a\n" + b"\x00" * 64
+WEBP = b"RIFF\x10\x00\x00\x00WEBPVP8 " + b"\x00" * 64
+
+
+def test_profile_photo_upload_replace_and_remove(tmp_path):
+    client, _ = client_for(tmp_path)
+    with client:
+        assert register(client, "ana", "Ana").status_code == 201
+        me = client.get("/api/auth/me").json()
+        assert me["avatar"] == 0
+        assert client.get(f"/api/users/{me['id']}/avatar").status_code == 404
+        first = client.put("/api/auth/avatar", content=PNG,
+                           headers={"Content-Type": "image/png"}).json()
+        assert first["avatar"] == 1
+        image = client.get(f"/api/users/{me['id']}/avatar?v=1")
+        assert image.status_code == 200 and image.content == PNG
+        assert image.headers["content-type"] == "image/png"
+        assert image.headers["x-content-type-options"] == "nosniff"
+        # El tipo sale de los bytes, no de la cabecera que mande el navegador.
+        second = client.put("/api/auth/avatar", content=WEBP,
+                            headers={"Content-Type": "image/png"}).json()
+        assert second["avatar"] == 2
+        assert client.get(f"/api/users/{me['id']}/avatar").headers["content-type"] == "image/webp"
+        assert client.delete("/api/auth/avatar").json()["avatar"] == 0
+        assert client.get(f"/api/users/{me['id']}/avatar").status_code == 404
+        assert client.get("/api/auth/me").json()["avatar"] == 0
+
+
+def test_profile_photo_rejects_other_files_and_big_ones(tmp_path):
+    client, _ = client_for(tmp_path)
+    with client:
+        assert register(client, "ana", "Ana").status_code == 201
+        svg = b'<svg xmlns="http://www.w3.org/2000/svg"><script>alert(1)</script></svg>'
+        for content in (svg, b"GIF89a" + b"\x00" * 20, b""):
+            response = client.put("/api/auth/avatar", content=content)
+            assert response.status_code == 400
+        big = client.put("/api/auth/avatar", content=PNG + b"\x00" * (512 * 1024))
+        assert big.status_code == 413
+        assert client.get("/api/auth/me").json()["avatar"] == 0

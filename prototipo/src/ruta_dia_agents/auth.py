@@ -51,15 +51,40 @@ class AttemptLimiter:
             self._hits.pop(key, None)
 
 
+# La foto se reduce en el navegador a 320 px; este tope deja margen de sobra.
+AVATAR_MAX_BYTES = 512 * 1024
+_AVATAR_TYPES = ((b"\xff\xd8\xff", "image/jpeg"), (b"\x89PNG\r\n\x1a\n", "image/png"))
+
+
+def avatar_type(data: bytes) -> str | None:
+    """Tipo de imagen según sus primeros bytes; no se confía en lo que diga el navegador."""
+    if data[:4] == b"RIFF" and data[8:12] == b"WEBP":
+        return "image/webp"
+    return next((kind for magic, kind in _AVATAR_TYPES if data.startswith(magic)), None)
+
+
 @dataclass(frozen=True)
 class User:
     id: str
     username: str
     display_name: str
     legacy: bool
+    # Versión de la foto de perfil; 0 si no tiene. Sirve para que el navegador no muestre
+    # una foto vieja guardada en caché.
+    avatar: int = 0
 
-    def public(self) -> dict[str, str]:
-        return {"id": self.id, "username": self.username, "display_name": self.display_name}
+    def public(self) -> dict[str, str | int]:
+        return {"id": self.id, "username": self.username, "display_name": self.display_name,
+                "avatar": self.avatar}
+
+
+# Columnas que se agregaron después: una base creada antes no las tiene.
+_PROFILE_COLUMNS = {
+    "first_name": "TEXT NOT NULL DEFAULT ''", "last_name": "TEXT NOT NULL DEFAULT ''",
+    "phone": "TEXT NOT NULL DEFAULT ''", "email": "TEXT NOT NULL DEFAULT ''",
+    "avatar": "BLOB", "avatar_type": "TEXT", "avatar_version": "INTEGER NOT NULL DEFAULT 0",
+}
+_AVATAR = "CASE WHEN u.avatar IS NULL THEN 0 ELSE u.avatar_version END"
 
 
 class AuthStore:
@@ -80,6 +105,10 @@ class AuthStore:
                 );
                 CREATE INDEX IF NOT EXISTS sessions_user ON sessions(user_id);
             """)
+            present = {row[1] for row in db.execute("PRAGMA table_info(users)")}
+            for column, kind in _PROFILE_COLUMNS.items():
+                if column not in present:
+                    db.execute(f"ALTER TABLE users ADD COLUMN {column} {kind}")
 
     def _connect(self) -> sqlite3.Connection:
         db = sqlite3.connect(self.path, timeout=5)
@@ -104,8 +133,10 @@ class AuthStore:
                 db.execute("BEGIN IMMEDIATE")
                 legacy = not db.execute("SELECT 1 FROM users LIMIT 1").fetchone()
                 db.execute(
-                    "INSERT INTO users VALUES (?, ?, ?, ?, ?, ?, ?)",
-                    (user_id, username, display_name, salt, digest, int(legacy), int(time.time())),
+                    "INSERT INTO users (id, username, display_name, salt, password_hash, legacy, "
+                    "created_at, first_name) VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
+                    (user_id, username, display_name, salt, digest, int(legacy), int(time.time()),
+                     display_name),
                 )
                 db.commit()
             except sqlite3.IntegrityError as exc:
@@ -115,14 +146,14 @@ class AuthStore:
     def authenticate(self, username: str, password: str) -> User | None:
         with self._connect() as db:
             row = db.execute(
-                "SELECT id, username, display_name, salt, password_hash, legacy "
-                "FROM users WHERE username=?", (username.strip().lower(),),
+                f"SELECT u.id, u.username, u.display_name, u.salt, u.password_hash, u.legacy, "
+                f"{_AVATAR} FROM users u WHERE u.username=?", (username.strip().lower(),),
             ).fetchone()
         # Mantiene un coste parecido para usuarios inexistentes.
         salt = row[3] if row else b"\x00" * 16
         digest = self._password(password, salt)
         if row and hmac.compare_digest(digest, row[4]):
-            return User(row[0], row[1], row[2], bool(row[5]))
+            return User(row[0], row[1], row[2], bool(row[5]), row[6])
         return None
 
     @staticmethod
@@ -146,11 +177,11 @@ class AuthStore:
             return None
         with self._connect() as db:
             row = db.execute(
-                "SELECT u.id, u.username, u.display_name, u.legacy FROM sessions s "
+                f"SELECT u.id, u.username, u.display_name, u.legacy, {_AVATAR} FROM sessions s "
                 "JOIN users u ON u.id=s.user_id WHERE s.token_hash=? AND s.expires_at>?",
                 (digest, int(time.time())),
             ).fetchone()
-        return User(row[0], row[1], row[2], bool(row[3])) if row else None
+        return User(row[0], row[1], row[2], bool(row[3]), row[4]) if row else None
 
     def logout(self, token: str | None) -> None:
         if not token:
@@ -162,18 +193,81 @@ class AuthStore:
         with self._connect() as db:
             db.execute("DELETE FROM sessions WHERE token_hash=?", (digest,))
 
-    def rename(self, user: User, display_name: str) -> User:
-        display_name = display_name.strip()
+    def created_at(self, user: User) -> int:
         with self._connect() as db:
-            db.execute("UPDATE users SET display_name=? WHERE id=?", (display_name, user.id))
-        return User(user.id, user.username, display_name, user.legacy)
+            row = db.execute("SELECT created_at FROM users WHERE id=?", (user.id,)).fetchone()
+        return int(row[0]) if row else 0
+
+    def change_password(self, user: User, current: str, new: str, keep_token: str | None) -> bool:
+        """Cambia la contraseña si `current` es la vigente. Cierra las demás sesiones de la
+        cuenta y conserva la de quien hizo el cambio."""
+        if not self.authenticate(user.username, current):
+            return False
+        salt = secrets.token_bytes(16)
+        digest = self._password(new, salt)
+        try:
+            keep = self._token_hash(keep_token) if keep_token else b""
+        except UnicodeEncodeError:
+            keep = b""
+        with self._connect() as db:
+            db.execute("UPDATE users SET salt=?, password_hash=? WHERE id=?",
+                       (salt, digest, user.id))
+            db.execute("DELETE FROM sessions WHERE user_id=? AND token_hash<>?", (user.id, keep))
+        return True
+
+    def profile(self, user: User) -> dict[str, str]:
+        """Nombre, apellido, teléfono y correo. Una cuenta creada antes de separar los campos
+        tiene todo en `display_name`: se muestra como nombre hasta que la persona lo divida."""
+        with self._connect() as db:
+            row = db.execute(
+                "SELECT first_name, last_name, phone, email, display_name FROM users WHERE id=?",
+                (user.id,),
+            ).fetchone()
+        if not row:
+            return {"first_name": "", "last_name": "", "phone": "", "email": ""}
+        first = row[0] if row[0] or row[1] else row[4]
+        return {"first_name": first, "last_name": row[1], "phone": row[2], "email": row[3]}
+
+    def update_profile(self, user: User, first_name: str, last_name: str, phone: str,
+                       email: str) -> User:
+        """Guarda los campos y recompone el nombre visible, que es el que ven los demás."""
+        display_name = f"{first_name} {last_name}".strip()
+        with self._connect() as db:
+            db.execute(
+                "UPDATE users SET first_name=?, last_name=?, phone=?, email=?, display_name=? "
+                "WHERE id=?", (first_name, last_name, phone, email, display_name, user.id),
+            )
+        return User(user.id, user.username, display_name, user.legacy, user.avatar)
+
+    def set_avatar(self, user: User, data: bytes, kind: str) -> User:
+        with self._connect() as db:
+            db.execute("UPDATE users SET avatar=?, avatar_type=?, avatar_version=avatar_version+1 "
+                       "WHERE id=?", (data, kind, user.id))
+            version = db.execute("SELECT avatar_version FROM users WHERE id=?",
+                                 (user.id,)).fetchone()[0]
+        return User(user.id, user.username, user.display_name, user.legacy, version)
+
+    def clear_avatar(self, user: User) -> User:
+        # La versión no vuelve a 0: si la persona sube otra foto, la URL cambia igual.
+        with self._connect() as db:
+            db.execute("UPDATE users SET avatar=NULL, avatar_type=NULL WHERE id=?", (user.id,))
+        return User(user.id, user.username, user.display_name, user.legacy, 0)
+
+    def avatar_image(self, user_id: str) -> tuple[bytes, str] | None:
+        with self._connect() as db:
+            row = db.execute(
+                "SELECT avatar, avatar_type FROM users WHERE id=? AND avatar IS NOT NULL",
+                (user_id,),
+            ).fetchone()
+        return (bytes(row[0]), row[1]) if row else None
 
     def user(self, user_id: str) -> User | None:
         with self._connect() as db:
             row = db.execute(
-                "SELECT id, username, display_name, legacy FROM users WHERE id=?", (user_id,)
+                f"SELECT u.id, u.username, u.display_name, u.legacy, {_AVATAR} FROM users u "
+                "WHERE u.id=?", (user_id,)
             ).fetchone()
-        return User(row[0], row[1], row[2], bool(row[3])) if row else None
+        return User(row[0], row[1], row[2], bool(row[3]), row[4]) if row else None
 
     def storage_path(self, user_id: str, legacy_path: Path) -> Path:
         user = self.user(user_id)
