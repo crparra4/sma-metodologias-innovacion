@@ -881,7 +881,7 @@ MENSAJE DEL USUARIO:
 {message}
 
 ESTADO DEL CUADERNO:
-{state.model_dump_json(indent=2)}
+{state.model_dump_json(indent=2, exclude={"progreso"})}
 
 ÍNDICE ÚNICO AUTORIZADO:
 {route_index}
@@ -1042,7 +1042,7 @@ MENSAJE:
 {message}
 
 ESTADO:
-{shown.model_dump_json(indent=2)}
+{shown.model_dump_json(indent=2, exclude={"progreso"})}
 
 {answered}
 CONTRATO 1:

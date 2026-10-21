@@ -10,6 +10,7 @@ import json
 import os
 import signal
 import subprocess
+import time
 from collections.abc import Mapping
 from pathlib import Path
 
@@ -111,9 +112,18 @@ def process_identity(pid: int) -> dict | None:
     return json.loads(raw) if raw else None
 
 
-def stop_process(pid: int) -> None:
+def stop_process(pid: int, wait: float = 10.0) -> None:
+    """Detiene el proceso y espera a que termine. Sin la espera, un `start` justo después
+    encontraba la interfaz todavía cerrándose, la daba por iniciada y quedaba sin ninguna."""
     if not WINDOWS:
         os.kill(int(pid), signal.SIGTERM)
+        deadline = time.monotonic() + wait
+        while time.monotonic() < deadline:
+            try:
+                os.kill(int(pid), 0)
+            except ProcessLookupError:
+                return
+            time.sleep(0.1)
         return
     subprocess.run(
         ["powershell.exe", "-NoProfile", "-Command", f"Stop-Process -Id {int(pid)}"],

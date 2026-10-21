@@ -919,3 +919,390 @@ que el código pone en línea (los tonos de los avatares sin foto) no pasan por 
 registro sigue pidiendo un solo nombre (se divide después en el perfil); no se probó en Windows ni
 con la cuenta real. La instancia en 8787 seguía corriendo con el código anterior: hay que
 reiniciarla para que tome el backend nuevo y migre la base.
+
+## Entrar desde otro computador: túnel de Cloudflare (17 oct 2026, Linux)
+
+Pedido del usuario: conectarse a la página y al agente desde cualquier computador. Decidió el
+**túnel rápido de Cloudflare** (`*.trycloudflare.com`, sin cuenta; la dirección cambia en cada
+apertura) y que desde internet **solo se cree cuenta con código de invitación**. Se descartaron un
+túnel fijo con dominio propio (pide cuenta y dominio en Cloudflare) y Tailscale (no sirve para un
+computador ajeno).
+
+**Implementado** (410 pruebas pasan, 5 nuevas; ruff limpio):
+
+- `scripts/abrir_tunel.sh [--port 8787]`: genera un código de 8 caracteres (`XXXX-XXXX`, sin 0/O/1/I/L),
+  reinicia Hilo con `HILO_HOSTS_PUBLICOS="*.trycloudflare.com"` y `HILO_CODIGO_INVITACION`, abre
+  `cloudflared tunnel --url`, muestra la dirección y el código, y con Ctrl+C (o al cerrar la
+  terminal) cierra el túnel. Hilo sigue en local. Solo Linux; **falta la versión de Windows**.
+- `web.py`: `TrustedHostMiddleware` acepta además lo que diga `HILO_HOSTS_PUBLICOS`; sin la
+  variable, solo hosts locales, como antes. Una petición con un host que no es local (`LOCAL_HOSTS`)
+  viene del túnel: registrarse exige `invite_code` igual a `HILO_CODIGO_INVITACION` (sin importar
+  mayúsculas, con `hmac.compare_digest`); sin código configurado, el registro remoto queda cerrado
+  (403). Iniciar sesión no cambia. `GET /api/auth/registration` le dice a la pantalla de acceso si
+  debe pedir el código. Desde el propio computador nunca se pide.
+- Interfaz: campo «Código de invitación» al crear cuenta desde afuera; desde afuera, la nota de
+  acceso dice que los datos se guardan en el computador de quien administra Hilo.
+- uvicorn ya confía en las cabeceras del proxy que llegan desde 127.0.0.1, así que detrás del
+  túnel la URL es https, la cookie sale con `Secure`, la comprobación de origen funciona y el
+  límite de intentos cuenta por la IP real de quien se conecta.
+- Corregido de paso: `local_runtime.stop_process` (Linux) volvía antes de que el proceso
+  terminara; un `start` justo después veía la interfaz todavía cerrándose, la daba por iniciada y
+  quedaba sin ninguna. Ahora espera hasta 10 s.
+
+**Probado:** instancia aparte con datos temporales y el modelo real a través de un túnel de verdad:
+registro con código malo (403) y bueno (201, cookie `Secure`), y un turno del agente de 34 s cuyos
+eventos SSE llegaron por partes (el túnel rápido no los acumula). Con la instancia real: dos
+aperturas seguidas (cada una reinicia Hilo con el código nuevo), Ctrl+C cierra el túnel y Hilo
+sigue respondiendo en local. No se creó ninguna cuenta en los datos reales.
+
+**Límites:** Cloudflare corta una respuesta que pase 100 s sin enviar nada; hoy ningún paso del
+agente se acerca (el más largo, unos 14 s). Mientras el túnel está abierto, la página es pública
+aunque protegida por inicio de sesión. El código vive solo en el proceso de Hilo y cambia en cada
+apertura.
+
+## Varias personas a la vez: diagnóstico y propuesta (19 oct 2026, Linux)
+
+Pregunta del usuario: cómo se comporta Hilo con 12 o 13 personas a la vez y qué arquitectura
+conviene. Primero se investigó y midió; después se implementó (abajo). Medición completa (fuera del
+repositorio): `../tesis/pruebas-concurrencia-2026-10-19/`.
+
+**Diagnóstico del código actual:**
+- `web.py` tiene un único `generation_lock` para todo el servidor y lo toma con
+  `acquire(blocking=False)`: mientras una persona genera, las demás reciben 409 («El modelo está
+  respondiendo»), aunque estén en proyectos distintos. `/api/status` publica `busy` global y la
+  interfaz (`main.ts`, `serverBusy`) bloquea el envío a todos. El mismo candado bloquea editar el
+  perfil y el análisis de 5 porqués.
+- `llama-server` arranca con `-np 1` (una ranura): el modelo atiende una petición a la vez.
+- Lo demás aguanta 13 personas: una base SQLite por cuenta, WAL, `busy_timeout`, `thread_id`
+  por proyecto en LangGraph, hilos de `asyncio.to_thread` suficientes.
+
+**Medido en la RTX 4060 Ti (turno de 3 llamadas, ~600 tokens generados, todos a la vez):**
+1 ranura → 69 tokens/s totales, 13 personas esperan ~102 s de mediana. 6 ranuras → ~172 tokens/s,
+~41 s en el peor caso y 8,6 s con una sola persona (sin pérdida). 8 ranuras casi igual con más
+VRAM; 13 ranuras de 8192 tokens no caben en 8 GB y todo se vuelve más lento.
+
+**Implementado el 19 oct 2026 (Linux; 417 pruebas pasan, 5 nuevas; ruff limpio; interfaz construida):**
+1. `config.py`: `parallel` (`RUTA_DIA_PARALLEL`, 6 por defecto). `local_model.py` arranca con
+   `-np parallel -c 8192·parallel -b 512 -ub 512`; sirve igual en Windows. Si el modelo ya estaba
+   corriendo con la configuración vieja, hay que detenerlo y volver a iniciarlo.
+2. `turnos.py` (nuevo): `ModelQueue` (cupos = ranuras, fila en orden de llegada, aviso del lugar
+   y latido cada 20 s para que el túnel no corte) y `ProjectLocks` (una generación por proyecto).
+3. `web.py`: sin `generation_lock`. El chat toma el candado de su proyecto (409 solo si ese mismo
+   proyecto ya está respondiendo) y espera cupo hasta 300 s, enviando eventos SSE
+   `{"type": "queue", "ahead": n}`. Perfil, borrar cuaderno y 5 porqués usan el candado del
+   proyecto. Customer Journey (leer notas) y diagnóstico del árbol esperan cupo hasta 45 s y, si
+   no hay, responden «ocupado» como antes. `/api/status?project=` dice si ese proyecto está
+   ocupado y trae `queue` (`slots`, `active`, `waiting`).
+4. `main.ts`: pide el estado del proyecto abierto (también al abrir un cuaderno) y muestra
+   «Faltan N respuestas antes de la tuya» mientras espera.
+
+**Probado con el agente real** (instancia temporal, datos borrados): 13 personas a la vez →
+13 respuestas, ninguna rechazada, mediana 78 s y máximo 106 s; una persona sola, 18 s. Antes,
+12 de 13 recibían 409. Detalle: `../tesis/pruebas-concurrencia-2026-10-19/resultados.md`.
+
+**Sin implementar (decisión del usuario):**
+- El Verificador corre con razonamiento (`RUTA_DIA_THINKING=true`): genera ~1000–1200 tokens por
+  llamada y es ~80 % del trabajo de la GPU. Bajar el presupuesto o apagarlo daría la mayor
+  mejora, pero cambia la calidad medida en la batería; habría que volver a medirla.
+- Reordenar los prompts (reglas e índice primero, mensaje al final) para aprovechar la caché de
+  prefijos: ~10 % con carga; cambia los prompts.
+- No se crean agentes por persona (son roles sin estado; el estado va por `thread_id`). No migrar
+  a vLLM ahora: no corre nativo en Windows y rompe el GGUF verificado con SHA-256.
+- La caché en RAM (`--cache-ram`) y la caché unificada (`--kv-unified`) se midieron sin ganancia;
+  se dejan como estaban.
+
+**Riesgo:** la documentación de Cloudflare dice que los túneles rápidos «no soportan SSE» y
+admiten 200 peticiones en vuelo. Con una persona funcionó (17 oct); con 13 no se ha probado.
+
+## Ablación: tres roles o un solo agente (19 oct 2026, Linux)
+
+Pregunta del usuario: ¿conviene un sistema multiagente o basta un agente? Se midió sin cambiar
+el comportamiento de Hilo. Informe: `../tesis/pruebas-ablacion-2026-10-19/INFORME.md`.
+
+**Implementado (solo para experimentos; la interfaz no lo usa):** `variantes.py` con
+`SoloControlesEnCodigo` (c: Verificador sin modelo, solo `grounded_verdict`) y `UnSoloAgente`
+(d: una instrucción y una conversación acumulada por turno). `DirectOpenAIRuntime` ganó dos
+ganchos (`_messages`, `_remember`) que no cambian lo que hace hoy. 419 pruebas pasan (2 nuevas).
+La variante (b), Verificador sin razonamiento, se descartó por decisión del usuario: cree que el
+razonamiento aporta y Hilo correrá en un equipo mejor.
+
+**Resultado (43 turnos × 2 rondas):** las tres aciertan 17/17 fichas y no fallan. (c) y (d)
+tardan 3,9 s por turno frente a 17,7 s de (a) y generan ~6 veces menos tokens. Segundo intento:
+(a) 9, (c) 3, (d) 0. Los rechazos propios del Verificador-modelo fueron casi todos «paso
+adelantado» falsos y en E02 degradaron un turno; el único error real que atrapó también lo
+atrapa el código. Lectura no ciega: (d) ≥ (a) ≈ (c). Falta la evaluación ciega
+(`evaluacion-ciega.md`).
+
+**Decidido por el usuario (19 oct 2026) e implementado:** Hilo usa la (c) por defecto.
+`RUTA_DIA_VARIANTE` (`a`, `c` o `d`; por defecto `c`) elige la variante en la interfaz y en la
+CLI; un valor desconocido impide arrancar. `/api/status` informa `variant`. Para volver a la
+original basta `RUTA_DIA_VARIANTE=a` en `.env` y reiniciar la interfaz. `UnSoloAgente` deja con su
+propio rol al revisor del árbol y al lector de notas. 421 pruebas pasan. Con 5 personas a la vez:
+12,5 s de mediana (antes 48,5 s); 5 dentro de un minuto: 5,2 s (antes 40,7 s).
+Argumento para la tesis: el Verificador sigue siendo un agente, ahora reactivo basado en reglas.
+Pendiente: confirmar la calidad con la evaluación ciega.
+
+## Evaluación exigente con promptfoo y Claude como juez (19 oct 2026, Linux)
+
+El usuario pidió pruebas exigentes en un laboratorio descargable y eligió promptfoo con Claude
+como juez. Todo vive en `../tesis/evaluacion-exigente-2026-10-19/` (fuera del repositorio; ver
+su `LEEME.md`). promptfoo 0.124.1 está en `~/.local/share/hilo-eval` y el entorno propio de la
+evaluación en `~/.venvs/hilo-eval` (Hilo + `anthropic` 1.15); el entorno de Hilo no se tocó.
+
+**Implementado y probado sin Claude:** 24 escenarios de conversación completa contra la API real
+de Hilo con datos temporales, en las variantes (a), (c) y (d); controles automáticos; juez Claude
+Opus 5.5 con rúbrica de 7 criterios. La prueba en seco (9 conversaciones) no tuvo errores y ya
+mostró fallos: en R02 (la persona exige que Hilo escriba los cinco porqués) las tres variantes
+responden mal; en R04 (la persona entrega cédula y celular de una entrevistada) ninguna dice que
+no guardará esos datos, y (a) y (c) le hablan a la entrevistada como si fuera la usuaria.
+
+**Sin hacer:** falta la clave de Anthropic (`~/.config/hilo-eval/anthropic.env`), la aprobación
+de escenarios y rúbrica por el usuario y el piloto con costo medido.
+
+### Resultado de la evaluación exigente (19 oct 2026)
+
+72 conversaciones, $6,71 en Claude. Informe: `../tesis/evaluacion-exigente-2026-10-19/INFORME.md`.
+Juez (0-1): (a) 0,51, (c) 0,46, (d) 0,51; ninguna diferencia pareada es significativa (IC 95 %
+incluye 0). (c) y (d) ~5 veces más rápidas. Común a las tres: escucha 0,06-0,10 (no responde
+aclaraciones, repite, pega la ficha), acción ~0,33; fuertes límites ~0,9 y fidelidad ~0,8.
+
+**Sin corregir, grave:** `sensitive.py` no detecta «no vale la pena seguir viviendo», «mejor me
+muero» ni «quisiera desaparecer» como crisis; cae en el desánimo y la frase fija dice «Es
+normal…». Corregir antes de pruebas con participantes. También: (d) desbordó 8192 tokens (F03).
+
+## Dónde quedó la sesión del 19 oct 2026 (Linux) y qué sigue
+
+Todo lo de hoy está sin commit (en Linux no se puede escribir en `.git`; el commit se hace desde
+Windows y solo si el usuario lo pide). Archivos nuevos en el repo: `src/ruta_dia_agents/turnos.py`,
+`src/ruta_dia_agents/variantes.py`, `tests/test_turnos.py`, `tests/test_variantes.py`; cambiados:
+`config.py`, `web.py`, `cli.py`, `direct_runtime.py`, `scripts/local_model.py`, `tests/test_web.py`,
+`frontend/src/main.ts` (y `frontend/dist`). 421 pruebas pasan. Hilo usa la variante (c) y 6 ranuras.
+
+Plan aprobado por el usuario («listo») para la próxima sesión, en este orden:
+1. **Corregir el detector de crisis** en `sensitive.py` («no vale la pena seguir viviendo»,
+   «mejor me muero», «quisiera desaparecer») y que la frase de desánimo no diga «es normal»;
+   pruebas con esas frases; verificar solo R03 con la evaluación (centavos).
+2. **Experimento con Claude Opus 5.5 como modelo de Hilo** (solo evaluación, datos inventados):
+   una conexión con la API de Anthropic para las variantes (a), (c) y (d), sin tocar la
+   interfaz; piloto de 2 escenarios × 3 variantes (~$3) y, con el costo medido, el usuario
+   decide corrida completa (~$35-45) o reducida (~$18-22). Hipótesis del usuario: con un modelo
+   más capaz, el multiagente (Verificador con razonamiento) supera al agente único. Comparar solo
+   variantes con el mismo modelo (el juez también es Opus: sesgo de autopreferencia).
+
+Propuesto y sin decidir: prueba dirigida a los 9 escenarios donde ganó (a), con mensajes fijos y
+4 repeticiones (~$7); mejora de «escucha» (que Hilo responda la aclaración antes de preguntar:
+cambia el diseño de una pregunta por turno, decisión del usuario); muestra calificada por una
+persona para medir la concordancia con el juez; versión Windows de `abrir_tunel.sh`.
+
+## Detector de crisis corregido (20 oct 2026, Linux)
+
+**Implementado** (426 pruebas pasan, ruff limpio; casos nuevos en `tests/test_sensitive.py`):
+- `sensitive.py`, `_CRISIS`: reconoce «no vale la pena seguir viviendo», «no le veo sentido a la
+  vida», «mejor me muero», «quisiera desaparecer» (no «desaparecer el papeleo»), «todos estarían
+  mejor sin mí», «ojalá no despertara» y «no quiero existir». «No vale la pena seguir con esta
+  idea» sigue siendo desánimo, no crisis.
+- `DISTRESS_OPENING` ya no dice «es normal».
+
+**Sin hacer:** verificar R03 con la evaluación exigente (centavos) y el experimento con Claude
+Opus 5.5 como modelo de Hilo. El usuario fijó un tope de **US$ 15** para las pruebas con Opus 5.5
+(20 oct); la corrida reducida estimada antes (~$18-22) no cabe: hay que achicarla. El usuario
+pausó esto para seguir con el documento.
+
+## Formatos de las pruebas con participantes alineados con la tesis (20 oct 2026, Linux)
+
+El documento mide el KPI 3 con la encuesta propia de 15 ítems y descarta la SUS (Tabla 26), pero
+la versión B usaba SUS, Paas y Leppink. **Implementado** en `../tesis/pruebas-participantes/`:
+versión B con los 15 ítems literales de la sección 1.11.8 y hoja de quien modera (bloques llenos,
+completitud, abandono, dudas); versión A remite a esa encuesta; expertos con una parte 4 de validez
+de contenido de los 15 ítems (pertinencia y claridad, 1-4, para la V de Aiken); consentimiento con
+60 min para expertos. `expertos-2-respuestas-a-calificar.md` se rehízo desde una corrida nueva con
+el código final (`../tesis/pruebas-herramientas-2026-10-20/`: 37 intercambios, 33 aprobados, 0
+errores, 0 degradados, 5,2 s de mediana). El servidor del modelo quedó encendido.
+
+**Pendiente en el documento:** el KPI 3 y la 4.3 hablan de «completar una fase» y de abandono de
+equipo; la tarea de la versión B es un mapa de empatía individual (6 bloques). Las fechas del
+objetivo 3 dicen noviembre y las sesiones son el 20 y 21 de octubre.
+
+## Sesión del 20 oct 2026 (Linux): crisis corregida y Hilo con Claude Opus 5.5
+
+- **Detector de crisis:** ya estaba corregido al empezar (cambio del 20 oct, 9:37, hecho fuera de
+  esta sesión y sin anotar): `sensitive.py` reconoce «no vale la pena seguir viviendo», «mejor me
+  muero», «quiero desaparecer» (sin confundir «desaparecer el papeleo»), y la frase de desánimo
+  ya no dice «es normal». 428 pruebas pasan. Verificado con la evaluación: R03 responde la
+  remisión fija.
+- **Experimento con Opus 5.5 como modelo de Hilo** (solo evaluación; tope del usuario $15; gasto
+  $12,13). Informe: `../tesis/evaluacion-exigente-2026-10-19/INFORME-OPUS.md`. (a) 0,79 frente a
+  (d) 0,80, diferencia +0,01 [−0,04; +0,06]: tampoco con un modelo grande el multiagente supera
+  al agente único. El modelo sí cambia mucho (mismos 14 escenarios: Qwen ~0,52 → Opus ~0,80;
+  escucha 0,11 → ~0,5), con la salvedad de que el juez es Opus. Conexión en
+  `../tesis/evaluacion-exigente-2026-10-19/hilo_claude.py`: no toca el producto; adapta el
+  esquema (`TemplateUpdate.value: Any` → texto) y valida contra el contrato original.
+
+Sigue sin decidir: mejora de «escucha» (diseño de una pregunta por turno), calificación humana de
+una muestra para medir concordancia con el juez, commit desde Windows.
+
+### Propuesta: cambiar el rol del Verificador (20 oct 2026, sin decidir ni implementar)
+
+Preocupación del usuario: el jurado puede preguntar por qué multiagente si un solo agente rinde
+igual, y siente que el Verificador-modelo no aporta. Propuesta del asistente: mantener la
+verificación como agente de reglas (código, ya es así en la variante c) y añadir un agente
+**Intérprete** que lea el turno antes del Metodólogo: si la persona preguntó algo (aclaración),
+qué datos dio y a qué parte de la ficha corresponden, qué ya está respondido y si está
+confundida. El Metodólogo recibe esa lectura y responde la aclaración en una frase (con la ficha)
+antes de su única pregunta. Ataca el criterio más bajo de la evaluación (escucha: Qwen ~0,1,
+Opus ~0,5). Variante opcional: un **Registrador** que guarda los datos confirmados en la ficha
+después de responder (fuera del camino crítico, sin sumar espera). Para justificarlo ante el
+jurado hay que medirlo: nueva variante frente a (c) en la evaluación exigente con Qwen (~$2,5 en
+Claude por 24 conversaciones). Ojo con el plazo: el desarrollo cierra el 25 oct.
+
+### Intérprete: variantes (e) y (f) implementadas (20 oct 2026, Linux)
+
+El usuario aprobó probar el Intérprete en dos formas. **Implementado** en `variantes.py`
+(434 pruebas pasan; 6 nuevas en `tests/test_interprete.py`); Hilo sigue usando (c) por defecto:
+
+- Cambios de arquitectura comunes: el turno se lee (`LecturaTurno`: pregunta de la persona,
+  datos que dio, si está confundida); una duda puntual que el modelo clasificaba como
+  «explicación» pasa a «trabajo» si no nombra la ficha (ya no se pega la ficha completa; «¿qué
+  es un PESTEL?» sí la sigue mostrando); el Metodólogo recibe la lectura y, si hubo pregunta,
+  llena `aclaracion` (máximo dos frases y 45 palabras, sin preguntas, por código). La aclaración
+  se une a la respuesta después del filtro de relleno de `guide` (que la borraba) y antes de
+  los controles del Verificador.
+- (e) `InterpreteAmpliado`: el Orquestador entrega también la lectura (mismas llamadas que c).
+- (f) `InterpreteAparte`: agente Intérprete propio con su instrucción y contrato, llamado antes
+  del Orquestador (una llamada más; si falla, el turno sigue como en c). Hoy corre dentro del
+  nodo «orchestrate» del grafo: si se adopta, conviene hacerlo nodo propio para que se vea.
+
+Prueba real con Qwen (duda «¿eso cuenta como político? ¿qué significa normativa?»): (c) pega la
+ficha; (e) y (f) responden la duda y luego hacen una pregunta. (e) mencionó «una ordenanza» que
+nadie dio (vigilar fidelidad).
+
+**Resultado de la evaluación ($4,48):** el Intérprete NO mejoró. Juez (c) 0,46, (e) 0,44,
+(f) 0,45; escucha 0,06 → 0,08/0,10 (sin cambio real); fidelidad 0,73 → 0,60/0,62 (el 4B
+responde las dudas con imprecisiones); 16 s por turno frente a 10,5. Informe:
+`../tesis/evaluacion-exigente-2026-10-19/INFORME-INTERPRETE.md`. Sugerencia: Hilo se queda con
+(c); (e) y (f) quedan en `variantes.py` como evidencia del experimento, sin usarse.
+
+### Diagnóstico de «escucha» y propuesta sin modelo (20 oct 2026, sin implementar)
+
+Conteo sobre la evidencia del juez (120 conversaciones con Qwen; 118 con escucha < 2; un fallo
+puede tener varios tipos; conteo por palabras clave, aproximado): vuelve a pedir lo ya dicho
+73 %; no responde una duda 23 %; ignora a qué parte quiere pasar la persona 14 %; insiste tras
+«no sé» 13 %; pide confirmar 4 %.
+
+Propuesta (decidir en código, sin más agentes): (1) **lista de partes de la ficha llevada por
+código** (de `template_fields`): cada parte queda pendiente, respondida (con las palabras de la
+persona) o «no sabe»; el código elige la parte siguiente, se la muestra al Metodólogo y el
+Verificador rechaza preguntar por una parte ya respondida o marcada «no sabe»; (2) si la persona
+pide pasar a una parte («pasemos a lo económico»), el código la fija como siguiente; (3)
+**glosario literal por ficha** para dudas de términos (como la explicación literal que ya
+funciona), y texto fijo si la duda no está en la ficha; (4) en la interfaz, botones rápidos bajo
+cada pregunta («No sé», «¿Qué significa?», «Pasar a la siguiente parte»). Medir contra (c) con la
+evaluación exigente (~$2,40 por variante).
+
+### Investigación: cuándo Verificador + Metodólogo superan a un agente (20 oct 2026)
+
+Resumen y referencias en `../tesis/investigacion-verificador-metodologo-2026-10-20.md`. Idea
+central: un verificador solo aporta con información externa confiable (Kamoi et al. 2024) o
+eligiendo entre varias candidatas (Snell et al. 2025); el estado del diálogo conviene llevarlo
+fuera del LLM (Hudeček y Dušek 2023; TreeInstruct; StratL); los roles con modelos pequeños
+ganan con ajuste fino por rol (Shen et al. 2024). Propuesta sin implementar: estado de la ficha
+en código + Orquestador como planificador de intención + Metodólogo con 3 candidatas +
+Verificador que elige contra el estado; medir también un solo agente con el mismo estado. El
+usuario pidió entender antes de aplicar.
+
+### Panorama de sistemas parecidos (20 oct 2026)
+
+`../tesis/panorama-agentes-similares-2026-10-20.md`. Los productos de innovación (Miro AI,
+LEANSpark, Strategyzer, Board of Innovation) generan contenido; pocos acompañan paso a paso y
+ninguno publica evaluación. Los tutores que guían con preguntas y funcionan llevan el estado
+fuera del modelo y separan planificar de redactar: KELE (consultor + profesor, reglas por
+etapas, 9B ajustado > GPT-4o), IntelliCode (LangGraph con estado central de un solo escritor),
+StratL, TreeInstruct. Tamaño: con solo prompts pesa mucho (Qwen2.5 7B < 14B < 32B en KELE);
+con ajuste fino, 6-9B superan a GPT-4/4o. Hilo usa 4B sin ajuste: por debajo del rango de los
+estudios. Ojo: entrenar con salidas de Claude choca con los términos de uso de Anthropic.
+
+## Planificador y Cliente simulado (20 oct 2026, Linux)
+
+Decisión del usuario: «3 como base y 1 como agente estrella» (Planificador pedagógico + Cliente
+simulado), tras el panorama de sistemas parecidos (KELE, IntelliCode, StratL).
+
+**Planificador — implementado** (`planificador.py`, `partes_fichas.json`; variantes `g` y `h` en
+`variantes.py`; Hilo sigue en `c` por defecto hasta medir):
+- `partes_fichas.json`: 14 fichas, 82 partes; cada definición es literal del «Cómo se usa» de su
+  ficha (prueba que lo verifica). Vive en `src/` porque `knowledge/` es de solo lectura en el
+  disco compartido. Trabajo de campo queda fuera (no tiene pasos numerados).
+- El avance por ficha (`{"en_curso", "partes": {id: {estado, texto}}}`) viaja en
+  `TurnResult.progreso` y la memoria lo devuelve en `ProjectState.progreso` desde la última
+  respuesta guardada (versionado por turno, sin tablas nuevas). El grafo lo guarda también en
+  respuestas fijas (`LangGraphRutaDia._con_progreso`). No se muestra al modelo en los prompts de
+  Orquestador ni Metodólogo (`exclude={"progreso"}`), así (c) no cambia.
+- Reglas: el reto del cuaderno llena la parte «reto/problema»; «no sé» corto → «no sabe» y se
+  sigue; una duda puntual se aclara con la definición literal de la ficha y se sigue en la misma
+  parte; «pasemos a X» manda; si la persona etiqueta otra parte se retoma la pendiente; sin
+  partes pendientes, cierre fijo por código. El Metodólogo recibe «PLAN DEL TURNO» y el
+  Verificador rechaza preguntar por una parte ya respondida o «no sabe».
+- (g) Planificador sobre (c); (h) el mismo avance con un solo agente (comparación justa).
+- Prueba real con Qwen (PESTEL, 6 turnos): avanza por partes, aclara con la ficha, respeta «no
+  sé» y «pasemos a lo legal», no vuelve a pedir lo dicho; 4-5 s por turno.
+
+**Cliente simulado — backend implementado, interfaz pendiente de diseño con el usuario**
+(`cliente_simulado.py`; tablas `practicas` y `practica_turnos` en `memory.py`; endpoints
+`POST /api/projects/{id}/practicas`, `GET …/practicas/{pid}`, `POST …/practicas/{pid}/mensajes`):
+- Agente aislado: solo conoce su personaje y la entrevista (no ve fichas ni al Metodólogo).
+  Ante preguntas dirigidas o hipotéticas responde lo que el entrevistador quiere oír
+  (deseabilidad social, como advierte la ficha); ante «cuéntame de la última vez…» cuenta un
+  episodio concreto.
+- Retroalimentación por código con 7 reglas, cada una citando literalmente la ficha de Trabajo
+  de campo (dirigida, hipotética, generalidad, doble, sí/no, opinión propia; y la buena:
+  historia, porqué o cómo se siente).
+- Lo practicado nunca entra en turnos, ficha, campos verificados ni contexto; cada práctica es
+  de quien la creó. Aviso fijo: «es una práctica… no es evidencia».
+- Prueba real con Qwen 4B («Don Hernando»): creíble y coherente.
+- Pendiente: diseño de la interfaz (proceso del usuario: opciones, referencias, estética de
+  cuaderno; ver memoria `hilo-herramientas-con-vista-propia`).
+
+457 pruebas pasan (10 nuevas del Planificador y 13 del Cliente simulado).
+
+### Interfaz del Cliente simulado (opción B, 20 oct 2026) y pendientes
+
+**Implementado:** vista «Practicar entrevista» (`frontend/src/practica.ts`, `practica.css`,
+sección `#practice-view` en `index.html`, botón «Entrevista» en la barra del proyecto, ruta
+`#practica=<id>`): entrevista a la izquierda (cliente en papel de post-it) y libreta del
+entrevistador a la derecha con sellos ✔/⚠ en vivo, barra de avance y «Para la próxima» con citas
+literales de la ficha. En la práctica no se muestra el chat de Hilo al lado. Probada en el
+navegador con una instancia temporal (escritorio y celular) y Qwen real; interfaz construida.
+457 pruebas pasan.
+
+**Pendiente:** leer el resultado de la evaluación de (g) y (h)
+(`../tesis/evaluacion-exigente-2026-10-19/resultados/eval-2026102*-…json` más reciente;
+`python analizar.py resultados/eval-20261019-175419.json <nuevo>`), decidir si Hilo pasa a (g)
+por defecto, actualizar la memoria y hacer el commit desde Windows si el usuario lo pide.
+
+### Resultado del Planificador (20 oct 2026)
+
+Informe: `../tesis/evaluacion-exigente-2026-10-19/INFORME-PLANIFICADOR.md`. (g) 0,54 frente a
+(c) 0,46, (h) 0,49; escucha 0,06 → 0,23; avance 0,42 → 0,67. **(g) supera a (h) con IC 95 %
+[−0,095; −0,000]**: primer resultado a favor del multiagente. (g) − (c) +0,071 [−0,003; +0,149].
+Fidelidad 0,73 → 0,69: el cierre fijo daba por completas partes a medias; quedó un cierre que
+solo dice lo cierto («Ya te pregunté por cada parte…») y el «no sé» tentativo ya no cuenta como
+«no sabe» (458 pruebas). Gasto $5,79 (tope $6).
+
+**Sin decidir (usuario):** si Hilo pasa a `RUTA_DIA_VARIANTE=g` por defecto (hoy `c`). Si se
+adopta, conviene mostrar el Planificador como nodo propio en el grafo de la interfaz.
+
+### Hilo usa la variante (g); Planificador visible y tokens por agente (20 oct 2026)
+
+**Decidido por el usuario e implementado:** `RUTA_DIA_VARIANTE` por defecto `g` (`config.py`).
+- El Planificador es ahora un nodo propio del grafo («plan», entre «orchestrate» y «guide»):
+  `LangGraphRutaDia._plan` llama a `runtime.planificar(...)` si existe; en otras variantes no
+  cambia nada. `stream_turn` ignora actualizaciones vacías. El panel «Agentes» lo dibuja (viewBox
+  340×425) con su tiempo.
+- Cada respuesta del chat trae `consumo` (tokens leídos y escritos por agente en el turno,
+  `web.consumo_por_agente`), y el panel «Agentes» lo muestra en «Tokens de este turno».
+- 458 pruebas pasan; probado en el navegador con una instancia temporal.
+
+**Consumo medido** (batería de 43 turnos, promedio por turno con modelo; tablas en
+`../tesis/pruebas-ablacion-2026-10-19/`): (a) 4.216 leídos / 1.165 escritos (Verificador 948
+escritos razonando); (c) 3.246 / 206; (d) 4.903 / 191; **(g) 3.299 / 207**: el Planificador y el
+Verificador son código (0 tokens) y el plan agrega ~55 tokens al Metodólogo. Cliente simulado:
+~450 leídos y ~45 escritos por pregunta.

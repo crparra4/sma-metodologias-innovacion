@@ -63,10 +63,7 @@ class DirectOpenAIRuntime(ContractRuntime):
         schema_name = re.sub(r"[^a-zA-Z0-9_-]", "_", output_model.__name__)[:64]
         options = {
             "model": self.settings.model,
-            "messages": [
-                {"role": "system", "content": ROLE_INSTRUCTIONS[role]},
-                {"role": "user", "content": description},
-            ],
+            "messages": self._messages(role, description),
             "temperature": self.settings.temperature,
             "max_tokens": max_tokens,
             "response_format": {
@@ -94,6 +91,7 @@ class DirectOpenAIRuntime(ContractRuntime):
                 raise ValueError(f"{role} no devolvió contenido estructurado")
             try:
                 parsed = output_model.model_validate(json.loads(content))
+                self._remember(role, description, content)
                 break
             except json.JSONDecodeError:
                 if retry:
@@ -108,6 +106,16 @@ class DirectOpenAIRuntime(ContractRuntime):
             }
         )
         return parsed
+
+    def _messages(self, role: str, description: str) -> list[dict]:
+        """Cada rol empieza con un contexto limpio: solo su instrucción y su tarea."""
+        return [
+            {"role": "system", "content": ROLE_INSTRUCTIONS[role]},
+            {"role": "user", "content": description},
+        ]
+
+    def _remember(self, role: str, description: str, content: str) -> None:
+        """Los roles no guardan nada entre llamadas; `variantes.UnSoloAgente` sí."""
 
     def extract_journey(self, description: str, output_model: type[T]) -> T:
         """Frases de unas notas para el recorrido; `journey_extract.grounded_quotes` comprueba

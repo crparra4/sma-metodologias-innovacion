@@ -30,8 +30,15 @@ _CRISIS = re.compile(
     rf"({_HARM_SELF})\b{_FIGURATIVE}|"
     r"\bme (quiero|quisiera|voy a) "
     rf"(matar|morir|suicidar|quitar la vida|hacer dano|lastimar|cortar)\b{_FIGURATIVE}|"
-    r"\bno quiero (seguir )?(vivir|viviendo)\b|\bno vale la pena vivir\b|\bsuicidarme\b|"
-    r"\b(estaria|estaba) mejor muert[oa]\b|\bme (autolesiono|corto|hago dano)\b"
+    r"\bno quiero (seguir )?(vivir|viviendo|existir|existiendo)\b|\bsuicidarme\b|"
+    r"\bno (vale|tiene) (la pena|sentido) (seguir )?(vivir|viviendo|estar viv[oa])\b|"
+    r"\bno le (veo|encuentro) sentido a (la vida|vivir|seguir viviendo)\b|"
+    r"\b(estaria|estaba|seria) mejor (estar )?muert[oa]\b|\bmejor me muero\b|"
+    r"\bojala (me muriera|no despertara|no existiera)\b|"
+    r"\b(todos|todo el mundo) (estarian|estaria) mejor sin mi\b|"
+    # «quiero desaparecer» sola; «quiero desaparecer el papeleo» es un proyecto.
+    r"\b(quiero|quisiera) desaparecer\b(?! (el|la|los|las|ese|esa|este|esta|mis|sus|un|una)\b)|"
+    r"\bme (autolesiono|corto|hago dano)\b"
 )
 _DANGEROUS_THINGS = (
     r"bomba\w*|explosivo\w*|arma\w*|pistola\w*|veneno\w*|droga\w*|cocaina|metanfetamina|"
@@ -161,6 +168,6 @@ SENSITIVE_REPLIES: dict[str, str] = {
     ),
 }
 DISTRESS_OPENING = (
-    "Siento que te estés sintiendo así. Es normal cuando un proyecto se pone cuesta arriba, y "
-    "no dice nada malo de ti. Vamos con calma, un paso a la vez."
+    "Siento que te estés sintiendo así. Que un proyecto se ponga cuesta arriba no dice nada malo "
+    "de ti. Vamos con calma, un paso a la vez."
 )

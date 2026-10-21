@@ -1,0 +1,85 @@
+/* Practicar entrevista. Comparte la caja, el encabezado y el pie de `pestel.css` (clase
+   `.pestel-view`). Por dentro, dos hojas: la entrevista (burbujas: el cliente en papel de
+   post-it, quien entrevista con tinta de esfero) y la libreta del entrevistador (papel rayado
+   con margen), donde cada pregunta recibe sellos. Verde: lo que la ficha recomienda. Naranja:
+   lo que la ficha pide evitar; al abrirlo se lee la cita. El color nunca es la única señal:
+   cada sello lleva ✔ o ⚠ y su nombre. */
+
+.practice-view{--g1:#294eb8;--g2:#5f88ec}
+
+.practice-warning{margin:14px 22px 0;padding:10px 14px;border:1.6px dashed var(--esfero-rojo,#c2372e);border-radius:14px 10px 16px 12px;
+  font-family:var(--esfero-letra,inherit);font-size:16px;line-height:1.35;color:var(--tinta,#26324d);background:#fff4ef}
+.practice-viewer-note{margin:14px 22px 0;font-family:var(--esfero-letra,inherit);color:var(--lapiz,#5d6880)}
+
+/* ---------- Primer paso: describir al personaje ---------- */
+.practice-setup{display:grid;gap:10px;max-width:640px;margin:22px auto 8px;padding:22px 24px;border:var(--borde,1.6px solid #26324d);
+  border-radius:24px 14px 26px 16px/16px 24px 14px 22px;background:var(--hoja,#fffdf7) repeating-linear-gradient(transparent 0 31px,#edf1f9 31px 32px);box-shadow:var(--sombra,none)}
+.practice-setup h3{margin:0;font-family:var(--mano,inherit);font-weight:700;font-size:28px;color:var(--tinta,#26324d)}
+.practice-setup label{font-family:var(--esfero-letra,inherit);font-size:17px;color:var(--lapiz,#5d6880)}
+.practice-setup textarea{width:100%;min-height:84px;resize:vertical;padding:10px 12px;border:1.4px solid var(--tinta,#26324d);border-radius:12px;
+  font:inherit;font-size:16px;line-height:1.4;color:var(--tinta,#26324d);background:var(--hoja,#fff)}
+.practice-setup .button{justify-self:start}
+.practice-hint{margin:0;font-size:14px;color:var(--lapiz,#5d6880)}
+
+/* ---------- Las dos hojas ---------- */
+.practice-board{display:grid;grid-template-columns:minmax(0,1.35fr) minmax(280px,1fr);gap:20px;padding:18px 22px 8px;align-items:start}
+@container pestel (max-width: 860px){.practice-board{grid-template-columns:1fr}.practice-turns{max-height:none;overflow:visible}}
+
+.practice-interview{display:flex;flex-direction:column;gap:12px;min-width:0}
+.practice-persona-card{position:relative;padding:12px 16px 12px 18px;border:1.4px solid var(--tinta,#26324d);border-radius:6px 16px 8px 18px;
+  background:var(--hoja,#fffdf7);box-shadow:0 2px 0 var(--tinta,#26324d);rotate:-.6deg}
+.practice-persona-card span{display:block;font-family:var(--esfero-letra,inherit);font-size:14px;color:var(--lapiz,#5d6880)}
+.practice-persona-card h3{margin:0;font-family:var(--mano,inherit);font-weight:700;font-size:26px;line-height:1.05;color:var(--esfero,#294eb8)}
+.practice-persona-card p{margin:4px 0 0;font-size:15px;line-height:1.4;color:var(--tinta,#26324d)}
+
+.practice-turns{display:flex;flex-direction:column;gap:10px;margin:0;padding:0;list-style:none;max-height:min(56vh,560px);overflow:auto;scrollbar-width:thin}
+.practice-empty{padding:14px;font-family:var(--esfero-letra,inherit);font-size:16px;color:var(--lapiz,#5d6880);text-align:center}
+.practice-turn{max-width:86%;padding:9px 14px 10px;border:1.4px solid var(--tinta,#26324d);font-size:15.5px;line-height:1.45;animation:practica-entrar .3s cubic-bezier(.2,.9,.3,1.2) both}
+.practice-turn p{margin:2px 0 0;white-space:pre-wrap}
+.practice-who{font-family:var(--esfero-letra,inherit);font-size:13.5px;opacity:.75}
+.practice-turn.is-entrevistador{align-self:flex-end;border-radius:16px 16px 4px 16px;background:var(--hoja,#fff);color:var(--esfero,#294eb8)}
+.practice-turn.is-cliente{align-self:flex-start;border-radius:16px 16px 16px 4px;background:var(--note-paper,#f7e594);color:var(--note-ink,#4c3c16);rotate:.3deg}
+.practice-turn.is-thinking p{opacity:.7;font-style:italic}
+
+.practice-ask{display:flex;gap:10px;align-items:flex-end}
+.practice-ask textarea{flex:1;min-height:48px;max-height:140px;resize:vertical;padding:10px 12px;border:1.4px solid var(--tinta,#26324d);border-radius:14px;
+  font:inherit;font-size:15.5px;line-height:1.4;color:var(--tinta,#26324d);background:var(--hoja,#fff)}
+
+/* ---------- Libreta del entrevistador ---------- */
+.practice-notebook{position:relative;padding:16px 16px 18px 46px;border:var(--borde,1.6px solid #26324d);border-radius:10px 18px 12px 20px;
+  background:var(--hoja,#fffdf7) repeating-linear-gradient(transparent 0 27px,#e6ecf7 27px 28px);box-shadow:var(--sombra,none)}
+.practice-notebook::before{content:"";position:absolute;inset:0 auto 0 32px;border-left:2px solid #f0b4ae}
+.practice-notebook h3{margin:0;font-family:var(--mano,inherit);font-weight:700;font-size:26px;line-height:1.05;color:var(--tinta,#26324d)}
+.practice-score{margin:4px 0 8px;font-family:var(--esfero-letra,inherit);font-size:16px;color:var(--lapiz,#5d6880)}
+.practice-meter{height:9px;margin:0 0 12px;border:1.2px solid var(--tinta,#26324d);border-radius:999px;overflow:hidden;background:var(--hoja,#fff)}
+.practice-meter::after{content:"";display:block;height:100%;width:calc(var(--avance,0)*100%);background:linear-gradient(90deg,#1f9d6b,#7fd8a8);transition:width .5s ease}
+
+.practice-stamps{display:flex;flex-direction:column;gap:12px;margin:0;padding:0;list-style:none}
+.practice-stamp{position:relative;display:grid;grid-template-columns:auto 1fr;gap:4px 10px;align-items:start}
+.practice-stamp-number{display:grid;place-items:center;width:26px;height:26px;border:1.4px solid var(--tinta,#26324d);border-radius:50%;
+  font-family:var(--esfero-letra,inherit);font-size:14px;background:var(--hoja,#fff)}
+.practice-stamp-question{margin:2px 0 0;font-family:var(--esfero-letra,inherit);font-size:15.5px;line-height:1.3;color:var(--esfero,#294eb8)}
+.practice-seals{grid-column:2;display:flex;flex-wrap:wrap;gap:6px}
+.practice-seal{display:inline-block;padding:3px 10px;border:2px solid currentColor;border-radius:8px;font-family:var(--esfero-letra,inherit);font-size:14.5px;
+  letter-spacing:.01em;background:#ffffffcc;rotate:-2deg}
+.practice-seal.is-good{color:#17784f}
+.practice-seal.is-avoid{color:#b8520f}
+.practice-seal.is-neutral{color:var(--lapiz,#5d6880);border-style:dashed}
+details.practice-seal summary{cursor:pointer;list-style:none}
+details.practice-seal summary::-webkit-details-marker{display:none}
+details.practice-seal[open]{rotate:0deg;max-width:100%}
+details.practice-seal p{margin:6px 0 2px;font-size:14px;line-height:1.35;color:var(--tinta,#26324d)}
+.practice-stamp.is-new .practice-seal{animation:practica-sello .5s cubic-bezier(.2,.9,.3,1.4) both}
+.practice-stamp.is-new .practice-seal:nth-child(2){animation-delay:.12s}
+.practice-stamp.is-new .practice-seal:nth-child(3){animation-delay:.24s}
+
+.practice-tips h4{margin:16px 0 6px;font-family:var(--mano,inherit);font-size:22px;color:var(--tinta,#26324d)}
+.practice-tips ul{margin:0;padding-left:18px;font-size:14.5px;line-height:1.4;color:var(--tinta,#26324d)}
+.practice-tips li{margin-bottom:6px}
+
+@keyframes practica-sello{0%{opacity:0;transform:scale(1.8) rotate(-12deg)}70%{opacity:1;transform:scale(.94) rotate(-1deg)}100%{transform:none}}
+@keyframes practica-entrar{from{opacity:0;transform:translateY(6px)}}
+@media (prefers-reduced-motion: reduce){
+  .practice-turn,.practice-stamp.is-new .practice-seal{animation:none}
+  .practice-meter::after{transition:none}
+}

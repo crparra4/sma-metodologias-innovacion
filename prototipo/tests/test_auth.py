@@ -427,3 +427,62 @@ def test_profile_photo_rejects_other_files_and_big_ones(tmp_path):
         big = client.put("/api/auth/avatar", content=PNG + b"\x00" * (512 * 1024))
         assert big.status_code == 413
         assert client.get("/api/auth/me").json()["avatar"] == 0
+
+
+def remote_client(tmp_path, monkeypatch, code=""):
+    """Hilo visto por un túnel: llega con el dominio público y no con 127.0.0.1."""
+    monkeypatch.setenv("HILO_HOSTS_PUBLICOS", "*.trycloudflare.com")
+    monkeypatch.setenv("HILO_CODIGO_INVITACION", code)
+    client, _ = client_for(tmp_path)
+    return TestClient(client.app, base_url="https://hilo-prueba.trycloudflare.com")
+
+
+def registration(client):
+    return client.get("/api/auth/registration").json()
+
+
+def register_with_code(client, username, code):
+    return client.post("/api/auth/register", json={
+        "username": username, "display_name": "Ana", "password": "una-clave-local-segura",
+        "confirm_password": "una-clave-local-segura", "invite_code": code,
+    })
+
+
+def test_unknown_hosts_are_rejected_unless_the_tunnel_adds_them(tmp_path, monkeypatch):
+    client, _ = client_for(tmp_path)
+    with TestClient(client.app, base_url="https://hilo-prueba.trycloudflare.com") as outside:
+        assert outside.get("/api/status").status_code == 400
+    with remote_client(tmp_path, monkeypatch) as outside:
+        assert outside.get("/api/status").status_code == 200
+
+
+def test_registration_from_the_tunnel_is_closed_without_an_invite_code(tmp_path, monkeypatch):
+    with remote_client(tmp_path, monkeypatch) as outside:
+        assert registration(outside) == {"invite_code": False, "closed": True}
+        response = register_with_code(outside, "ana", "")
+        assert response.status_code == 403 and "código de invitación" in response.json()["detail"]
+
+
+def test_registration_from_the_tunnel_needs_the_right_invite_code(tmp_path, monkeypatch):
+    with remote_client(tmp_path, monkeypatch, code="K7M2-QX9P") as outside:
+        assert registration(outside) == {"invite_code": True, "closed": False}
+        assert register_with_code(outside, "ana", "").status_code == 403
+        assert register_with_code(outside, "ana", "K7M2-QX9Z").status_code == 403
+        created = register_with_code(outside, "ana", " k7m2-qx9p ")
+        assert created.status_code == 201
+        # Por https la cookie de sesión va marcada como segura.
+        assert "secure" in created.headers["set-cookie"].lower()
+        assert outside.get("/api/auth/me").json()["username"] == "ana"
+        # Quien ya tiene cuenta entra sin código.
+        outside.post("/api/auth/logout")
+        login = outside.post("/api/auth/login",
+                             json={"username": "ana", "password": "una-clave-local-segura"})
+        assert login.status_code == 200
+
+
+def test_registration_on_this_computer_never_asks_for_the_code(tmp_path, monkeypatch):
+    monkeypatch.setenv("HILO_CODIGO_INVITACION", "K7M2-QX9P")
+    client, _ = client_for(tmp_path)
+    with client:
+        assert registration(client) == {"invite_code": False, "closed": False}
+        assert register(client, "ana", "Ana").status_code == 201

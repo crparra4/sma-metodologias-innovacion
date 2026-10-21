@@ -11,12 +11,12 @@ from langgraph.checkpoint.sqlite import SqliteSaver
 from .audit import JsonlVerificationRecorder
 from .config import Settings
 from .contracts import ProjectState
-from .direct_runtime import DirectOpenAIRuntime
 from .knowledge import KnowledgeCatalog
 from .langgraph_workflow import LangGraphRutaDia
 from .memory import NotebookMemory
 from .runtime import CrewAIRuntime
 from .service import RutaDiaService
+from .variantes import VARIANTES
 
 
 def _parser() -> argparse.ArgumentParser:
@@ -55,7 +55,7 @@ def _service(settings: Settings, catalog: KnowledgeCatalog, runtime_name: str, c
     if runtime_name == "langgraph":
         return LangGraphRutaDia(
             catalog=catalog,
-            runtime=DirectOpenAIRuntime(settings),
+            runtime=VARIANTES[settings.variant](settings),
             recorder=recorder,
             checkpointer=checkpointer,
         )

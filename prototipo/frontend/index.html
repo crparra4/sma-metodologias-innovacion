@@ -82,6 +82,7 @@
         <div class="auth-field"><label for="auth-username" data-auth-text="username">Usuario</label><input id="auth-username" data-auth-placeholder="usernamePlaceholder" type="text" minlength="3" maxlength="40" autocomplete="username" autocapitalize="none" spellcheck="false" placeholder="Escribe tu nombre de usuario…" aria-describedby="auth-username-hint" required /><span class="auth-hint" id="auth-username-hint" data-auth-text="usernameHint">Usa el usuario de tu cuenta en esta computadora.</span></div>
         <div class="auth-field" id="auth-password-field" hidden><label for="auth-password" data-auth-text="password">Contraseña</label><input id="auth-password" data-auth-placeholder="passwordPlaceholder" type="password" minlength="10" maxlength="128" autocomplete="current-password" placeholder="Escribe tu contraseña…" required /><span class="auth-hint" id="auth-password-hint" data-auth-text="passwordHint" hidden>Usa al menos 10 caracteres.</span></div>
         <div class="auth-field" id="auth-confirm-field" hidden><label for="auth-confirm" data-auth-text="confirmPassword">Confirma tu contraseña</label><input id="auth-confirm" type="password" maxlength="128" autocomplete="new-password" /></div>
+        <div class="auth-field" id="auth-invite-field" hidden><label for="auth-invite" data-auth-text="inviteCode">Código de invitación</label><input id="auth-invite" type="text" maxlength="64" autocomplete="off" autocapitalize="characters" spellcheck="false" aria-describedby="auth-invite-hint" /><small class="auth-hint" id="auth-invite-hint" data-auth-text="inviteHint">Pídeselo a quien administra este Hilo.</small></div>
         <p class="auth-error" id="auth-error" role="alert" hidden></p>
         <button class="auth-submit" id="auth-submit" type="submit">Continuar</button>
         <button class="auth-back" id="auth-back" data-auth-text="back" type="button" hidden>Cambiar usuario</button>
@@ -366,6 +367,41 @@
         </div>
         <footer class="pestel-foot"><p>Marca como críticas las etapas donde más importa mejorar: no todas pesan igual. Hilo lee este recorrido para preguntarte por lo que falta, pero no lo llena por ti ni lo da por comprobado.</p></footer>
       </section>
+      <section class="pestel-view practice-view" id="practice-view" hidden aria-labelledby="practice-title">
+        <header class="pestel-head">
+          <div class="pestel-heading"><span class="pestel-badge" aria-hidden="true">🎙️</span><div class="pestel-heading-text"><h2 id="practice-title">Practicar entrevista</h2><p>Ensaya tus preguntas con un cliente simulado antes de salir a campo.</p></div></div>
+          <div class="pestel-head-actions"><button class="button" id="practice-new" type="button" hidden>Nueva práctica</button></div>
+        </header>
+        <p class="practice-warning" role="note">🧪 Cliente simulado: es una práctica. Lo que responda no es evidencia de tus usuarios reales y no se guarda en la ficha.</p>
+        <p class="practice-viewer-note" id="practice-viewer-note" hidden>Solo quien puede editar el proyecto practica entrevistas.</p>
+        <p class="pestel-error" id="practice-error" role="alert" hidden></p>
+        <form class="practice-setup" id="practice-setup" novalidate>
+          <h3>¿A quién vas a entrevistar?</h3>
+          <label for="practice-persona">Describe a la persona en una o dos frases: quién es, cómo vive el problema y qué le pasa.</label>
+          <textarea id="practice-persona" maxlength="600" rows="3" placeholder="Ej. Don Hernando, 67 años, pensionado de Ibagué. Va a la oficina del fondo en persona y desconfía de poner la clave en el celular."></textarea>
+          <p class="practice-hint">Hilo hará de esa persona. No conoce tu método ni sabe qué buscas: responde como lo haría alguien real.</p>
+          <button class="button primary" id="practice-start" type="submit">Empezar entrevista</button>
+        </form>
+        <div class="practice-board" id="practice-board" hidden>
+          <section class="practice-interview" aria-labelledby="practice-persona-name">
+            <div class="practice-persona-card"><span>Entrevistas a</span><h3 id="practice-persona-name"></h3><p id="practice-persona-text"></p></div>
+            <ol class="practice-turns" id="practice-turns" aria-live="polite"></ol>
+            <form class="practice-ask" id="practice-ask">
+              <label class="sr-only" for="practice-question">Tu pregunta</label>
+              <textarea id="practice-question" rows="2" maxlength="600" placeholder="Escribe tu pregunta… (Enter para enviar)"></textarea>
+              <button class="button primary" id="practice-send" type="submit">Preguntar</button>
+            </form>
+          </section>
+          <aside class="practice-notebook" aria-labelledby="practice-notebook-title">
+            <h3 id="practice-notebook-title">Libreta del entrevistador</h3>
+            <p class="practice-score" id="practice-score"></p>
+            <div class="practice-meter" id="practice-meter" hidden></div>
+            <ol class="practice-stamps" id="practice-stamps"></ol>
+            <div class="practice-tips" id="practice-tips"></div>
+          </aside>
+        </div>
+        <footer class="pestel-foot"><p>Los sellos salen de la ficha «Trabajo de campo». Lo que diga el cliente simulado sirve para ensayar tus preguntas, no para llenar tu mapa de empatía.</p></footer>
+      </section>
         <section class="chat-panel" id="chat-panel" aria-labelledby="project-name">
           <header class="chat-panel-heading"><div class="project-heading" id="project-heading"><div class="project-progress" id="project-progress" role="img" aria-label="Progreso de etapas" hidden><svg viewBox="0 0 48 48" aria-hidden="true"><circle class="progress-track" cx="24" cy="24" r="20"/><circle class="progress-fill" id="project-progress-fill" cx="24" cy="24" r="20" pathLength="100" stroke-dasharray="100" stroke-dashoffset="100"/></svg><span id="project-progress-label" aria-hidden="true"></span></div><div class="project-heading-text"><h1 id="project-name">Inicio</h1><div class="project-stage" id="project-stage"><span id="project-phase"></span><span id="project-current-stage"></span><span id="project-access-label"></span></div></div></div><ul class="project-members" id="project-members" aria-label="Personas con acceso" hidden></ul><button class="project-share" id="share-project" type="button" aria-label="Administrar acceso al proyecto" title="Compartir este proyecto con otra cuenta local"><svg class="icon" aria-hidden="true"><use href="#i-share"/></svg><span id="share-project-label">Compartir</span></button><span class="sr-only" id="share-project-status" role="status"></span></header>
           <div class="messages" id="messages" role="log" aria-live="polite" aria-relevant="additions"></div>
@@ -394,8 +430,13 @@
           <section class="agents-flow" aria-labelledby="flow-heading">
             <div class="panel-heading"><h2 id="flow-heading">Recorrido de agentes</h2><span class="small-badge">LangGraph</span></div>
             <p class="panel-description" id="flow-description">El recorrido se ilumina mientras conversas.</p>
-            <svg id="graph" class="graph" viewBox="0 0 340 400" role="img" aria-label="Grafo de Hilo: Orquestador, Metodólogo, Verificador y un reintento ante rechazo"></svg>
+            <svg id="graph" class="graph" viewBox="0 0 340 425" role="img" aria-label="Grafo de Hilo: Orquestador, Planificador, Metodólogo, Verificador y un reintento ante rechazo"></svg>
             <div class="graph-legend"><span><i class="legend-dot active"></i>En ejecución</span><span><i class="legend-dot done"></i>Completado</span></div>
+            <div class="token-usage" id="token-usage" hidden>
+              <h3>Tokens de este turno</h3>
+              <table><thead><tr><th scope="col">Agente</th><th scope="col">Lee</th><th scope="col">Escribe</th></tr></thead><tbody id="token-usage-rows"></tbody></table>
+              <p>El Planificador y el Verificador trabajan en código: no gastan tokens.</p>
+            </div>
             <details class="trace-details"><summary>Ver eventos del turno <span id="trace-count">0</span></summary><ol id="trace-list" class="trace-list"><li class="empty-trace">Los eventos aparecerán al enviar un mensaje.</li></ol></details>
           </section>
           <section class="agents-memory" aria-labelledby="memory-heading">
@@ -412,6 +453,7 @@
           <button class="board-toggle" id="open-pestel" type="button" aria-pressed="false" aria-controls="pestel-view"><svg class="icon" aria-hidden="true"><use href="#i-search"/></svg>PESTEL</button>
           <button class="board-toggle" id="open-empathy" type="button" aria-pressed="false" aria-controls="empathy-view"><svg class="icon" aria-hidden="true"><use href="#i-person"/></svg>Empatía</button>
           <button class="board-toggle" id="open-journey" type="button" aria-pressed="false" aria-controls="journey-view"><svg class="icon" aria-hidden="true"><use href="#i-arrow"/></svg>Journey</button>
+          <button class="board-toggle" id="open-practice" type="button" aria-pressed="false" aria-controls="practice-view"><svg class="icon" aria-hidden="true"><use href="#i-meeting"/></svg>Entrevista</button>
           <button class="board-toggle" id="toggle-notes" type="button" data-board-tool="notes" aria-pressed="false" aria-controls="board-notes-panel"><svg class="icon" aria-hidden="true"><use href="#i-note"/></svg>Post-its</button>
           <button class="board-toggle" id="toggle-agents" type="button" data-board-tool="agents" aria-pressed="false" aria-controls="board-agents-panel"><svg class="icon" aria-hidden="true"><use href="#i-route"/></svg>Agentes</button>
         </div>

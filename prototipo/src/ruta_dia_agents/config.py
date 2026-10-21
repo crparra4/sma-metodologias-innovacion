@@ -47,6 +47,13 @@ class Settings:
     top_p: float | None = None
     thinking: bool = False
     runtime: str = "langgraph"
+    # Respuestas que el modelo local genera a la vez (ranuras de llama-server). 6 es el punto
+    # medido en la RTX 4060 Ti de 8 GB; con más ranuras el modelo deja de caber en la GPU.
+    parallel: int = 6
+    # Variante del agente (ver `variantes.py`). Desde el 20 oct 2026, (g): Planificador con el
+    # avance de la ficha + Metodólogo + Verificador en código. En la evaluación exigente superó
+    # al agente único con la misma información y a (c) en escucha y avance.
+    variant: str = "g"
 
     @classmethod
     def from_env(cls) -> Settings:
@@ -71,4 +78,6 @@ class Settings:
             agent_max_retry_limit=int(os.getenv("RUTA_DIA_AGENT_RETRIES", "2")),
             thinking=_as_bool(os.getenv("RUTA_DIA_THINKING")),
             runtime=os.getenv("RUTA_DIA_RUNTIME", "langgraph").strip().lower(),
+            parallel=max(1, int(os.getenv("RUTA_DIA_PARALLEL", "6"))),
+            variant=os.getenv("RUTA_DIA_VARIANTE", "g").strip().lower(),
         )

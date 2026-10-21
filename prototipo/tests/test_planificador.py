@@ -1,0 +1,165 @@
+import json
+import re
+from dataclasses import replace
+from types import SimpleNamespace
+from unittest.mock import Mock
+
+import pytest
+
+from ruta_dia_agents.config import Settings
+from ruta_dia_agents.contracts import (
+    HandoffContract,
+    ProjectState,
+    TurnResult,
+    Verdict,
+    VerificationResult,
+)
+from ruta_dia_agents.knowledge import KnowledgeCatalog
+from ruta_dia_agents.memory import NotebookMemory
+from ruta_dia_agents.planificador import (
+    NO_SABE,
+    RESPONDIDA,
+    _todas,
+    cierre,
+    es_duda,
+    partes_repetidas,
+    planear,
+)
+from ruta_dia_agents.variantes import PlanificadorConControles
+
+RETO = "Lanzar una app que pague por reciclar en conjuntos de Bogotá."
+
+
+@pytest.fixture
+def catalog():
+    return KnowledgeCatalog(Settings.from_env().route_path)
+
+
+def estados(plan):
+    return {k: v["estado"] for k, v in plan.progreso["partes"].items()}
+
+
+def test_every_part_definition_is_literal_text_from_its_card(catalog):
+    for ficha, partes in _todas().items():
+        como = re.sub(r"\s+", " ", catalog.card_section(ficha, "how"))
+        for parte in partes:
+            assert parte.definicion in como, (ficha, parte.id)
+
+
+def test_the_plan_walks_the_parts_without_asking_twice():
+    plan = planear("pestel", None, "Quiero hacer un PESTEL", RETO)
+    assert plan.objetivo.id == "politico" and estados(plan) == {"reto": RESPONDIDA}
+
+    plan = planear("pestel", plan.progreso, "Separar las basuras en tres bolsas es obligatorio.")
+    assert estados(plan)["politico"] == RESPONDIDA and plan.objetivo.id == "economico"
+
+    plan = planear("pestel", plan.progreso, "no sé")
+    assert estados(plan)["economico"] == NO_SABE and plan.objetivo.id == "social"
+    assert plan.nota  # se le dice que quedó anotado
+
+
+def test_a_doubt_is_answered_from_the_card_and_the_part_stays_open():
+    plan = planear("pestel", {"en_curso": "politico", "partes": {}},
+                   "Lo de las bolsas, ¿eso cuenta como político? ¿Qué significa normativa?")
+    assert plan.intencion == "aclarar" and plan.objetivo.id == "politico"
+    assert "«Político: normativas, políticas públicas" in plan.aclaracion
+    assert "politico" not in plan.progreso["partes"]
+
+
+def test_asking_to_move_and_labelling_another_part_are_respected():
+    plan = planear("pestel", {"en_curso": "politico", "partes": {}}, "pasemos a lo legal")
+    assert plan.objetivo.id == "legal" and "politico" not in plan.progreso["partes"]
+
+    plan = planear("pestel", plan.progreso, "En lo social, la gente quiere que le paguen rápido.")
+    assert estados(plan) == {"social": RESPONDIDA}
+    assert plan.objetivo.id == "legal"  # se retoma la parte que quedó sin responder
+
+
+def test_when_every_part_is_done_the_plan_closes():
+    partes = {p: {"estado": RESPONDIDA, "texto": "x"} for p in
+              ["reto", "politico", "economico", "social", "tecnologico", "ecologico", "legal",
+               "oportunidad_amenaza"]}
+    plan = planear("pestel", {"en_curso": "priorizar", "partes": partes},
+                   "Lo más relevante es lo legal y lo económico.")
+    assert plan.intencion == "cerrar" and plan.objetivo is None
+    texto = cierre(plan, "PESTEL")
+    # Solo dice lo cierto (ya preguntó por cada parte); no da la ficha por completa.
+    assert texto.startswith("Ya te pregunté por cada parte de **PESTEL**.")
+    assert "recorrimos" not in texto and "anotaste" not in texto
+
+
+def test_a_tentative_answer_is_not_a_no_se():
+    plan = planear("ficha-hipotesis", {"en_curso": "criterio", "partes": {}},
+                   "No sé, ¿2 de cada 10 citas perdidas ya sería un buen umbral?")
+    assert plan.progreso["partes"]["criterio"]["estado"] == RESPONDIDA and not plan.nota
+
+
+def test_repeated_parts_are_detected_only_in_the_question():
+    plan = planear("pestel", {"en_curso": "politico", "partes": {}}, "La alcaldía da becas.")
+    assert [p.id for p in partes_repetidas("¿Qué otra norma política conoces?", plan)] == [
+        "politico"]
+    assert partes_repetidas("Anotado lo político. ¿Qué pasa con la economía?", plan) == []
+
+
+def test_point_doubts_are_not_requests_to_continue():
+    assert es_duda("¿eso va en dolores o en necesidades?")
+    assert not es_duda("¿qué hago ahora?")
+    assert not es_duda("Lo de las bolsas cuenta como político.")
+
+
+def test_tools_without_parts_get_no_plan():
+    assert planear("trabajo-de-campo", None, "Quiero planear entrevistas") is None
+
+
+def test_memory_returns_the_progress_saved_with_the_last_answer(tmp_path):
+    progreso = {"pestel": {"en_curso": "economico",
+                           "partes": {"politico": {"estado": RESPONDIDA, "texto": "becas"}}}}
+    estado = ProjectState(notebook_id="n")
+    handoff = HandoffContract(intent="i", phase="Descubrimiento", stage=1, expertise="novel",
+                              context_summary="c")
+    resultado = TurnResult(
+        message="¿Y lo económico?", handoff=handoff, attempts=1, progreso=progreso,
+        verification=VerificationResult(verdict=Verdict.APPROVED, severity="none",
+                                        findings=[], source_tool_id=""),
+    )
+    with NotebookMemory(tmp_path / "n.sqlite3") as memoria:
+        memoria.save_exchange("La alcaldía da becas.", resultado, estado)
+        assert memoria.load(estado).progreso == progreso
+
+
+def test_planner_variant_asks_only_for_the_part_that_is_due(catalog):
+    card = catalog.tool_card("pestel")
+    headings = [h.strip() for h in re.findall(r"^#{1,6}\s+(.+)$", card, re.MULTILINE)]
+    recibido = {}
+
+    def crear(**options):
+        nombre = options["response_format"]["json_schema"]["name"]
+        recibido[nombre] = options["messages"][-1]["content"]
+        salida = (
+            {"selection": "1:pestel", "intent": "PESTEL", "kind": "trabajo",
+             "expertise": "novel", "context_summary": "c", "reason": "r"}
+            if nombre == "RouteDecision" else
+            {"message": "¿Qué otra norma política conoces?", "tool_id": "pestel",
+             "next_step": "Preguntar", "source_sections": headings[:1], "template_updates": []}
+        )
+        return SimpleNamespace(
+            choices=[SimpleNamespace(message=SimpleNamespace(content=json.dumps(salida)))],
+            usage=None)
+
+    client = Mock()
+    client.chat.completions.create.side_effect = crear
+    settings = replace(Settings.from_env(), base_url="http://127.0.0.1:18083/v1", api_key="t")
+    runtime = PlanificadorConControles(settings, client=client)
+    state = ProjectState(notebook_id="n", stage=1, active_tool="pestel",
+                         context={"question": RETO},
+                         progreso={"pestel": {"en_curso": "politico", "partes": {}}})
+    mensaje = "La alcaldía tiene becas de tecnología para colegios."
+    handoff = runtime.orchestrate(mensaje, state, catalog.route_index())
+    handoff = runtime.planificar(mensaje, state, handoff, catalog.route_index())
+    candidate = runtime.guide(mensaje, state, handoff, card)
+
+    assert "Parte que toca ahora: «Económico»" in recibido["GroundedCandidateResponse"]
+    assert "Político: «La alcaldía tiene becas" in recibido["GroundedCandidateResponse"]
+    veredicto = runtime.verify(candidate, handoff, card, message=mensaje, state=state)
+    assert veredicto.verdict == Verdict.REJECTED  # preguntó otra vez por lo político
+    assert runtime.progreso_turno["pestel"]["en_curso"] == "economico"

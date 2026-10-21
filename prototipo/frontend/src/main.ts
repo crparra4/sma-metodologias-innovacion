@@ -10,6 +10,7 @@ import { authText, translateAuthError, loadAuthLanguage, saveAuthLanguage, type 
 import { EmpathyController } from './empatia';
 import { JourneyController } from './journey';
 import { PestelController } from './pestel';
+import { PracticeController } from './practica';
 import { ProblemTreeController } from './problem-tree';
 import { WhyAnalysisController } from './why-analysis';
 import { SettingsController } from './ajustes';
@@ -54,11 +55,11 @@ let noteSource = '';
 let noteSaving = false;
 let selectedExcerpt = '';
 type Graph = { nodes: string[]; edges: { source: string; target: string; conditional: boolean }[] };
-type StreamEvent = { type: string; node?: string; status?: string; attempt?: number; duration_ms?: number; state?: State; handoff?: Result['handoff']; verification?: Verification; result?: Result; elapsed_ms?: number; source_sections?: string[]; message?: string };
+type StreamEvent = { type: string; node?: string; status?: string; attempt?: number; duration_ms?: number; state?: State; handoff?: Result['handoff']; verification?: Verification; result?: Result; elapsed_ms?: number; source_sections?: string[]; message?: string; ahead?: number; consumo?: { agente: string; llamadas: number; leidos: number; escritos: number }[] };
 const el = <T extends HTMLElement = HTMLElement>(id: string) => document.getElementById(id) as T;
 const icon = (name: string) => `<svg class="icon" aria-hidden="true"><use href="#i-${name}"/></svg>`;
 const safeMarkdown = (text: string) => DOMPurify.sanitize(marked.parse(text, { async: false }) as string);
-const names: Record<string, string> = { orchestrate: 'Orquestador', guide: 'Metodólogo', verify: 'Verificador', finalize: 'Respuesta', degrade: 'Respuesta segura', knowledge_gap: 'Sin ficha' };
+const names: Record<string, string> = { orchestrate: 'Orquestador', plan: 'Planificador', guide: 'Metodólogo', verify: 'Verificador', finalize: 'Respuesta', degrade: 'Respuesta segura', knowledge_gap: 'Sin ficha' };
 const verdictNames: Record<string, string> = { approved: 'Aprobada', observed: 'Con observaciones', rejected: 'Respuesta segura' };
 let stages: Stage[] = [];
 let tools: Tool[] = [];
@@ -68,15 +69,18 @@ let activeAccess: ProjectAccess | null = null;
 let sharedMembers: SharingMember[] = [];
 let advances: Advance[] = [];
 let invitations: Invitation[] = [];
-let currentView: 'home' | 'project' | 'tools' | 'calendar' | 'tree' | 'pestel' | 'empathy' | 'journey' = 'home';
+let currentView: 'home' | 'project' | 'tools' | 'calendar' | 'tree' | 'pestel' | 'empathy' | 'journey' | 'practice' = 'home';
 // Vistas que viven dentro del tablero del proyecto; el árbol y el PESTEL ocupan el lugar principal.
-const inProject = () => ['project', 'tree', 'pestel', 'empathy', 'journey'].includes(currentView);
-const inTool = () => ['tree', 'pestel', 'empathy', 'journey'].includes(currentView);
+const inProject = () => ['project', 'tree', 'pestel', 'empathy', 'journey', 'practice'].includes(currentView);
+const inTool = () => ['tree', 'pestel', 'empathy', 'journey', 'practice'].includes(currentView);
 const methodologyNames: Record<string, string> = { transversal: 'Transversal', 'design-thinking': 'Design Thinking', 'lean-startup': 'Lean Startup', sit: 'SIT' };
 type Account = { id: string; username: string; display_name: string; avatar: number };
 let account: Account | null = null;
 const notebookStorageKey = () => `hilo-notebook-${account?.id || 'local'}`;
 let authMode: 'login' | 'register' = 'login';
+// Entrando por un túnel, crear cuenta pide un código de invitación (o está cerrado).
+let registration = { invite_code: false, closed: false };
+const remoteAccess = !['localhost', '127.0.0.1', '[::1]'].includes(window.location.hostname);
 let authLanguage = loadAuthLanguage();
 const authT = (key: AuthTextKey) => authText(authLanguage, key);
 const summaries = new Map<string, string>();
@@ -181,6 +185,7 @@ const askFromBoard = (text: string) => {
 };
 const pestel: PestelController = new PestelController(api, { ask: askFromBoard });
 const empathy: EmpathyController = new EmpathyController(api, { ask: askFromBoard });
+const practice = new PracticeController(api);
 const journey: JourneyController = new JourneyController(api, { ask: askFromBoard });
 
 function showError(message = '') {
@@ -235,6 +240,7 @@ function syncControls() {
   el<HTMLButtonElement>('open-problem-tree').disabled = blocked || !activeState;
   el<HTMLButtonElement>('open-pestel').disabled = blocked || !activeState;
   el<HTMLButtonElement>('open-empathy').disabled = blocked || !activeState;
+  el<HTMLButtonElement>('open-practice').disabled = blocked || !activeState;
   el<HTMLButtonElement>('open-journey').disabled = blocked || !activeState;
   el<HTMLButtonElement>('share-project').disabled = loadingNotebook || !activeState;
   el<HTMLButtonElement>('tree-share-project').disabled = loadingNotebook || !activeState;
@@ -254,7 +260,9 @@ function syncControls() {
 
 async function refreshStatus() {
   try {
-    const status = await api<{ available: boolean; busy: boolean; model: string }>('/status');
+    // «Ocupado» es por proyecto: lo que pase en otros proyectos no bloquea este.
+    const project = activeAccess?.project_id || activeState?.notebook_id;
+    const status = await api<{ available: boolean; busy: boolean; model: string }>(project ? `/status?project=${encodeURIComponent(project)}` : '/status');
     available = status.available;
     serverBusy = status.busy;
     el('model-dot').className = `status-dot ${available ? 'online' : 'offline'}`;
@@ -429,7 +437,9 @@ function updateHeader() {
   el('pestel-view').hidden = currentView !== 'pestel';
   el('empathy-view').hidden = currentView !== 'empathy';
   el('journey-view').hidden = currentView !== 'journey';
-  el('chat-panel').hidden = currentView !== 'project' && !(inTool() && boardTools.has('chat'));
+  el('practice-view').hidden = currentView !== 'practice';
+  // En la práctica no va el chat de Hilo al lado: dos chats confundirían lo simulado con lo real.
+  el('chat-panel').hidden = currentView !== 'project' && !(inTool() && currentView !== 'practice' && boardTools.has('chat'));
   el('calendar-view').hidden = currentView !== 'calendar';
   el('go-calendar').setAttribute('aria-current', currentView === 'calendar' ? 'page' : 'false');
   el('go-tools').setAttribute('aria-current', currentView === 'tools' ? 'page' : 'false');
@@ -524,6 +534,11 @@ function renderProjects() {
 }
 
 function canNavigateAwayFromTree(): boolean {
+  if (currentView === 'practice') {
+    if (practice.canLeave()) return true;
+    if (activeAccess) history.replaceState(null, '', `#practica=${encodeURIComponent(activeAccess.project_id)}`);
+    return false;
+  }
   if (currentView === 'journey') {
     if (journey.canLeave()) return true;
     if (activeAccess) history.replaceState(null, '', `#journey=${encodeURIComponent(activeAccess.project_id)}`);
@@ -568,7 +583,7 @@ async function followLocation() {
   if (busy || loadingNotebook) return;
   if (location.hash === '#herramientas') { showTools(false); return; }
   if (location.hash === '#calendario') { showCalendar(false); return; }
-  const treeMatch = location.hash.match(/^#(arbol|pestel|empatia|journey)=(.+)$/);
+  const treeMatch = location.hash.match(/^#(arbol|pestel|empatia|journey|practica)=(.+)$/);
   if (treeMatch) {
     let id: string;
     try { id = decodeURIComponent(treeMatch[2]); } catch { showHome(false); return; }
@@ -576,7 +591,7 @@ async function followLocation() {
     if (notebook) {
       await loadNotebook(notebook.project_id, false);
       if (currentView === 'project' && activeAccess?.project_id === notebook.project_id) {
-        await (treeMatch[1] === 'pestel' ? showPestel(false) : treeMatch[1] === 'empatia' ? showEmpathy(false) : treeMatch[1] === 'journey' ? showJourney(false) : showProblemTree(false));
+        await (treeMatch[1] === 'pestel' ? showPestel(false) : treeMatch[1] === 'empatia' ? showEmpathy(false) : treeMatch[1] === 'journey' ? showJourney(false) : treeMatch[1] === 'practica' ? showPractice(false) : showProblemTree(false));
       }
       return;
     }
@@ -609,7 +624,7 @@ async function loadNotebook(id: string, updateLocation = true) {
     renderMembers(); renderNotebooks(); updateHeader(); scrollChat(); setSidebar(false);
     el('delete-confirm').hidden = true;
   } catch (error) { showError((error as Error).message); }
-  finally { if (version === selectedVersion) { loadingNotebook = false; syncControls(); } }
+  finally { if (version === selectedVersion) { loadingNotebook = false; syncControls(); void refreshStatus(); } }
 }
 
 async function showProblemTree(updateLocation = true) {
@@ -633,6 +648,7 @@ el('open-problem-tree').addEventListener('click', () => {
   if (currentView === 'pestel' && !pestel.canLeave()) return;
   if (currentView === 'empathy' && !empathy.canLeave()) return;
   if (currentView === 'journey' && !journey.canLeave()) return;
+  if (currentView === 'practice' && !practice.canLeave()) return;
   setBoardTool('chat', true);
   void showProblemTree();
 });
@@ -658,6 +674,7 @@ el('open-pestel').addEventListener('click', () => {
   if (currentView === 'tree' && !problemTree.canLeave()) return;
   if (currentView === 'empathy' && !empathy.canLeave()) return;
   if (currentView === 'journey' && !journey.canLeave()) return;
+  if (currentView === 'practice' && !practice.canLeave()) return;
   setBoardTool('chat', true);
   void showPestel();
 });
@@ -682,8 +699,33 @@ el('open-empathy').addEventListener('click', () => {
   if (currentView === 'tree' && !problemTree.canLeave()) return;
   if (currentView === 'pestel' && !pestel.canLeave()) return;
   if (currentView === 'journey' && !journey.canLeave()) return;
+  if (currentView === 'practice' && !practice.canLeave()) return;
   setBoardTool('chat', true);
   void showEmpathy();
+});
+
+async function showPractice(updateLocation = true) {
+  if (!activeAccess || !activeState) return;
+  currentView = 'practice';
+  if (updateLocation) history.pushState(null, '', `#practica=${encodeURIComponent(activeAccess.project_id)}`);
+  updateHeader(); renderNotebooks(); setSidebar(false);
+  await practice.open(activeAccess.project_id, activeAccess.role);
+}
+
+el('open-practice').addEventListener('click', () => {
+  if (busy || loadingNotebook) return;
+  if (currentView === 'practice') {
+    if (!practice.canLeave()) return;
+    currentView = 'project';
+    history.pushState(null, '', `#proyecto=${encodeURIComponent(activeAccess!.project_id)}`);
+    updateHeader(); renderNotebooks();
+    return;
+  }
+  if (currentView === 'tree' && !problemTree.canLeave()) return;
+  if (currentView === 'pestel' && !pestel.canLeave()) return;
+  if (currentView === 'empathy' && !empathy.canLeave()) return;
+  if (currentView === 'journey' && !journey.canLeave()) return;
+  void showPractice();
 });
 
 async function showJourney(updateLocation = true) {
@@ -714,20 +756,22 @@ el('tree-share-project').addEventListener('click', () => el<HTMLButtonElement>('
 
 const positions: Record<string, { x: number; y: number; w: number; h: number; label: string }> = {
   __start__: { x: 144, y: 15, w: 12, h: 12, label: 'Inicio' },
-  orchestrate: { x: 144, y: 65, w: 180, h: 46, label: 'Orquestador' },
-  guide: { x: 144, y: 150, w: 180, h: 46, label: 'Metodólogo' },
-  verify: { x: 144, y: 235, w: 180, h: 46, label: 'Verificador' },
-  finalize: { x: 110, y: 320, w: 145, h: 44, label: 'Respuesta' },
-  knowledge_gap: { x: 285, y: 150, w: 100, h: 44, label: 'Sin ficha' },
-  degrade: { x: 285, y: 320, w: 100, h: 44, label: 'Respuesta segura' },
-  __end__: { x: 144, y: 385, w: 12, h: 12, label: 'Fin' },
+  orchestrate: { x: 144, y: 62, w: 180, h: 46, label: 'Orquestador' },
+  plan: { x: 144, y: 128, w: 150, h: 40, label: 'Planificador' },
+  guide: { x: 144, y: 190, w: 180, h: 46, label: 'Metodólogo' },
+  verify: { x: 144, y: 262, w: 180, h: 46, label: 'Verificador' },
+  finalize: { x: 110, y: 338, w: 145, h: 44, label: 'Respuesta' },
+  knowledge_gap: { x: 285, y: 128, w: 100, h: 44, label: 'Sin ficha' },
+  degrade: { x: 285, y: 338, w: 100, h: 44, label: 'Respuesta segura' },
+  __end__: { x: 144, y: 405, w: 12, h: 12, label: 'Fin' },
 };
 const paths: Record<string, string> = {
-  '__start__>orchestrate': 'M144 21V42', 'orchestrate>guide': 'M144 88V127',
-  'orchestrate>knowledge_gap': 'M234 65H285V128', 'guide>verify': 'M144 173V212',
-  'verify>guide': 'M54 235H27V150H54', 'verify>finalize': 'M144 258V279H110V298',
-  'verify>degrade': 'M234 235H285V298', 'finalize>__end__': 'M110 342V366H144V379',
-  'degrade>__end__': 'M285 342V366H144V379', 'knowledge_gap>__end__': 'M335 150H338V395H144V391',
+  '__start__>orchestrate': 'M144 21V36', 'orchestrate>plan': 'M144 85V105',
+  'plan>guide': 'M144 148V164',
+  'orchestrate>knowledge_gap': 'M234 62H285V103', 'guide>verify': 'M144 213V236',
+  'verify>guide': 'M54 262H27V190H54', 'verify>finalize': 'M144 285V302H110V313',
+  'verify>degrade': 'M234 262H285V313', 'finalize>__end__': 'M110 360V384H144V396',
+  'degrade>__end__': 'M285 360V384H144V396', 'knowledge_gap>__end__': 'M335 128H338V418H144V411',
 };
 const svgNS = 'http://www.w3.org/2000/svg';
 const svgElement = (tag: string, attrs: Record<string, string>) => { const node = document.createElementNS(svgNS, tag); for (const [key, value] of Object.entries(attrs)) node.setAttribute(key, value); return node; };
@@ -740,7 +784,7 @@ function buildGraph() {
     if (!paths[key]) continue;
     graph.append(svgElement('path', { d: paths[key], class: `graph-edge ${edge.conditional ? 'conditional' : ''}`, 'data-source': edge.source, 'data-target': edge.target, 'marker-end': 'url(#arrowhead)' }));
   }
-  const retry = svgElement('text', { x: '18', y: '199', transform: 'rotate(-90 18 199)', class: 'edge-label' }); retry.textContent = 'Reintento'; graph.append(retry);
+  const retry = svgElement('text', { x: '18', y: '226', transform: 'rotate(-90 18 226)', class: 'edge-label' }); retry.textContent = 'Reintento'; graph.append(retry);
   for (const key of graphData.nodes) {
     const p = positions[key]; if (!p) continue;
     const group = svgElement('g', { 'data-node': key, class: 'graph-node idle' });
@@ -753,6 +797,21 @@ function buildGraph() {
     }
     graph.append(group);
   }
+}
+
+// Tokens que leyó y escribió cada agente en el último turno (los pasos en código no gastan).
+function renderTokenUsage(consumo: NonNullable<StreamEvent['consumo']>) {
+  const rows = el('token-usage-rows');
+  rows.replaceChildren();
+  const number = new Intl.NumberFormat('es-CO');
+  for (const fila of consumo) {
+    const row = document.createElement('tr');
+    for (const text of [fila.llamadas > 1 ? `${fila.agente} ×${fila.llamadas}` : fila.agente, number.format(fila.leidos), number.format(fila.escritos)]) {
+      const cell = document.createElement('td'); cell.textContent = text; row.append(cell);
+    }
+    rows.append(row);
+  }
+  el('token-usage').hidden = !consumo.length;
 }
 
 function resetGraph() {
@@ -791,7 +850,15 @@ function handleEvent(event: StreamEvent) {
     const label = document.createElement('span'); label.textContent = `${names[event.node] || event.node}${running ? ' · inicio' : ' · completado'}`;
     const time = document.createElement('span'); time.textContent = event.duration_ms !== undefined ? `${(event.duration_ms / 1000).toFixed(1)} s` : event.attempt ? `#${event.attempt}` : '';
     item.append(label, time); el('trace-list').append(item); el('trace-count').textContent = String(++traceCount);
-  } else if (event.type === 'session') markNode('__start__', 'done');
+  } else if (event.type === 'queue' && event.ahead) {
+    // Hay más personas usando Hilo: la respuesta espera su turno en la fila del modelo.
+    const waiting = event.ahead === 1 ? 'Falta 1 respuesta' : `Faltan ${event.ahead} respuestas`;
+    el('run-status').firstElementChild!.textContent = `En fila: ${waiting.toLowerCase()} de otras personas antes de la tuya.`;
+    if (pending) pending.querySelector('.pending-text')!.textContent = `${waiting} antes de la tuya…`;
+  } else if (event.type === 'session') {
+    markNode('__start__', 'done');
+    el('run-status').firstElementChild!.textContent = 'Procesando y verificando tu mensaje…';
+  }
   else if (event.type === 'verification' && event.verification) {
     if (event.verification.verdict === 'rejected') markNode('verify', 'failed', 'Rechazada · revisar');
   } else if (event.type === 'result' && event.result && event.state) {
@@ -809,6 +876,7 @@ function handleEvent(event: StreamEvent) {
     el('flow-description').textContent = isFixedReply(event.result) ? 'Respuesta fija del sistema, sin ficha.' : event.result.degraded ? 'El control activó una respuesta segura.' : `Respuesta verificada · ${toolName(event.result.handoff.active_tool)}.`;
     el('run-status').firstElementChild!.textContent = 'Respuesta guardada en este cuaderno.';
     el('run-time').textContent = `${((event.elapsed_ms || 0) / 1000).toFixed(1)} s`;
+    renderTokenUsage(event.consumo || []);
     scrollChat();
   } else if (event.type === 'error') {
     markNode(lastNode, 'failed', 'Error');
@@ -1292,6 +1360,9 @@ function renderBoard() {
   const journeyToggle = el<HTMLButtonElement>('open-journey');
   journeyToggle.setAttribute('aria-pressed', String(currentView === 'journey'));
   journeyToggle.title = currentView === 'journey' ? 'Volver al chat' : 'Mostrar el customer journey del proyecto';
+  const practiceToggle = el<HTMLButtonElement>('open-practice');
+  practiceToggle.setAttribute('aria-pressed', String(currentView === 'practice'));
+  practiceToggle.title = currentView === 'practice' ? 'Volver al chat' : 'Practicar una entrevista con un cliente simulado';
   const empathyToggle = el<HTMLButtonElement>('open-empathy');
   empathyToggle.setAttribute('aria-pressed', String(currentView === 'empathy'));
   empathyToggle.title = currentView === 'empathy' ? 'Volver al chat' : 'Mostrar el mapa de empatía del proyecto';
@@ -2267,7 +2338,7 @@ function renderAuthLanguage() {
   el('auth-intro').textContent = authT(registering ? 'registerIntro' : 'loginIntro');
   const submit = el<HTMLButtonElement>('auth-submit');
   submit.textContent = authT(submit.disabled ? registering ? 'creating' : 'entering' : registering ? 'register' : el('auth-password-field').hidden ? 'continue' : 'login');
-  el('auth-note').textContent = authT(registering ? 'registerNote' : 'loginNote');
+  el('auth-note').textContent = authT(remoteAccess ? 'remoteNote' : registering ? 'registerNote' : 'loginNote');
   const error = el('auth-error');
   if (!error.hidden) error.textContent = translateAuthError(error.textContent || '', authLanguage);
 }
@@ -2283,6 +2354,7 @@ function setAuthMode(mode: 'login' | 'register') {
   const registering = mode === 'register';
   el('auth-name-field').hidden = !registering;
   el('auth-confirm-field').hidden = !registering;
+  el('auth-invite-field').hidden = !(registering && registration.invite_code);
   el('auth-password-hint').hidden = !registering;
   el('auth-password-field').hidden = !registering;
   el('auth-back').hidden = true;
@@ -2291,7 +2363,7 @@ function setAuthMode(mode: 'login' | 'register') {
   el<HTMLInputElement>('auth-confirm').value = '';
   el<HTMLInputElement>('auth-password').autocomplete = registering ? 'new-password' : 'current-password';
   el('auth-login-prompt').hidden = !registering;
-  el('auth-register-prompt').hidden = registering;
+  el('auth-register-prompt').hidden = registering || registration.closed;
   el('auth-error').hidden = true;
   renderAuthLanguage();
   el<HTMLInputElement>(registering ? 'auth-name' : 'auth-username').focus();
@@ -2320,12 +2392,14 @@ el('auth-form').addEventListener('submit', async event => {
     error.hidden = false; el(authMode === 'register' && !displayName ? 'auth-name' : password.length < 10 ? 'auth-password' : 'auth-confirm').focus(); return;
   }
   if (!password) { error.textContent = authT('missingPassword'); error.hidden = false; el('auth-password').focus(); return; }
+  const inviteCode = el<HTMLInputElement>('auth-invite').value.trim();
+  if (authMode === 'register' && registration.invite_code && !inviteCode) { error.textContent = authT('missingInvite'); error.hidden = false; el('auth-invite').focus(); return; }
   const submit = el<HTMLButtonElement>('auth-submit'); submit.disabled = true; submit.textContent = authT(authMode === 'register' ? 'creating' : 'entering');
   const modeControls = ['auth-back', 'auth-login-tab', 'auth-register-tab'].map(id => el<HTMLButtonElement>(id));
   modeControls.forEach(control => { control.disabled = true; });
   try {
     const path = authMode === 'register' ? '/auth/register' : '/auth/login';
-    await api<Account>(path, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(authMode === 'register' ? { username, display_name: displayName, password, confirm_password: confirm } : { username, password }) });
+    await api<Account>(path, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(authMode === 'register' ? { username, display_name: displayName, password, confirm_password: confirm, invite_code: inviteCode } : { username, password }) });
     window.location.reload();
   } catch (caught) { error.textContent = translateAuthError((caught as Error).message, authLanguage); error.hidden = false; submit.disabled = false; submit.textContent = authT(authMode === 'register' ? 'register' : 'login'); modeControls.forEach(control => { control.disabled = false; }); }
 });
@@ -2335,6 +2409,7 @@ async function init() {
   try {
     const response = await fetch('/api/auth/me', { cache: 'no-store' });
     if (response.status === 401) {
+      try { registration = await api<typeof registration>('/auth/registration'); } catch { /* sin respuesta, el servidor decide al registrar */ }
       el('auth-view').hidden = false; setAuthMode('login'); return;
     }
     if (!response.ok) throw new Error(authT('sessionError'));

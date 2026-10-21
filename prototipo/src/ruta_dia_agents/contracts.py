@@ -68,6 +68,9 @@ class ProjectState(StrictModel):
     validated_fields: dict[str, dict[str, Any]] = Field(default_factory=dict)
     context: ProjectContext = Field(default_factory=ProjectContext)
     color: NotebookColor = NotebookColor.BLUE
+    # Avance por ficha que lleva el Planificador (`planificador.py`); viene de la última
+    # respuesta guardada. No se le muestra al modelo tal cual.
+    progreso: dict[str, dict[str, Any]] = Field(default_factory=dict)
 
 
 class ToolRecommendation(StrictModel):
@@ -164,3 +167,5 @@ class TurnResult(StrictModel):
     attempts: int = Field(ge=1, le=2)
     degraded: bool = False
     accepted_updates: list[TemplateUpdate] = Field(default_factory=list)
+    # Foto del avance por ficha después de este turno (vacía si no hay Planificador).
+    progreso: dict[str, dict[str, Any]] = Field(default_factory=dict)

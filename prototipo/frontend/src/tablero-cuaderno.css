@@ -168,3 +168,12 @@
   #app #project-workspace .problem-tree-head h2{font-size:25px}
   #app #project-workspace :is(.problem-tree-lane-head h3,.problem-tree-core h3){font-size:26px}
 }
+
+/* Tokens de cada agente en el último turno: tabla breve bajo el grafo. */
+#app #project-workspace .token-usage{margin:0 0 18px;padding:10px 12px;border:1.2px dashed var(--lapiz,#5d6880);border-radius:12px}
+#app #project-workspace .token-usage h3{margin:0 0 6px;font-family:var(--esfero-letra);font-weight:400;font-size:15px;color:var(--tinta)}
+#app #project-workspace .token-usage table{width:100%;border-collapse:collapse;font-size:12.5px;color:var(--tinta)}
+#app #project-workspace .token-usage th{font-weight:600;text-align:right;color:var(--lapiz);padding:2px 4px}
+#app #project-workspace .token-usage th:first-child,#app #project-workspace .token-usage td:first-child{text-align:left}
+#app #project-workspace .token-usage td{text-align:right;padding:2px 4px;font-variant-numeric:tabular-nums}
+#app #project-workspace .token-usage p{margin:6px 0 0;font-size:12px;line-height:1.4;color:var(--lapiz)}

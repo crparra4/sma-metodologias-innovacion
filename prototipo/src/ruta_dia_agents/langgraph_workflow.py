@@ -68,6 +68,7 @@ class LangGraphRutaDia:
         self.recorder = recorder or NullRecorder()
         builder = StateGraph(RutaDiaGraphState)
         builder.add_node("orchestrate", self._orchestrate)
+        builder.add_node("plan", self._plan)
         builder.add_node("knowledge_gap", self._knowledge_gap)
         builder.add_node("guide", self._guide)
         builder.add_node("verify", self._verify)
@@ -77,8 +78,9 @@ class LangGraphRutaDia:
         builder.add_conditional_edges(
             "orchestrate",
             self._after_orchestration,
-            {"knowledge_gap": "knowledge_gap", "guide": "guide"},
+            {"knowledge_gap": "knowledge_gap", "guide": "plan"},
         )
+        builder.add_edge("plan", "guide")
         builder.add_edge("knowledge_gap", END)
         builder.add_edge("guide", "verify")
         builder.add_conditional_edges(
@@ -97,7 +99,17 @@ class LangGraphRutaDia:
             self._turn_input(message, state),
             config={"configurable": {"thread_id": state.notebook_id}},
         )
-        return TurnResult.model_validate(final["result"])
+        return self._con_progreso(TurnResult.model_validate(final["result"]), state)
+
+    def _con_progreso(self, result: TurnResult, state: ProjectState) -> TurnResult:
+        """Guarda el avance de las fichas en cada respuesta, también en las fijas.
+
+        Si el turno tuvo Planificador, vale su avance; si no (saludo, tema sensible, otra
+        variante), se conserva el que traía el cuaderno.
+        """
+        progreso = getattr(self.runtime, "progreso_turno", None)
+        return result.model_copy(
+            update={"progreso": progreso if progreso is not None else state.progreso})
 
     @staticmethod
     def _turn_input(message: str, state: ProjectState) -> dict:
@@ -153,6 +165,8 @@ class LangGraphRutaDia:
                     }
             elif part["type"] == "updates":
                 for update in data.values():
+                    if not update:  # un paso que no cambió nada (p. ej. «plan» sin Planificador)
+                        continue
                     if "handoff" in update:
                         yield {"type": "handoff", "handoff": update["handoff"]}
                     if "verification" in update:
@@ -166,6 +180,7 @@ class LangGraphRutaDia:
                         final_result = TurnResult.model_validate(update["result"])
         if final_result is None:
             raise RuntimeError("El grafo terminó sin producir un resultado")
+        final_result = self._con_progreso(final_result, state)
         yield {
             "type": "result",
             "result": final_result.model_dump(mode="json"),
@@ -216,6 +231,22 @@ class LangGraphRutaDia:
             context_summary=handoff.context_summary,
             kind=handoff.kind,
         )
+
+    def _plan(self, graph_state: RutaDiaGraphState) -> dict:
+        """Planificador: con el avance de la ficha decide qué parte toca (`planificador.py`).
+
+        Es código, no modelo. Si la variante no tiene Planificador, el paso no cambia nada.
+        """
+        planificar = getattr(self.runtime, "planificar", None)
+        if planificar is None:
+            return {}
+        handoff = planificar(
+            graph_state["message"],
+            ProjectState.model_validate(graph_state["project_state"]),
+            HandoffContract.model_validate(graph_state["handoff"]),
+            self.catalog.route_index(),
+        )
+        return {"handoff": handoff.model_dump(mode="json")}
 
     @staticmethod
     def _after_orchestration(

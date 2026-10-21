@@ -22,6 +22,12 @@ const es = {
   sessionError: 'No se pudo comprobar tu sesión.', reload: 'Recarga la página.',
   requestError: 'No se pudo completar el acceso. Inténtalo de nuevo.',
   tooManyAttempts: 'Demasiados intentos. Espera un minuto y vuelve a intentarlo.',
+  inviteCode: 'Código de invitación', inviteHint: 'Pídeselo a quien administra este Hilo.',
+  missingInvite: 'Escribe el código de invitación.',
+  // Estos dos son los mensajes del servidor, tal cual, para poder traducirlos.
+  registrationClosed: 'Desde internet solo se puede crear una cuenta con un código de invitación.',
+  wrongInvite: 'El código de invitación no es correcto.',
+  remoteNote: 'Hilo corre en el computador de quien lo administra: tus datos se guardan allí, no en este equipo.',
 };
 export type AuthTextKey = keyof typeof es;
 const en: Record<AuthTextKey, string> = {
@@ -46,6 +52,11 @@ const en: Record<AuthTextKey, string> = {
   sessionError: 'Unable to check your session.', reload: 'Reload the page.',
   requestError: 'Unable to complete sign-in. Please try again.',
   tooManyAttempts: 'Too many attempts. Wait a minute and try again.',
+  inviteCode: 'Invitation code', inviteHint: 'Ask the person who runs this Hilo.',
+  missingInvite: 'Enter the invitation code.',
+  registrationClosed: 'From the internet, an account can only be created with an invitation code.',
+  wrongInvite: 'The invitation code is not correct.',
+  remoteNote: 'Hilo runs on its administrator\'s computer: your data is stored there, not on this device.',
 };
 
 export function authText(language: AuthLanguage, key: AuthTextKey): string {

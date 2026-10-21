@@ -187,7 +187,7 @@ def test_stream_uses_real_graph_events_and_restores_memory_after_reopening(setti
         response = client.post("/api/chat", json={"notebook_id": "tesis", "message": "PESTEL"})
         received = events(response)
         started_nodes = [e["node"] for e in received if e.get("status") == "started"]
-        assert started_nodes == ["orchestrate", "guide", "verify", "finalize"]
+        assert started_nodes == ["orchestrate", "plan", "guide", "verify", "finalize"]
         assert received[-1]["type"] == "result"
         assert received[-1]["result"]["verification"]["verdict"] == "approved"
         assert not any("candidate" in e for e in received)
@@ -219,34 +219,82 @@ def test_second_turn_does_not_receive_the_previous_turn_verdict(settings):
     assert feedback == [None, None]
 
 
-def test_busy_model_rejects_a_second_generation_and_releases_the_lock(settings):
+def test_busy_project_rejects_a_second_generation_but_other_projects_continue(settings):
     entered = threading.Event()
     release = threading.Event()
+    calls = []
 
     class SlowRuntime(FakeRuntime):
         def orchestrate(self, *args):
-            entered.set()
-            assert release.wait(timeout=5)
+            calls.append(None)
+            if len(calls) == 1:  # solo el primer turno queda esperando
+                entered.set()
+                assert release.wait(timeout=5)
             return super().orchestrate(*args)
 
-    with TestClient(app(settings, lambda _: SlowRuntime([Verdict.APPROVED]))) as client:
+    settings = replace(settings, parallel=2)
+    with TestClient(app(settings, lambda _: SlowRuntime([Verdict.APPROVED] * 2))) as client:
         with ThreadPoolExecutor(max_workers=1) as executor:
             first = executor.submit(
                 client.post, "/api/chat", json={"notebook_id": "a", "message": "PESTEL"}
             )
             try:
                 assert entered.wait(timeout=5)
+                assert client.get("/api/status", params={"project": "a"}).json()["busy"]
+                assert not client.get("/api/status", params={"project": "b"}).json()["busy"]
                 second = client.post(
-                    "/api/chat", json={"notebook_id": "b", "message": "PESTEL"}
+                    "/api/chat", json={"notebook_id": "a", "message": "PESTEL"}
                 )
                 assert second.status_code == 409
                 assert client.put("/api/notebooks/a/profile", json={
                     "context": {"question": "Nuevo reto"}, "color": "green",
                 }).status_code == 409
+                # Otra persona, en otro proyecto, no espera a la primera.
+                other = client.post(
+                    "/api/chat", json={"notebook_id": "b", "message": "PESTEL"}
+                )
+                assert events(other)[-1]["type"] == "result"
             finally:
                 release.set()
             assert events(first.result(timeout=5))[-1]["type"] == "result"
-        assert client.get("/api/status").json()["busy"] is False
+        status = client.get("/api/status").json()
+        assert status["busy"] is False
+        assert status["queue"] == {"slots": 2, "active": 0, "waiting": 0}
+
+
+def test_full_model_queues_the_next_turn_and_reports_its_place(settings):
+    entered = threading.Event()
+    release = threading.Event()
+    calls = []
+
+    class SlowRuntime(FakeRuntime):
+        def orchestrate(self, *args):
+            calls.append(None)
+            if len(calls) == 1:
+                entered.set()
+                assert release.wait(timeout=5)
+            return super().orchestrate(*args)
+
+    settings = replace(settings, parallel=1)
+    with TestClient(app(settings, lambda _: SlowRuntime([Verdict.APPROVED] * 2))) as client:
+        with ThreadPoolExecutor(max_workers=2) as executor:
+            first = executor.submit(
+                client.post, "/api/chat", json={"notebook_id": "a", "message": "PESTEL"}
+            )
+            assert entered.wait(timeout=5)
+            second = executor.submit(
+                client.post, "/api/chat", json={"notebook_id": "b", "message": "PESTEL"}
+            )
+            for _ in range(100):
+                if client.get("/api/status").json()["queue"]["waiting"] == 1:
+                    break
+                threading.Event().wait(0.02)
+            assert client.get("/api/status").json()["queue"]["waiting"] == 1
+            release.set()
+            assert events(first.result(timeout=5))[-1]["type"] == "result"
+            queued = events(second.result(timeout=5))
+        assert queued[0] == {"type": "queue", "ahead": 1}
+        assert queued[-1]["type"] == "result"
 
 
 def test_errors_and_status_do_not_expose_api_keys(settings):

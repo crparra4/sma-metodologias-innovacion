@@ -126,6 +126,20 @@ Al abrir un proyecto puedes enviar mensajes, ver agentes activos y reintentos, r
 y consultar la ficha y memoria guardada. Los detalles están
 en [interfaz-local.md](docs/interfaz-local.md).
 
+### Entrar desde otro computador (Linux)
+
+```bash
+# Abre un túnel de Cloudflare y muestra la dirección https y un código de invitación.
+# Ctrl+C lo cierra; Hilo sigue funcionando en este computador.
+bash scripts/abrir_tunel.sh
+```
+
+Necesita `cloudflared`; no pide cuenta de Cloudflare. Hilo y Qwen siguen corriendo en este equipo,
+que debe quedar encendido y sin suspenderse. La dirección cambia cada vez que se abre el túnel.
+Desde afuera se inicia sesión con las cuentas de siempre; para crear una cuenta nueva hace falta el
+código que muestra el script, distinto en cada apertura. Sin túnel, Hilo solo acepta conexiones
+desde este computador.
+
 ## Estado del conocimiento importado
 
 El beta aporta 15 fichas utilizables. La ruta declaraba más herramientas sin ficha; esas opciones

@@ -1,12 +1,12 @@
 from __future__ import annotations
 
 import asyncio
+import hmac
 import json
 import logging
 import os
 import re
 import sqlite3
-import threading
 import time
 from contextlib import closing
 from contextvars import ContextVar
@@ -33,9 +33,11 @@ from .auth import (
     User,
     avatar_type,
 )
+from .cliente_simulado import AVISO as AVISO_PRACTICA
+from .cliente_simulado import responder as responder_cliente
+from .cliente_simulado import retroalimentacion, revisar_pregunta
 from .config import PROJECT_ROOT, Settings
 from .contracts import NotebookColor, ProjectContext, ProjectState, TurnResult
-from .direct_runtime import DirectOpenAIRuntime
 from .empathy_map import EmpathyMapUpdate
 from .empathy_map import context_lines as empathy_context
 from .journey import JourneyUpdate
@@ -58,6 +60,8 @@ from .tree_diagnosis import (
     rule_findings,
     summary_text,
 )
+from .turnos import ModelQueue, ProjectLocks
+from .variantes import VARIANTES
 from .why_analysis import TOOL_ID as WHY_TOOL_ID
 from .why_analysis import WhyClose, WhyStart, WhyUpdate, context_text
 
@@ -68,7 +72,18 @@ MAX_BODY_BYTES = 1024 * 1024
 ACCESS_ATTEMPTS_PER_MINUTE = 20
 LOGIN_ATTEMPTS_PER_MINUTE = 5
 TOO_MANY_ATTEMPTS = "Demasiados intentos. Espera un minuto y vuelve a intentarlo."
+# Direcciones con las que se entra desde este mismo computador. Cualquier otra llega por un
+# túnel (scripts/abrir_tunel.sh) y para crear cuenta necesita el código de invitación.
+LOCAL_HOSTS = {"localhost", "127.0.0.1", "::1", "testserver"}
+REGISTRATION_CLOSED = "Desde internet solo se puede crear una cuenta con un código de invitación."
+WRONG_INVITE_CODE = "El código de invitación no es correcto."
 BODY_TOO_LARGE = "La solicitud es demasiado grande."
+# Espera máxima en la fila del modelo. El chat avisa su lugar mientras tanto; las lecturas de
+# notas y el diagnóstico del árbol responden sin esperar tanto porque la petición queda abierta
+# (el túnel de Cloudflare corta a los 100 s sin respuesta).
+MODEL_WAIT_CHAT = 300.0
+MODEL_WAIT_SHORT = 45.0
+QUEUE_HEARTBEAT = 20.0
 
 
 def restrict_data_dir(path: Path) -> None:
@@ -145,6 +160,14 @@ class CreateNotebookRequest(NotebookRequest):
         return value
 
 
+class PracticaRequest(BaseModel):
+    persona: str = Field(min_length=10, max_length=600)
+
+
+class PracticaMensaje(BaseModel):
+    texto: str = Field(min_length=2, max_length=600)
+
+
 class ProfileRequest(BaseModel):
     context: ProjectContext
     color: NotebookColor
@@ -155,6 +178,7 @@ class RegisterRequest(BaseModel):
     display_name: str = Field(min_length=1, max_length=60)
     password: str = Field(min_length=10, max_length=128)
     confirm_password: str
+    invite_code: str = Field(default="", max_length=64)
 
 
 class LoginRequest(BaseModel):
@@ -239,6 +263,25 @@ def _checkpointer(connection: sqlite3.Connection) -> SqliteSaver:
     return SqliteSaver(connection, serde=JsonPlusSerializer(allowed_msgpack_modules=[]))
 
 
+AGENTES = {"orchestrator": "Orquestador", "methodologist": "Metodólogo",
+           "verifier": "Verificador", "interpreter": "Intérprete"}
+
+
+def consumo_por_agente(calls: list[dict]) -> list[dict]:
+    """Tokens que leyó y escribió cada agente en el turno (los pasos en código no gastan)."""
+    total: dict[str, dict] = {}
+    for call in calls:
+        uso = call.get("usage") or {}
+        fila = total.setdefault(call["role"], {
+            "agente": AGENTES.get(call["role"], call["role"]),
+            "llamadas": 0, "leidos": 0, "escritos": 0,
+        })
+        fila["llamadas"] += 1
+        fila["leidos"] += uso.get("prompt_tokens") or 0
+        fila["escritos"] += uso.get("completion_tokens") or 0
+    return list(total.values())
+
+
 def _close_runtime(runtime) -> None:
     client = getattr(runtime, "client", None)
     if client is not None:
@@ -247,12 +290,19 @@ def _close_runtime(runtime) -> None:
 
 def create_app(
     settings: Settings | None = None,
-    runtime_factory=DirectOpenAIRuntime,
+    runtime_factory=None,
     model_probe=model_available,
     frontend_path: Path | None = None,
     require_auth: bool = True,
 ) -> FastAPI:
     settings = settings or Settings.from_env()
+    if runtime_factory is None:
+        if settings.variant not in VARIANTES:
+            raise ValueError(
+                f"RUTA_DIA_VARIANTE debe ser una de {', '.join(VARIANTES)}; "
+                f"llegó «{settings.variant}»."
+            )
+        runtime_factory = VARIANTES[settings.variant]
     endpoint = urlparse(settings.base_url or "")
     if endpoint.hostname not in {"127.0.0.1", "localhost", "::1"}:
         raise ValueError("La interfaz requiere RUTA_DIA_BASE_URL apuntando al modelo local.")
@@ -261,11 +311,16 @@ def create_app(
     settings.checkpoint_path.parent.mkdir(parents=True, exist_ok=True)
     restrict_data_dir(settings.memory_path.parent)
     app = FastAPI(title="Ruta DIA local", docs_url=None, redoc_url=None)
-    app.add_middleware(
-        TrustedHostMiddleware, allowed_hosts=["localhost", "127.0.0.1", "testserver"]
-    )
+    # El túnel agrega su dominio (p. ej. `*.trycloudflare.com`); sin él solo se entra en local.
+    public_hosts = [host.strip() for host in os.getenv("HILO_HOSTS_PUBLICOS", "").split(",")
+                    if host.strip()]
+    invite_code = os.getenv("HILO_CODIGO_INVITACION", "").strip()
+    app.add_middleware(TrustedHostMiddleware, allowed_hosts=[*LOCAL_HOSTS, *public_hosts])
     app.add_middleware(BodyLimitMiddleware)
-    generation_lock = threading.Lock()
+    # Varias personas a la vez: el modelo atiende `parallel` respuestas juntas y pone las demás
+    # en fila; cada proyecto genera una sola respuesta a la vez.
+    model_queue = ModelQueue(settings.parallel)
+    project_locks = ProjectLocks()
     app.state.jobs = set()
     auth = AuthStore(settings.memory_path.parent / "auth.sqlite3")
     sharing = SharingStore(settings.memory_path.parent / "auth.sqlite3")
@@ -422,11 +477,26 @@ def create_app(
     def origin_key(request: Request) -> str:
         return request.client.host if request.client else "local"
 
+    def remote(request: Request) -> bool:
+        return (request.url.hostname or "") not in LOCAL_HOSTS
+
+    @app.get("/api/auth/registration")
+    def registration(request: Request):
+        # La pantalla de acceso pregunta si debe pedir el código antes de mostrar el formulario.
+        outside = remote(request)
+        return {"invite_code": outside and bool(invite_code), "closed": outside and not invite_code}
+
     @app.post("/api/auth/register", status_code=201)
     def register(body: RegisterRequest, request: Request):
         if body.password != body.confirm_password:
             raise HTTPException(400, "Las contraseñas no coinciden.")
         throttle(access_attempts, origin_key(request))
+        if remote(request):
+            if not invite_code:
+                raise HTTPException(403, REGISTRATION_CLOSED)
+            if not hmac.compare_digest(body.invite_code.strip().upper().encode(),
+                                       invite_code.upper().encode()):
+                raise HTTPException(403, WRONG_INVITE_CODE)
         user = auth.register(body.username, body.display_name, body.password)
         auth.logout(request.cookies.get(COOKIE_NAME))
         response = JSONResponse(user.public(), status_code=201)
@@ -536,13 +606,16 @@ def create_app(
         return response
 
     @app.get("/api/status")
-    def status():
+    def status(project: str | None = None):
         return {
             "app_id": "ruta-dia-local",
             "model": settings.model,
             "available": model_probe(settings),
-            "busy": generation_lock.locked(),
+            # Ocupado es por proyecto: otra persona en otro proyecto no bloquea a nadie.
+            "busy": project_locks.busy(project) if project else project_locks.any_busy(),
+            "queue": model_queue.snapshot(),
             "runtime": "LangGraph",
+            "variant": settings.variant,
             "memory": "SQLite local",
         }
 
@@ -724,20 +797,20 @@ def create_app(
 
     @app.put("/api/notebooks/{notebook_id}/profile")
     def update_profile(notebook_id: str, body: ProfileRequest):
-        if not generation_lock.acquire(blocking=False):
+        access = project_access(notebook_id)
+        require_owner(access)
+        if not project_locks.acquire(access["project_id"]):
             raise HTTPException(
                 409, "Espera a que termine la respuesta antes de editar el proyecto."
             )
         try:
-            access = project_access(notebook_id)
-            require_owner(access)
             with NotebookMemory(project_memory_path(access)) as memory:
                 state = memory.update_profile(access["notebook_id"], body.context, body.color)
                 if state is None:
                     raise HTTPException(404, "El cuaderno no existe.")
                 return state.model_dump(mode="json")
         finally:
-            generation_lock.release()
+            project_locks.release(access["project_id"])
 
     @app.get("/api/notebooks/{notebook_id}")
     def get_notebook(notebook_id: str, request: Request):
@@ -806,11 +879,11 @@ def create_app(
 
     @app.delete("/api/notebooks/{notebook_id}")
     def delete_notebook(notebook_id: str):
-        if not generation_lock.acquire(blocking=False):
+        access = project_access(notebook_id)
+        require_owner(access)
+        if not project_locks.acquire(access["project_id"]):
             raise HTTPException(409, "Espera a que termine la respuesta antes de eliminar memoria.")
         try:
-            access = project_access(notebook_id)
-            require_owner(access)
             with NotebookMemory(project_memory_path(access)) as memory:
                 memory.delete(access["notebook_id"])
             with closing(sqlite3.connect(
@@ -821,7 +894,7 @@ def create_app(
                 sharing.delete_project(access["project_id"])
             return {"deleted": access["notebook_id"]}
         finally:
-            generation_lock.release()
+            project_locks.release(access["project_id"])
 
     @app.get("/api/sharing/invitations")
     def list_invitations(request: Request):
@@ -900,7 +973,7 @@ def create_app(
         proposals: list[dict] = []
         discarded = 0
         started = time.perf_counter()
-        if not generation_lock.acquire(blocking=False):
+        if not model_queue.acquire(timeout=MODEL_WAIT_SHORT):
             model_status = "ocupado"
         else:
             try:
@@ -918,12 +991,76 @@ def create_app(
                 logger.exception("Fallo al leer notas para el recorrido")
                 model_status = "no_disponible"
             finally:
-                generation_lock.release()
+                model_queue.release()
         return {
             "proposals": proposals,
             "model_status": model_status,
             "discarded": discarded,
             "elapsed_ms": round((time.perf_counter() - started) * 1000),
+        }
+
+    # ---------------------------------------------------- práctica con el cliente simulado
+
+    def _practica(access: dict, practica_id: str, request: Request, memory) -> dict:
+        user = request.state.user
+        practica = memory.practica(access["notebook_id"], practica_id, user.id if user else "")
+        if practica is None:
+            raise HTTPException(404, "La práctica no existe.")
+        return practica
+
+    @app.post("/api/projects/{project_id}/practicas", status_code=201)
+    def crear_practica(project_id: str, body: PracticaRequest, request: Request):
+        access = project_access(project_id)
+        require_edit(access)
+        user = request.state.user
+        with NotebookMemory(project_memory_path(access)) as memory:
+            require_notebook(memory, access["notebook_id"])
+            practica = memory.crear_practica(
+                access["notebook_id"], body.persona.strip(), user.id if user else "")
+        return {**practica, "aviso": AVISO_PRACTICA}
+
+    @app.get("/api/projects/{project_id}/practicas/{practica_id}")
+    def ver_practica(project_id: str, practica_id: str, request: Request):
+        access = project_access(project_id)
+        with NotebookMemory(project_memory_path(access)) as memory:
+            practica = _practica(access, practica_id, request, memory)
+        preguntas = [t["texto"] for t in practica["turnos"] if t["rol"] == "entrevistador"]
+        return {**practica, "retro": retroalimentacion(preguntas), "aviso": AVISO_PRACTICA}
+
+    @app.post("/api/projects/{project_id}/practicas/{practica_id}/mensajes")
+    def hablar_con_cliente(project_id: str, practica_id: str, body: PracticaMensaje,
+                           request: Request):
+        access = project_access(project_id)
+        require_edit(access)
+        with NotebookMemory(project_memory_path(access)) as memory:
+            practica = _practica(access, practica_id, request, memory)
+            reto = memory.load(ProjectState(notebook_id=access["notebook_id"])).context.question
+        if not model_queue.acquire(timeout=MODEL_WAIT_SHORT):
+            raise HTTPException(503, "Hilo está atendiendo a muchas personas; intenta de nuevo.")
+        runtime = None
+        try:
+            runtime = runtime_factory(settings)
+            respuesta = responder_cliente(
+                runtime.client, settings.model, practica["persona"], reto,
+                practica["turnos"], body.texto.strip(),
+            )
+        except Exception:
+            logger.exception("Fallo del cliente simulado")
+            raise HTTPException(503, "El cliente simulado no pudo responder.") from None
+        finally:
+            if runtime is not None:
+                _close_runtime(runtime)
+            model_queue.release()
+        with NotebookMemory(project_memory_path(access)) as memory:
+            memory.agregar_turnos_practica(practica_id, body.texto.strip(), respuesta)
+        reglas = revisar_pregunta(body.texto)
+        return {
+            "respuesta": respuesta,
+            "revision": {
+                "bien": [r.nombre for r in reglas if r.buena],
+                "evitar": [{"nombre": r.nombre, "cita": r.cita} for r in reglas if not r.buena],
+            },
+            "aviso": AVISO_PRACTICA,
         }
 
     @app.get("/api/projects/{project_id}/empathy-map")
@@ -954,7 +1091,7 @@ def create_app(
         findings = rule_findings(tree)
         discarded = 0
         started = time.perf_counter()
-        if not generation_lock.acquire(blocking=False):
+        if not model_queue.acquire(timeout=MODEL_WAIT_SHORT):
             model_status = "ocupado"
         else:
             try:
@@ -970,7 +1107,7 @@ def create_app(
                 logger.exception("Fallo en el diagnóstico de contenido del árbol")
                 model_status = "no_disponible"
             finally:
-                generation_lock.release()
+                model_queue.release()
         sharing.save_tree_diagnosis(
             access["project_id"], tree["version"],
             summary_text(findings, tree, tree["version"], model_status),
@@ -988,7 +1125,7 @@ def create_app(
         require_edit(access)
         if not request.state.user:
             raise HTTPException(401, "Inicia sesión para trabajar el análisis.")
-        if generation_lock.locked():
+        if project_locks.busy(access["project_id"]):
             raise HTTPException(409, "Espera a que Hilo termine de responder.")
         return access
 
@@ -1097,8 +1234,11 @@ def create_app(
     async def chat(body: ChatRequest, request: Request):
         access = project_access(body.project_id or body.notebook_id)
         user = request.state.user
-        if not generation_lock.acquire(blocking=False):
-            raise HTTPException(409, "El modelo está respondiendo. Espera y vuelve a enviar.")
+        project_id = access["project_id"]
+        if not project_locks.acquire(project_id):
+            raise HTTPException(
+                409, "Hilo está respondiendo en este proyecto. Espera y vuelve a enviar."
+            )
         queue: asyncio.Queue = asyncio.Queue()
         loop = asyncio.get_running_loop()
         resolved_checkpoint_path = (
@@ -1119,7 +1259,20 @@ def create_app(
         def generate():
             runtime = None
             started = time.monotonic()
+            admitted = False
             try:
+                # Si el modelo está lleno, la persona ve su lugar en la fila mientras espera.
+                admitted = model_queue.acquire(
+                    timeout=MODEL_WAIT_CHAT,
+                    on_wait=lambda ahead: emit({"type": "queue", "ahead": ahead}),
+                    heartbeat=QUEUE_HEARTBEAT,
+                )
+                if not admitted:
+                    emit({"type": "error", "message": (
+                        "Hay muchas personas usando Hilo en este momento. "
+                        "Vuelve a enviar el mensaje en un momento."
+                    )})
+                    return
                 with NotebookMemory(project_memory_path(access)) as memory, closing(sqlite3.connect(
                     resolved_checkpoint_path, check_same_thread=False
                 )) as connection:
@@ -1193,6 +1346,7 @@ def create_app(
                                 )
                             event["state"] = next_state.model_dump(mode="json")
                             event["elapsed_ms"] = round((time.monotonic() - started) * 1000)
+                            event["consumo"] = consumo_por_agente(getattr(runtime, "calls", []))
                         emit(event)
             except Exception:
                 logger.exception("Fallo en un turno de la interfaz local")
@@ -1208,7 +1362,9 @@ def create_app(
                     if runtime is not None:
                         _close_runtime(runtime)
                 finally:
-                    generation_lock.release()
+                    if admitted:
+                        model_queue.release()
+                    project_locks.release(project_id)
                     emit(None)
 
         # El trabajo continúa y guarda su resultado aunque el navegador se cierre o recargue.

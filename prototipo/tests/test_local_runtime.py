@@ -240,3 +240,28 @@ def test_stop_forgets_a_process_that_is_no_longer_the_same(tmp_path, monkeypatch
     monkeypatch.setattr(interface, "process_identity", lambda pid: dict(saved))
     interface.stop(8787)
     assert stopped == [4242] and not record.exists()
+
+
+
+@pytest.mark.skipif(sys.platform == "win32", reason="la espera es de la rama de Linux")
+def test_stop_process_waits_until_the_process_is_gone():
+    import os
+    import subprocess
+    import time
+
+    # Como la interfaz: un proceso que no es hijo de quien lo detiene y que tarda medio
+    # segundo en cerrarse, igual que uvicorn al apagarse con calma.
+    slow = ("import signal, time; "
+            "signal.signal(signal.SIGTERM, lambda *_: (time.sleep(0.5), exit(0))); "
+            "time.sleep(30)")
+    launcher = subprocess.run(
+        ["sh", "-c", f'"{sys.executable}" -c "{slow}" >/dev/null 2>&1 & echo $!'],
+        capture_output=True, text=True, check=True,
+    )
+    pid = int(launcher.stdout)
+    time.sleep(0.3)
+    started = time.monotonic()
+    local_runtime.stop_process(pid)
+    assert time.monotonic() - started >= 0.4
+    with pytest.raises(ProcessLookupError):
+        os.kill(pid, 0)
