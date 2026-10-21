@@ -166,3 +166,9 @@ def test_a_chat_turn_with_the_local_model_off_is_answered_and_recorded_as_claude
         cuaderno = client.get("/api/notebooks/tienda").json()
     assert cuaderno["turns"][-1]["metadata"]["modelo"] == "claude"
     assert Gasto(settings.claude_gasto_path, 1.0).total > 0
+
+
+def test_only_the_capable_model_gets_the_conversational_style(settings):
+    claude = ClaudeFalso(json.dumps({"message": "¿Qué más?"}))
+    con_claude = Respaldo(settings, cliente=claude).runtime(PlanificadorConControles, settings)
+    assert con_claude.estilo_natural and not PlanificadorConControles(settings).estilo_natural

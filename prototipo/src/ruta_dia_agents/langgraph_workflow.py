@@ -497,7 +497,9 @@ class LangGraphRutaDia:
         steps = self.catalog.card_section(handoff.active_tool, "how") if handoff.active_tool else ""
         message = SAFE_DEGRADATION
         verification = VerificationResult.model_validate(graph_state["verification"])
-        if por_plan := salida_con_plan(getattr(self.runtime, "plan", None)):
+        ficha = graph_state.get("tool_card") or (
+            self.catalog.prompt_card(handoff.active_tool) if handoff.active_tool else "")
+        if por_plan := salida_con_plan(getattr(self.runtime, "plan", None), ficha):
             # Con Planificador, la salida segura sigue el plan del turno (parte que toca y su
             # definición literal) en lugar de pegar el paso a paso de la ficha.
             message = "\n\n".join([*self._opening(graph_state, handoff), por_plan])

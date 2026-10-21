@@ -896,8 +896,25 @@ def grounded_verdict(assessment, candidate, handoff, tool_card, message, state=N
     )
 
 
+_ESTILO_ESTRICTO = (
+    "- Formula tú UNA pregunta concreta al usuario y espera su respuesta. "
+    "No le pidas que te pregunte."
+)
+_ESTILO_NATURAL = """\
+- Habla como una facilitadora cercana, en 2 o 3 frases cortas: primero reconoce en una frase
+  lo que la persona acaba de aportar, con sus palabras (sin halagos vacíos como «¡Excelente!»);
+  si ayuda, agrega una sugerencia o un ejemplo breve que salga de la ficha o de lo que la persona
+  ya dijo («Te sugiero…», «Por ejemplo…»); y termina con UNA pregunta concreta. No le pidas que
+  te pregunte."""
+
+
 class ContractRuntime:
     """Prompts y contratos compartidos por las implementaciones de ejecución."""
+
+    # Estilo conversacional (reconocer lo dicho y sugerir, no solo preguntar). Solo con un modelo
+    # capaz: con el de 4B, en la demo del 21 oct 2026, inventaba al reflejar y alargaba el JSON
+    # hasta cortarlo. Lo activa `respaldo_claude.ConClaude`.
+    estilo_natural = False
 
     def __init__(self, settings: Settings):
         self.settings = settings
@@ -1096,7 +1113,7 @@ DATO DE ESTE MENSAJE QUE EL SISTEMA YA REGISTRÓ:
 {received}
 
 Reglas de acompañamiento:
-- Responde SOLO con la próxima acción de la ficha. No enumeres toda la metodología.
+- Avanza solo con la próxima acción de la ficha. No enumeres toda la metodología.
 - Lee el mensaje original: si el usuario ya dio el problema, ese paso está cumplido.
 - No pidas repetir información explícita. Si dice «mi reto es X», el paso de definir
   el reto ya está cumplido y debes avanzar a la siguiente acción de la ficha.
@@ -1106,7 +1123,7 @@ Reglas de acompañamiento:
   No presentes ninguno como hallazgo, causa demostrada o resultado confirmado.
 - El contexto inicial permanece separado de validated_fields. No lo copies a template_updates;
   estos campos requieren datos aportados en el mensaje actual y aprobación posterior.
-- Formula tú UNA pregunta concreta al usuario y espera su respuesta. No le pidas que te pregunte.
+{_ESTILO_NATURAL if self.estilo_natural else _ESTILO_ESTRICTO}
 - No sugieras una causa como cierta. Si la persona dice que no sabe, no repitas la pregunta:
   pregunta qué podría revisar o a quién preguntar para averiguarlo.
 - Pregunta por UNA sola parte de la ficha (un factor, un bloque, un lente) y llámala por su
@@ -1114,8 +1131,8 @@ Reglas de acompañamiento:
 - Si la ficha trae una plantilla («Creemos que [acción] logrará [resultado] para
   [usuario]»), cítala y pide completarla.
 - No repitas tu pregunta anterior ni digas que algo «ya está definido» si la persona no lo dijo.
-- Sin frases de relleno ni opiniones. No des consejo médico, legal ni financiero y no pidas
-  datos personales.
+- Cada frase debe aportar algo. No inventes datos, cifras ni causas, y no opines sobre si la
+  idea es buena o mala. No des consejo médico, legal ni financiero y no pidas datos personales.
 {starting}
 - No inventes causas, cifras, leyes, entrevistas, hipótesis confirmadas ni datos personales.
 - La frase next_step debe describir exactamente la misma acción que solicitas en message.

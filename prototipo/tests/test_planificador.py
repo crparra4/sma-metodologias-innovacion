@@ -20,8 +20,11 @@ from ruta_dia_agents.planificador import (
     NO_SABE,
     RESPONDIDA,
     _todas,
+    antes_de_la_pregunta,
     cierre,
+    consejo_de_la_ficha,
     es_duda,
+    partes_de,
     partes_repetidas,
     planear,
     salida_con_plan,
@@ -83,10 +86,13 @@ def test_when_every_part_is_done_the_plan_closes():
     plan = planear("pestel", {"en_curso": "priorizar", "partes": partes},
                    "Lo más relevante es lo legal y lo económico.")
     assert plan.intencion == "cerrar" and plan.objetivo is None
-    texto = cierre(plan, "PESTEL")
-    # Solo dice lo cierto (ya preguntó por cada parte); no da la ficha por completa.
-    assert texto.startswith("Ya te pregunté por cada parte de **PESTEL**.")
-    assert "recorrimos" not in texto and "anotaste" not in texto
+    texto = cierre(plan, "PESTEL", "Customer Journey Map")
+    # Solo dice lo cierto (ya pasó por cada parte); no da la ficha por completa.
+    assert texto.startswith("Ya pasamos por cada parte de **PESTEL**.")
+    assert "completaste" not in texto and "anotaste" not in texto
+    # y recomienda la herramienta que sigue en la ruta
+    assert "Te recomiendo seguir con **Customer Journey Map**" in texto
+    assert cierre(plan, "Lean Canvas").endswith("¿Quieres revisar alguna parte antes de seguir?")
 
 
 def test_a_tentative_answer_is_not_a_no_se():
@@ -209,3 +215,34 @@ def test_the_safe_exit_does_not_quote_the_same_part_twice():
     avance = {"en_curso": "causa_de_fondo", "partes": {}}
     plan = planear("arbol-problemas", avance, "¿Qué es una causa de fondo?", reto="x")
     assert salida_con_plan(plan).count("anida la respuesta") == 1
+
+
+def test_the_card_tip_for_a_part_is_quoted_literally():
+    tarjeta = KnowledgeCatalog(Settings.from_env().route_path).tool_card("arbol-problemas")
+    fondo = next(p for p in partes_de("arbol-problemas") if p.id == "causa_de_fondo")
+    assert consejo_de_la_ficha(fondo, tarjeta) == (
+        "Quedarse en la causa superficial lleva a soluciones superficiales.")
+    causas = next(p for p in partes_de("arbol-problemas") if p.id == "causas")
+    assert consejo_de_la_ficha(causas, tarjeta) == ""  # ese paso no trae consejo
+
+
+def test_text_goes_right_before_the_question():
+    assert antes_de_la_pregunta("Buen punto. ¿Y qué más?", "Un consejo.") == (
+        "Buen punto. Un consejo. ¿Y qué más?")
+    assert antes_de_la_pregunta("Anota las causas.", "Un consejo.") == (
+        "Anota las causas. Un consejo.")
+
+
+def test_a_tip_that_leans_on_the_previous_sentence_is_not_shown_alone():
+    tarjeta = KnowledgeCatalog(Settings.from_env().route_path).tool_card("arbol-problemas")
+    revision = next(p for p in partes_de("arbol-problemas") if p.id == "revision")
+    assert consejo_de_la_ficha(revision, tarjeta) == ""
+
+
+def test_the_safe_exit_also_brings_the_card_tip():
+    tarjeta = KnowledgeCatalog(Settings.from_env().route_path).tool_card("arbol-problemas")
+    avance = {"en_curso": "causas", "partes": {"causas": {"estado": "respondida", "texto": "x"}}}
+    plan = planear("arbol-problemas", avance, "Otra cosa más sobre esto.", reto="x")
+    assert plan.objetivo.id == "causa_de_fondo"
+    assert "Un consejo de la ficha: «Quedarse en la causa superficial" in salida_con_plan(
+        plan, tarjeta)

@@ -1360,3 +1360,22 @@ Al correrlo aparecieron fallas reales, corregidas con pruebas (484 pasan):
   («matriz de priorización» → `matriz-priorizacion`; antes quedaba al azar del modelo).
 Pendiente visto: con «Usuario objetivo: …» en el mapa de empatía, un campo validado quedó en
 `piensa_siente`; revisar `named_field_update` con las partes del Planificador.
+
+### Conversación más natural y con recomendaciones (21 oct 2026)
+
+Pedido del usuario: que Hilo no solo pregunte, que también sugiera y recomiende.
+- Probado primero con el modelo local (4B): pedirle reconocer lo dicho y sugerir lo hizo inventar
+  («El equipo de canales digitales planteó…») y alargar el JSON hasta cortarlo. Igual que con el
+  Intérprete: con el modelo pequeño, más tareas = menos fidelidad.
+- **Decisión (implementada):** estilo conversacional (reconocer con las palabras de la persona,
+  sugerir con ejemplos, una pregunta) solo con un modelo capaz: `ContractRuntime.estilo_natural`,
+  activado por `respaldo_claude.ConClaude`. Probado con Claude en 9 turnos (0,29 USD): natural y
+  sin inventar. Con el modelo local sigue la instrucción estricta, más lo que pone el código:
+  - el cierre de cada ficha recomienda la herramienta que sigue en la ruta (`planificador.cierre`);
+  - el consejo literal que la ficha da en el paso de la parte nueva (`consejo_de_la_ficha`; solo 2
+    de 82 partes traen uno: enriquecer las fichas con consejos es tarea para la persona experta);
+  - un «no sé» más amable.
+- La salida segura toma la ficha del catálogo si el grafo no la trae.
+- En la VPS, `~/hilo/.env.hilo` tenía finales de línea de Windows (venía del `.env` del disco
+  compartido): systemd los tolera, `source` en bash no. Se limpiaron.
+490 pruebas pasan.

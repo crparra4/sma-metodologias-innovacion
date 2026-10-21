@@ -119,6 +119,7 @@ class ConClaude:
     """Mezcla para cualquier runtime de `variantes.py`: Claude atiende la llamada al modelo."""
 
     claude = None  # cliente de la API (`anthropic.Anthropic`); lo pone `Respaldo.runtime`
+    estilo_natural = True  # un modelo capaz reconoce lo dicho y sugiere sin inventar
     gasto: Gasto
 
     def modelo_de(self, role: str) -> str:

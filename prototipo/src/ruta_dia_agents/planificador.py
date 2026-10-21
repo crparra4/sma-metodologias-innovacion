@@ -164,7 +164,7 @@ def _definicion_para(duda: str, partes: tuple[Parte, ...], en_curso: Parte | Non
     return en_curso
 
 
-def salida_con_plan(plan: Plan | None) -> str | None:
+def salida_con_plan(plan: Plan | None, tool_card: str = "") -> str | None:
     """Salida segura cuando el modelo no logró una pregunta que pasara la verificación.
 
     En vez de pegar el paso a paso de la ficha, pregunta por la parte que decidió el
@@ -178,6 +178,8 @@ def salida_con_plan(plan: Plan | None) -> str | None:
     else:
         partes.append(f"Sigamos con **{plan.objetivo.nombre}**. La ficha lo explica así: "
                       f"{_cita(plan.objetivo)}")
+    if tool_card and (consejo := consejo_de_la_ficha(plan.objetivo, tool_card)):
+        partes.append(f"Un consejo de la ficha: «{consejo}»")
     partes.append("¿Qué puedes contarme de eso en tu proyecto?")
     return "\n\n".join(partes)
 
@@ -219,7 +221,7 @@ def planear(tool_id: str, progreso: dict | None, mensaje: str, reto: str = "") -
         tentativa = len(_NO_SE.sub("", plano).split()) >= 6
         if _NO_SE.search(plano) and not tentativa:
             registro[en_curso.id] = {"estado": NO_SABE, "texto": ""}
-            nota = "Lo dejamos anotado como algo por averiguar."
+            nota = "Está bien no saberlo todavía: lo dejamos anotado como algo por averiguar."
         elif len(contenido.split()) >= 3 or tentativa:
             registro[en_curso.id] = {"estado": RESPONDIDA,
                                      "texto": (contenido or mensaje)[:LARGO_TEXTO]}
@@ -248,7 +250,7 @@ def planear(tool_id: str, progreso: dict | None, mensaje: str, reto: str = "") -
     )
 
 
-def bloque_para_metodologo(plan: Plan) -> str:
+def bloque_para_metodologo(plan: Plan, natural: bool = False) -> str:
     """Lo que el Metodólogo recibe: la parte que toca y lo que no debe volver a pedir."""
     objetivo = plan.objetivo
     lineas = [
@@ -263,25 +265,64 @@ def bloque_para_metodologo(plan: Plan) -> str:
         lineas.append("- La persona no lo sabe (no insistas): "
                       + ", ".join(p.nombre for p in plan.sin_saber))
     lineas.append(
+        "- En message: reconoce en una frase lo último que dijo la persona, con sus palabras; si "
+        "ayuda, sugiere un ejemplo breve; y termina con UNA pregunta concreta sobre "
+        f"«{objetivo.nombre}», en palabras sencillas. No preguntes por otras partes."
+        if natural else
         f"- En message haz UNA sola pregunta concreta sobre «{objetivo.nombre}», en palabras "
         "sencillas y partiendo de lo último que dijo la persona. No preguntes por otras partes."
     )
     return "\n".join(lineas)
 
 
-def cierre(plan: Plan, nombre_ficha: str) -> str:
-    """Respuesta fija cuando Hilo ya preguntó por cada parte.
+def cierre(plan: Plan, nombre_ficha: str, siguiente: str = "") -> str:
+    """Respuesta fija cuando Hilo ya preguntó por cada parte, con la recomendación de seguir.
 
-    Solo dice lo que es cierto: que ya se preguntó por cada parte. No afirma que la ficha esté
+    Solo dice lo que es cierto: que ya se pasó por cada parte. No afirma que la ficha esté
     completa ni resume lo anotado, porque el código no sabe si cada respuesta fue completa (en
     la evaluación exigente, un resumen así exponía partes a medias como terminadas).
+    `siguiente` es el nombre de la herramienta que sigue en la ruta.
     """
     pendientes = ", ".join(p.nombre for p in plan.sin_saber)
-    return (
-        f"Ya te pregunté por cada parte de **{nombre_ficha}**."
-        + (f" Quedaron por averiguar: {pendientes}." if pendientes else "")
-        + " ¿Hay alguna parte que quieras completar o revisar antes de pasar a la siguiente ficha?"
-    )
+    texto = f"Ya pasamos por cada parte de **{nombre_ficha}**."
+    if pendientes:
+        texto += (f" Te quedó por averiguar: {pendientes}. Te sugiero conseguir ese dato antes de "
+                  "usarlo para decidir.")
+    if siguiente:
+        return texto + (f" Te recomiendo seguir con **{siguiente}**, la herramienta que viene en "
+                        f"la ruta. ¿Quieres revisar alguna parte o pasamos a {siguiente}?")
+    return texto + " ¿Quieres revisar alguna parte antes de seguir?"
+
+
+def antes_de_la_pregunta(mensaje: str, texto: str) -> str:
+    """Pone `texto` justo antes de la última pregunta del mensaje (o al final si no hay)."""
+    frases = re.split(r"(?<=[.!?»])\s+", mensaje.strip())
+    for i in range(len(frases) - 1, -1, -1):
+        if "?" in frases[i]:
+            return " ".join([*frases[:i], texto, *frases[i:]])
+    return f"{mensaje.strip()} {texto}"
+
+
+def consejo_de_la_ficha(parte: Parte, tool_card: str) -> str:
+    """El consejo que la ficha da en el mismo paso que define la parte, si lo trae.
+
+    «Baja a la causa de fondo: … Quedarse en la causa superficial lleva a soluciones
+    superficiales.» → lo que sigue a la definición. Sale literal de la ficha: no se inventa.
+    """
+    plano = " ".join(tool_card.replace("**", "").split())
+    definicion = " ".join(parte.definicion.replace("**", "").split())
+    inicio = plano.find(definicion)
+    if inicio < 0:
+        return ""
+    resto = plano[inicio + len(definicion):]
+    resto = re.split(r"\s\d+\.\s|\s#{1,6}\s|\s[-*]\s", resto, maxsplit=1)[0].strip()
+    if len(resto.split()) < 6:
+        return ""
+    # «Si una tarjeta no pasa esa lectura…» depende de la frase anterior: sola no se entiende.
+    if re.search(r"\b(esa|ese|eso|esta|este|esto|esas|esos|estas|estos)\b",
+                 _plano(" ".join(resto.split()[:6]))):
+        return ""
+    return resto
 
 
 def _recorte(texto: str, largo: int = 90) -> str:

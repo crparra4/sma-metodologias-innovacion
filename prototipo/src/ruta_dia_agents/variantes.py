@@ -49,9 +49,12 @@ from .contracts import (
     VerificationResult,
 )
 from .direct_runtime import DirectOpenAIRuntime
+from .knowledge import KnowledgeCatalog
 from .planificador import (
+    antes_de_la_pregunta,
     bloque_para_metodologo,
     cierre,
+    consejo_de_la_ficha,
     es_duda,
     partes_de,
     partes_repetidas,
@@ -305,7 +308,8 @@ class _ConPlanificador:
             titulo = re.search(r"^#\s+(.+)$", tool_card, re.MULTILINE)
             secciones = re.findall(r"^#{1,6}\s+(.+)$", tool_card, re.MULTILINE)
             return CandidateResponse(
-                message=cierre(plan, titulo.group(1).strip() if titulo else handoff.active_tool),
+                message=cierre(plan, titulo.group(1).strip() if titulo else handoff.active_tool,
+                               self._siguiente_ficha(handoff.active_tool)),
                 tool_id=handoff.active_tool,
                 next_step="Revisar una parte o pasar a la siguiente ficha",
                 source_sections=[secciones[0].strip()] if secciones else [],
@@ -314,14 +318,36 @@ class _ConPlanificador:
                                   allowed_fields)
         # Textos del código (aclaración literal de la ficha, nota de «no sabe») antes de la
         # pregunta; se unen después del filtro de relleno de `guide`, que los borraría.
+        mensaje = candidate.message
+        anterior = (state.progreso.get(handoff.active_tool) or {}).get("en_curso")
+        # Al llegar a una parte nueva, el consejo que la ficha da en ese paso (literal).
+        if (plan.intencion == "preguntar" and plan.objetivo.id != anterior
+                and (consejo := consejo_de_la_ficha(plan.objetivo, tool_card))):
+            mensaje = antes_de_la_pregunta(mensaje, f"Un consejo de la ficha: «{consejo}»")
         previo = " ".join(texto for texto in (plan.aclaracion, plan.nota) if texto)
-        if not previo:
+        if previo:
+            mensaje = f"{previo}\n\n{mensaje}"
+        if mensaje == candidate.message:
             return candidate
-        return candidate.model_copy(update={"message": f"{previo}\n\n{candidate.message}"})
+        return candidate.model_copy(update={"message": mensaje})
+
+    def _siguiente_ficha(self, tool_id: str) -> str:
+        """Nombre de la herramienta que sigue en la ruta (misma etapa o la siguiente)."""
+        if not hasattr(self, "_orden_ruta"):
+            ruta = KnowledgeCatalog(self.settings.route_path).route
+            nombres = {tool.id: tool.name for tool in ruta.tools}
+            self._orden_ruta = [(t, nombres.get(t, t)) for etapa in ruta.stages
+                                for t in etapa.tools]
+        ids = [t for t, _ in self._orden_ruta]
+        if tool_id not in ids:
+            return ""
+        siguientes = self._orden_ruta[ids.index(tool_id) + 1:]
+        return siguientes[0][1] if siguientes else ""
 
     def _run(self, agent, description, output_model):
         if str(agent) == self.methodologist and self.plan is not None and self.plan.objetivo:
-            description = f"{description}\n\n{bloque_para_metodologo(self.plan)}"
+            plan = bloque_para_metodologo(self.plan, self.estilo_natural)
+            description = f"{description}\n\n{plan}"
         return super()._run(agent, description, output_model)
 
     def verify(self, candidate, handoff, tool_card, *, message="", state=None):
