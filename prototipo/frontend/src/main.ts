@@ -55,7 +55,7 @@ let noteSource = '';
 let noteSaving = false;
 let selectedExcerpt = '';
 type Graph = { nodes: string[]; edges: { source: string; target: string; conditional: boolean }[] };
-type StreamEvent = { type: string; node?: string; status?: string; attempt?: number; duration_ms?: number; state?: State; handoff?: Result['handoff']; verification?: Verification; result?: Result; elapsed_ms?: number; source_sections?: string[]; message?: string; ahead?: number; consumo?: { agente: string; llamadas: number; leidos: number; escritos: number }[] };
+type StreamEvent = { type: string; node?: string; status?: string; attempt?: number; duration_ms?: number; state?: State; handoff?: Result['handoff']; verification?: Verification; result?: Result; elapsed_ms?: number; source_sections?: string[]; message?: string; ahead?: number; consumo?: { agente: string; llamadas: number; leidos: number; escritos: number; modelo?: string }[] };
 const el = <T extends HTMLElement = HTMLElement>(id: string) => document.getElementById(id) as T;
 const icon = (name: string) => `<svg class="icon" aria-hidden="true"><use href="#i-${name}"/></svg>`;
 const safeMarkdown = (text: string) => DOMPurify.sanitize(marked.parse(text, { async: false }) as string);
@@ -800,13 +800,21 @@ function buildGraph() {
 }
 
 // Tokens que leyó y escribió cada agente en el último turno (los pasos en código no gastan).
+// Con el respaldo, el agente lo atiende Claude: «claude-opus-5-5» → «Opus 5.5». El local no se nombra.
+const modeloRespaldo = (modelo = '') => {
+  const m = modelo.match(/^claude-([a-z]+)-(\d+)(?:-(\d+))?/);
+  return m ? `${m[1][0].toUpperCase()}${m[1].slice(1)} ${m[2]}${m[3] ? `.${m[3]}` : ''}` : '';
+};
+
 function renderTokenUsage(consumo: NonNullable<StreamEvent['consumo']>) {
   const rows = el('token-usage-rows');
   rows.replaceChildren();
   const number = new Intl.NumberFormat('es-CO');
   for (const fila of consumo) {
     const row = document.createElement('tr');
-    for (const text of [fila.llamadas > 1 ? `${fila.agente} ×${fila.llamadas}` : fila.agente, number.format(fila.leidos), number.format(fila.escritos)]) {
+    const nombre = fila.llamadas > 1 ? `${fila.agente} ×${fila.llamadas}` : fila.agente;
+    const respaldo = modeloRespaldo(fila.modelo);
+    for (const text of [respaldo ? `${nombre} · ${respaldo}` : nombre, number.format(fila.leidos), number.format(fila.escritos)]) {
       const cell = document.createElement('td'); cell.textContent = text; row.append(cell);
     }
     rows.append(row);

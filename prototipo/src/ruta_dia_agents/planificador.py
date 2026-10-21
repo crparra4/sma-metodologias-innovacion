@@ -97,8 +97,14 @@ _PEDIDO = re.compile(
 )
 _DUDA = re.compile(
     r"\b(que (significa|quiere decir|es eso|es esto|seria)|cuenta como|cuentan como|va en|"
-    r"van en|diferencia entre|a que se refiere|como asi|eso (cuenta|sirve|va|aplica)|"
+    r"van en|diferencia (hay )?entre|(cual|que) es la diferencia|a que se refiere|como asi|"
+    r"que (es|son) (un|una|el|la|los|las|lo) |eso (cuenta|sirve|va|aplica)|"
     r"(en|a) (que|cual) (bloque|factor|parte|sombrero|lente|patron) va)\b"
+)
+# «Quiero hacer el árbol de problemas» pide empezar la ficha: no responde ninguna de sus partes.
+_PIDE_FICHA = re.compile(
+    r"\b(quiero|quisiera|me gustaria|vamos a|hagamos|ayudame (a|con)|empecemos( con)?|"
+    r"necesito|podemos) (hacer|aplicar|usar|empezar|trabajar|armar|construir|con|el|la|los)\b"
 )
 _ETIQUETA = (
     r"(^|[.;!?\n]\s*)((en|sobre|para|de) (lo|el|la|los|las) )?((factor|bloque|parte|sombrero) )?"
@@ -145,15 +151,35 @@ def _contenido(mensaje: str) -> str:
 def _definicion_para(duda: str, partes: tuple[Parte, ...], en_curso: Parte | None) -> Parte | None:
     preguntas = " ".join(f for f in _frases(duda) if "?" in f) or duda
     plano = _plano(preguntas)
-    nombradas = [(pos, p) for p in partes if (pos := _posicion(plano, p)) is not None]
+    # Gana el nombre más largo: en «¿qué es una causa de fondo?» también aparece «causa».
+    nombradas = [(-len(m.group()), m.start(), p) for p in partes
+                 if (m := _patron(p).search(plano))]
     if nombradas:
-        return min(nombradas, key=lambda par: par[0])[1]
+        return min(nombradas, key=lambda par: par[:2])[2]
     palabras = {w for w in re.findall(r"\w{5,}", plano)} - {"significa", "quiere", "decir",
                                                               "cuenta", "diferencia", "refiere"}
     for parte in partes:
         if palabras & set(re.findall(r"\w{5,}", _plano(parte.definicion))):
             return parte
     return en_curso
+
+
+def salida_con_plan(plan: Plan | None) -> str | None:
+    """Salida segura cuando el modelo no logró una pregunta que pasara la verificación.
+
+    En vez de pegar el paso a paso de la ficha, pregunta por la parte que decidió el
+    Planificador, con su definición literal: no depende del modelo y no vuelve a lo respondido.
+    """
+    if plan is None or plan.objetivo is None:
+        return None
+    partes = [plan.aclaracion] if plan.aclaracion else []
+    if _cita(plan.objetivo) in plan.aclaracion:  # la aclaración ya citó esta parte
+        partes.append(f"Sigamos con **{plan.objetivo.nombre}**.")
+    else:
+        partes.append(f"Sigamos con **{plan.objetivo.nombre}**. La ficha lo explica así: "
+                      f"{_cita(plan.objetivo)}")
+    partes.append("¿Qué puedes contarme de eso en tu proyecto?")
+    return "\n\n".join(partes)
 
 
 def _cita(parte: Parte) -> str:
@@ -184,7 +210,10 @@ def planear(tool_id: str, progreso: dict | None, mensaje: str, reto: str = "") -
     # La respuesta cuenta para la parte preguntada salvo que la persona haya etiquetado otra
     # («En lo social, …»), pida pasar a otra o tenga una duda: con una duda se aclara y se
     # sigue en la misma parte.
-    if en_curso and en_curso.id not in registro and not etiquetadas and not pedida and not duda:
+    pide_ficha = bool(_PIDE_FICHA.search(plano)) and all(
+        palabra in plano for palabra in tool_id.split("-") if len(palabra) > 2)
+    if (en_curso and en_curso.id not in registro and not etiquetadas and not pedida
+            and not duda and not pide_ficha):
         contenido = _contenido(mensaje)
         # «No sé, ¿2 de 10 ya sería bueno?» es una respuesta tentativa, no un «no sé».
         tentativa = len(_NO_SE.sub("", plano).split()) >= 6

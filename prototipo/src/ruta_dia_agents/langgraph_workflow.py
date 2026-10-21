@@ -24,6 +24,7 @@ from .contracts import (
 )
 from .guardrails import StructuralViolation, validate_candidate, validate_handoff
 from .knowledge import KnowledgeCatalog
+from .planificador import salida_con_plan
 from .runtime import AgentRuntime, is_thanks, next_step_hint
 from .sensitive import DISTRESS_OPENING, SENSITIVE_REPLIES, sensitive_topic, shows_distress
 from .service import SAFE_DEGRADATION
@@ -496,7 +497,11 @@ class LangGraphRutaDia:
         steps = self.catalog.card_section(handoff.active_tool, "how") if handoff.active_tool else ""
         message = SAFE_DEGRADATION
         verification = VerificationResult.model_validate(graph_state["verification"])
-        if {finding.code for finding in verification.findings} == {"repeated_question"}:
+        if por_plan := salida_con_plan(getattr(self.runtime, "plan", None)):
+            # Con Planificador, la salida segura sigue el plan del turno (parte que toca y su
+            # definición literal) en lugar de pegar el paso a paso de la ficha.
+            message = "\n\n".join([*self._opening(graph_state, handoff), por_plan])
+        elif {finding.code for finding in verification.findings} == {"repeated_question"}:
             # El modelo insistió en la misma pregunta: mejor decirlo y ofrecer el paso que
             # sigue que soltarle a la persona la ficha entera.
             candidate = CandidateResponse.model_validate(graph_state["candidate"])

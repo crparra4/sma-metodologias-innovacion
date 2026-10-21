@@ -50,6 +50,7 @@ from .notes import NoteRequest
 from .pestel import PestelUpdate
 from .pestel import context_lines as pestel_context
 from .problem_tree import ProblemTreeUpdate
+from .respaldo_claude import ModeloNoDisponible, Respaldo
 from .sensitive import sensitive_topic
 from .sharing import SharingStore
 from .tasks import TaskRequest
@@ -265,6 +266,7 @@ def _checkpointer(connection: sqlite3.Connection) -> SqliteSaver:
 
 AGENTES = {"orchestrator": "Orquestador", "methodologist": "Metodólogo",
            "verifier": "Verificador", "interpreter": "Intérprete"}
+SONDA_SEGUNDOS = 15  # cada cuánto se vuelve a preguntar si el modelo local responde
 
 
 def consumo_por_agente(calls: list[dict]) -> list[dict]:
@@ -274,12 +276,34 @@ def consumo_por_agente(calls: list[dict]) -> list[dict]:
         uso = call.get("usage") or {}
         fila = total.setdefault(call["role"], {
             "agente": AGENTES.get(call["role"], call["role"]),
-            "llamadas": 0, "leidos": 0, "escritos": 0,
+            "llamadas": 0, "leidos": 0, "escritos": 0, "modelo": call.get("modelo", ""),
         })
         fila["llamadas"] += 1
         fila["leidos"] += uso.get("prompt_tokens") or 0
         fila["escritos"] += uso.get("completion_tokens") or 0
     return list(total.values())
+
+
+def origen_del_turno(calls: list[dict]) -> str:
+    """Quién respondió el turno: el modelo local, el respaldo con Claude o ninguno."""
+    if not calls:
+        return "ninguno"
+    return "claude" if any(c.get("modelo", "").startswith("claude") for c in calls) else "local"
+
+
+class SondaModelo:
+    """Pregunta si el modelo local responde, como mucho una vez cada `SONDA_SEGUNDOS`."""
+
+    def __init__(self, probe, settings: Settings):
+        self.probe, self.settings = probe, settings
+        self._hasta, self._valor = 0.0, False
+
+    def local(self) -> bool:
+        ahora = time.monotonic()
+        if ahora >= self._hasta:
+            self._valor = bool(self.probe(self.settings))
+            self._hasta = ahora + SONDA_SEGUNDOS
+        return self._valor
 
 
 def _close_runtime(runtime) -> None:
@@ -306,6 +330,18 @@ def create_app(
     endpoint = urlparse(settings.base_url or "")
     if endpoint.hostname not in {"127.0.0.1", "localhost", "::1"}:
         raise ValueError("La interfaz requiere RUTA_DIA_BASE_URL apuntando al modelo local.")
+    # Respaldo: si el modelo local no responde, Claude atiende el turno (hasta el tope de gasto).
+    respaldo = Respaldo(settings) if settings.respaldo_claude else None
+    sonda = SondaModelo(model_probe, settings)
+
+    def nuevo_runtime():
+        """Runtime del turno: el modelo local si responde; si no, el respaldo con Claude."""
+        if respaldo is None or sonda.local():
+            return runtime_factory(settings)
+        if not respaldo.disponible():
+            raise ModeloNoDisponible("Se alcanzó el tope de gasto del respaldo con Claude.")
+        return respaldo.runtime(runtime_factory, settings)
+
     catalog = KnowledgeCatalog(settings.route_path)
     catalog.require_valid()
     settings.checkpoint_path.parent.mkdir(parents=True, exist_ok=True)
@@ -610,7 +646,9 @@ def create_app(
         return {
             "app_id": "ruta-dia-local",
             "model": settings.model,
-            "available": model_probe(settings),
+            "available": sonda.local() or bool(respaldo and respaldo.disponible()),
+            "modelo": ("local" if sonda.local() else
+                       "claude" if respaldo and respaldo.disponible() else None),
             # Ocupado es por proyecto: otra persona en otro proyecto no bloquea a nadie.
             "busy": project_locks.busy(project) if project else project_locks.any_busy(),
             "queue": model_queue.snapshot(),
@@ -977,7 +1015,7 @@ def create_app(
             model_status = "ocupado"
         else:
             try:
-                extract = getattr(runtime_factory(settings), "extract_journey", None)
+                extract = getattr(nuevo_runtime(), "extract_journey", None)
                 if extract is None:
                     model_status = "no_disponible"
                 else:
@@ -1019,6 +1057,14 @@ def create_app(
                 access["notebook_id"], body.persona.strip(), user.id if user else "")
         return {**practica, "aviso": AVISO_PRACTICA}
 
+    @app.get("/api/projects/{project_id}/practicas")
+    def listar_practicas(project_id: str, request: Request):
+        """Para retomar la práctica desde otro navegador: la vista abre la más reciente."""
+        access = project_access(project_id)
+        user = request.state.user
+        with NotebookMemory(project_memory_path(access)) as memory:
+            return memory.practicas(access["notebook_id"], user.id if user else "")
+
     @app.get("/api/projects/{project_id}/practicas/{practica_id}")
     def ver_practica(project_id: str, practica_id: str, request: Request):
         access = project_access(project_id)
@@ -1039,11 +1085,12 @@ def create_app(
             raise HTTPException(503, "Hilo está atendiendo a muchas personas; intenta de nuevo.")
         runtime = None
         try:
-            runtime = runtime_factory(settings)
-            respuesta = responder_cliente(
-                runtime.client, settings.model, practica["persona"], reto,
-                practica["turnos"], body.texto.strip(),
-            )
+            runtime = nuevo_runtime()
+            argumentos = (practica["persona"], reto, practica["turnos"], body.texto.strip())
+            if hasattr(runtime, "responder_cliente"):  # respaldo con Claude
+                respuesta = runtime.responder_cliente(*argumentos)
+            else:
+                respuesta = responder_cliente(runtime.client, settings.model, *argumentos)
         except Exception:
             logger.exception("Fallo del cliente simulado")
             raise HTTPException(503, "El cliente simulado no pudo responder.") from None
@@ -1095,7 +1142,7 @@ def create_app(
             model_status = "ocupado"
         else:
             try:
-                review = getattr(runtime_factory(settings), "review_tree", None)
+                review = getattr(nuevo_runtime(), "review_tree", None)
                 if review is None:
                     model_status = "no_disponible"
                 else:
@@ -1312,7 +1359,7 @@ def create_app(
                         state = state.model_copy(
                             update={"locked_tool": WHY_TOOL_ID, "recent_turns": []},
                         )
-                    runtime = runtime_factory(settings)
+                    runtime = nuevo_runtime()
                     workflow = LangGraphRutaDia(
                         catalog, runtime, JsonlVerificationRecorder(resolved_audit_path),
                         checkpointer=_checkpointer(connection),
@@ -1323,6 +1370,8 @@ def create_app(
                         thread_id=access["project_id"] if user else state.notebook_id,
                     ):
                         if event["type"] == "result":
+                            event["result"]["modelo"] = origen_del_turno(
+                                getattr(runtime, "calls", []))
                             result = TurnResult.model_validate(event["result"])
                             # Una respuesta puede tardar; el permiso se revisa de nuevo antes
                             # de guardar para respetar una revocacion o un cambio de rol.
@@ -1348,6 +1397,12 @@ def create_app(
                             event["elapsed_ms"] = round((time.monotonic() - started) * 1000)
                             event["consumo"] = consumo_por_agente(getattr(runtime, "calls", []))
                         emit(event)
+            except ModeloNoDisponible:
+                logger.warning("Turno sin modelo: el local no responde y el respaldo se agotó")
+                emit({"type": "error", "message": (
+                    "El modelo de Hilo no está disponible en este momento. "
+                    "Intenta de nuevo más tarde."
+                )})
             except Exception:
                 logger.exception("Fallo en un turno de la interfaz local")
                 emit({

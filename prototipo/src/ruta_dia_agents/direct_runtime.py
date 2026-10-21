@@ -61,6 +61,39 @@ class DirectOpenAIRuntime(ContractRuntime):
             role, min(self.settings.max_tokens or 384, 384)
         )
         schema_name = re.sub(r"[^a-zA-Z0-9_-]", "_", output_model.__name__)[:64]
+        # El modelo pequeño a veces alarga un texto hasta agotar los tokens y el JSON queda
+        # cortado. Se repite una vez con otra semilla: con la misma saldría el mismo texto.
+        for retry in range(2):
+            content, usage = self._llamar(
+                role, description, output_model, schema_name, max_tokens, thinking, retry
+            )
+            try:
+                parsed = output_model.model_validate(json.loads(content))
+                self._remember(role, description, content)
+                break
+            except json.JSONDecodeError:
+                if retry:
+                    raise
+        self.calls.append(
+            {
+                "role": role,
+                "schema": schema_name,
+                "output": parsed.model_dump(mode="json"),
+                "usage": usage,
+                "modelo": self.modelo_de(role),
+            }
+        )
+        return parsed
+
+    def _llamar(
+        self, role: str, description: str, output_model: type[T], schema_name: str,
+        max_tokens: int, thinking: bool, retry: int,
+    ) -> tuple[str, dict | None]:
+        """Una llamada al modelo local: devuelve el JSON como texto y el uso de tokens.
+
+        `respaldo_claude.ConClaude` reemplaza solo este paso; todo lo demás del turno (roles,
+        Planificador, controles en código) sigue igual con cualquier modelo.
+        """
         options = {
             "model": self.settings.model,
             "messages": self._messages(role, description),
@@ -80,32 +113,17 @@ class DirectOpenAIRuntime(ContractRuntime):
         }
         if self.settings.top_p is not None:
             options["top_p"] = self.settings.top_p
-        # El modelo pequeño a veces alarga un texto hasta agotar los tokens y el JSON queda
-        # cortado. Se repite una vez con otra semilla: con la misma saldría el mismo texto.
-        for retry in range(2):
-            if self.settings.seed is not None:
-                options["seed"] = self.settings.seed + retry
-            response = self.client.chat.completions.create(**options)
-            content = response.choices[0].message.content
-            if not content:
-                raise ValueError(f"{role} no devolvió contenido estructurado")
-            try:
-                parsed = output_model.model_validate(json.loads(content))
-                self._remember(role, description, content)
-                break
-            except json.JSONDecodeError:
-                if retry:
-                    raise
-        usage = response.usage.model_dump() if response.usage else None
-        self.calls.append(
-            {
-                "role": role,
-                "schema": schema_name,
-                "output": parsed.model_dump(mode="json"),
-                "usage": usage,
-            }
-        )
-        return parsed
+        if self.settings.seed is not None:
+            options["seed"] = self.settings.seed + retry
+        response = self.client.chat.completions.create(**options)
+        content = response.choices[0].message.content
+        if not content:
+            raise ValueError(f"{role} no devolvió contenido estructurado")
+        return content, response.usage.model_dump() if response.usage else None
+
+    def modelo_de(self, role: str) -> str:
+        """Modelo que responde por este rol (con el modelo local, el mismo para todos)."""
+        return self.settings.model
 
     def _messages(self, role: str, description: str) -> list[dict]:
         """Cada rol empieza con un contexto limpio: solo su instrucción y su tarea."""

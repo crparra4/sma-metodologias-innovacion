@@ -54,6 +54,13 @@ class Settings:
     # avance de la ficha + Metodólogo + Verificador en código. En la evaluación exigente superó
     # al agente único con la misma información y a (c) en escucha y avance.
     variant: str = "g"
+    # Respaldo con Claude cuando el modelo local no responde (`respaldo_claude.py`). Apagado por
+    # defecto: solo se enciende en el servidor de las pruebas, que tiene la clave de la API.
+    respaldo_claude: bool = False
+    claude_metodologo: str = "claude-opus-5-5"
+    claude_modelo: str = "claude-sonnet-5-5"  # Orquestador, Cliente simulado y auxiliares
+    claude_tope_usd: float = 24.0
+    claude_gasto_path: Path | None = None
 
     @classmethod
     def from_env(cls) -> Settings:
@@ -80,4 +87,9 @@ class Settings:
             runtime=os.getenv("RUTA_DIA_RUNTIME", "langgraph").strip().lower(),
             parallel=max(1, int(os.getenv("RUTA_DIA_PARALLEL", "6"))),
             variant=os.getenv("RUTA_DIA_VARIANTE", "g").strip().lower(),
+            respaldo_claude=_as_bool(os.getenv("RUTA_DIA_RESPALDO_CLAUDE")),
+            claude_metodologo=os.getenv("RUTA_DIA_CLAUDE_METODOLOGO", "claude-opus-5-5"),
+            claude_modelo=os.getenv("RUTA_DIA_CLAUDE_MODELO", "claude-sonnet-5-5"),
+            claude_tope_usd=float(os.getenv("RUTA_DIA_CLAUDE_TOPE_USD", "24")),
+            claude_gasto_path=data_root / "gasto-claude.jsonl",
         )

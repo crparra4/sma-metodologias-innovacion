@@ -52,7 +52,13 @@ export class PracticeController {
   async open(projectId: string, role: Role): Promise<void> {
     this.projectId = projectId; this.role = role; this.practica = null; this.stamped = 0;
     this.showError();
-    const saved = recall(projectId);
+    let saved = recall(projectId);
+    if (!saved) {  // otro navegador u otro equipo: se retoma la práctica más reciente
+      try {
+        const lista = await this.api<{ id: string }[]>(`/projects/${encodeURIComponent(projectId)}/practicas`);
+        saved = lista[0]?.id || null;
+      } catch { saved = null; }
+    }
     if (saved) {
       try {
         this.practica = await this.api<Practica>(`/projects/${encodeURIComponent(projectId)}/practicas/${encodeURIComponent(saved)}`);

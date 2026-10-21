@@ -118,15 +118,26 @@ def locked_tool_selection(tool_id: str, route: dict, current_stage: int) -> str 
     return f"{current_stage if current_stage in stages else stages[0]}:{tool_id}"
 
 
+_ENLACES = r"(?:\s+(?:de|del|la|las|el|los|y))*\s+"
+
+
+def _alias_patterns(tool: dict) -> list[str]:
+    """Nombre, identificador y el identificador con o sin «de/del/la» entre sus palabras
+    («matriz de priorización» nombra a `matriz-priorizacion`, cuyo nombre lleva «de ideas»)."""
+    aliases = {_plain_text(tool["name"]), _plain_text(tool["id"].replace("-", " "))}
+    patterns = [re.escape(alias) for alias in aliases]
+    patterns.append(_ENLACES.join(re.escape(w) for w in tool["id"].split("-")))
+    return patterns
+
+
 def explicit_tool_selection(message: str, route: dict, current_stage: int) -> str | None:
     """Prioriza una herramienta nombrada como petición; omite negaciones y comparaciones."""
     plain = _plain_text(message)
     requested: dict[str, list[int]] = {}
     for stage in route["stages"]:
         for tool in stage["tools"]:
-            aliases = {_plain_text(tool["name"]), _plain_text(tool["id"].replace("-", " "))}
-            for alias in aliases:
-                match = re.search(rf"(?<!\w){re.escape(alias)}(?!\w)", plain)
+            for alias in _alias_patterns(tool):
+                match = re.search(rf"(?<!\w){alias}(?!\w)", plain)
                 if not match:
                     continue
                 prefix = plain[max(0, match.start() - 65):match.start()]
@@ -158,9 +169,8 @@ def mentioned_tool(message: str, route: dict) -> str | None:
     for stage in route["stages"]:
         for tool in stage["tools"]:
             id_words = set(tool["id"].split("-"))
-            aliases = {_plain_text(tool["name"]), _plain_text(tool["id"].replace("-", " "))}
             if id_words <= words or any(
-                re.search(rf"(?<!\w){re.escape(alias)}(?!\w)", plain) for alias in aliases
+                re.search(rf"(?<!\w){alias}(?!\w)", plain) for alias in _alias_patterns(tool)
             ):
                 found.add(tool["id"])
     return next(iter(found)) if len(found) == 1 else None
@@ -619,6 +629,31 @@ def asks_user_to_lead(text: str) -> bool:
     """Invertir los roles es pedirle a la persona que pregunte o dirija; el Verificador lo
     marcaba también en preguntas normales («¿conoces alguna ley…?»)."""
     return bool(_ASKS_USER_TO_LEAD.search(_plain_text(text)))
+
+
+_VOCATIVO = re.compile(
+    r"^\s*(?P<trato>(?:doña|don|señora|señor)\s+)?(?P<nombre>[A-ZÁÉÍÓÚÑ][a-záéíóúñ]+"
+    r"(?:\s+[A-ZÁÉÍÓÚÑ][a-záéíóúñ]+)?)\s*[,:]\s*(?=[¿a-záéíóúñ])",
+    re.IGNORECASE,
+)
+_NO_ES_NOMBRE = {"hola", "bien", "perfecto", "listo", "gracias", "claro", "excelente", "genial",
+                 "entonces", "ahora", "luego", "bueno", "vale", "muy"}
+
+
+def sin_vocativo(text: str, user_context: str) -> str:
+    """Quita «Doña Gloria, …» al inicio: la pregunta es para la persona, no para su arquetipo
+    ni para la persona entrevistada. Solo si el nombre lo dio la persona (o lleva tratamiento)."""
+    match = _VOCATIVO.match(text)
+    if not match:
+        return text
+    nombre = match.group("nombre")
+    if nombre.split()[0].lower() in _NO_ES_NOMBRE:
+        return text
+    if not match.group("trato") and nombre not in user_context:
+        return text
+    rest = text[match.end():]
+    inicio = 1 if rest.startswith("¿") else 0  # «¿qué…» → «¿Qué…»
+    return rest[:inicio] + rest[inicio:inicio + 1].upper() + rest[inicio + 1:]
 
 
 def open_question_marks(text: str) -> str:
@@ -1139,7 +1174,10 @@ Reglas de acompañamiento:
             state.context.stated_context(),
             *state.shared_context,
         ])
-        text = open_question_marks(drop_filler(candidate.message, user_context, tool_card))
+        text = sin_vocativo(
+            open_question_marks(drop_filler(candidate.message, user_context, tool_card)),
+            user_context,
+        )
         if kept != list(candidate.template_updates) or text != candidate.message:
             candidate = candidate.model_copy(update={"template_updates": kept, "message": text})
         return candidate

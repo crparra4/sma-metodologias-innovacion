@@ -101,9 +101,11 @@ _PERSONAL_DATA = re.compile(
 _DISTRESS = re.compile(
     r"\b(estoy|me siento|me tiene|ando|quede|estamos|nos sentimos)\b.{0,15}"
     r"\b(muy |super |tan |re |bastante )?(frustrad|desanimad|desmotivad|agotad|abrumad|"
-    r"estresad|angustiad|triste|decepcionad|hart[oa]\b|perdid[oa]\b|sol[oa]\b|mal\b|sin ganas)|"
+    r"estresad|angustiad|cansad|triste|decepcionad|hart[oa]\b|perdid[oa]\b|sol[oa]\b|mal\b|"
+    r"sin ganas)|"
     r"\b(mi|nuestro|nuestra|el|la) (proyecto|negocio|emprendimiento|idea|empresa|tesis)\b.{0,25}"
-    r"\b(fracaso|fracasando|no sirve|no funciono|se hundio|va muy mal)\b|"
+    r"\b(fracaso|fracasando|no sirve|no funciono|se hundio|va muy mal|no avanza|"
+    r"no va para ningun lado)\b|"
     r"\b(fracase|fracasamos|no puedo mas|quiero rendirme|voy a renunciar|tirar la toalla|"
     r"no sirvo para esto|me siento (un|una) (fracaso|inutil)|no se si vale la pena)\b"
 )

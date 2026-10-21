@@ -366,6 +366,15 @@ class NotebookMemory:
         return {"id": row["id"], "notebook_id": row["notebook_id"], "persona": row["persona"],
                 "created_at": row["created_at"], "turnos": [dict(t) for t in turnos]}
 
+    def practicas(self, notebook_id: str, participant_id: str = "") -> list[dict]:
+        """Las prácticas de esta persona en el proyecto, la más reciente primero."""
+        rows = self.connection.execute(
+            "SELECT id, persona, created_at FROM practicas "
+            "WHERE notebook_id = ? AND participant_id = ? ORDER BY created_at DESC",
+            (notebook_id, participant_id),
+        ).fetchall()
+        return [dict(row) for row in rows]
+
     def agregar_turnos_practica(self, practica_id: str, pregunta: str, respuesta: str) -> None:
         now = datetime.now(UTC).isoformat()
         with self.connection:

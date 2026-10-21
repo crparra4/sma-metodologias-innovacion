@@ -169,3 +169,5 @@ class TurnResult(StrictModel):
     accepted_updates: list[TemplateUpdate] = Field(default_factory=list)
     # Foto del avance por ficha después de este turno (vacía si no hay Planificador).
     progreso: dict[str, dict[str, Any]] = Field(default_factory=dict)
+    # Quién respondió: el modelo local, el respaldo con Claude o ninguno (respuesta fija).
+    modelo: Literal["local", "claude", "ninguno"] = "local"

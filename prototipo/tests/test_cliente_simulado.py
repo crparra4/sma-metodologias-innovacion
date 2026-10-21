@@ -117,3 +117,14 @@ def test_a_practice_belongs_to_whoever_created_it(tmp_path):
         practica = memoria.crear_practica("p", PERSONA, participant_id="ana")
         assert memoria.practica("p", practica["id"], "ana") is not None
         assert memoria.practica("p", practica["id"], "luis") is None
+
+
+def test_practices_are_listed_newest_first_for_whoever_created_them(app):
+    aplicacion, _ = app
+    with TestClient(aplicacion) as client:
+        client.post("/api/notebooks", json={"notebook_id": "p"})
+        primera = client.post("/api/projects/p/practicas", json={"persona": PERSONA}).json()
+        segunda = client.post("/api/projects/p/practicas", json={
+            "persona": "Doña Gloria, 68 años, pensionada de Kennedy."}).json()
+        lista = client.get("/api/projects/p/practicas").json()
+    assert [p["id"] for p in lista] == [segunda["id"], primera["id"]]

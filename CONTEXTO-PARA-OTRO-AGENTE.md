@@ -1306,3 +1306,57 @@ adopta, conviene mostrar el Planificador como nodo propio en el grafo de la inte
 escritos razonando); (c) 3.246 / 206; (d) 4.903 / 191; **(g) 3.299 / 207**: el Planificador y el
 Verificador son código (0 tokens) y el plan agrega ~55 tokens al Metodólogo. Cliente simulado:
 ~450 leídos y ~45 escritos por pregunta.
+
+## Hilo en la VPS con respaldo de Claude (21 oct 2026, Linux)
+
+Decisión del usuario: el modelo local sigue siendo el principal, pero las pruebas no pueden
+depender de que su PC esté prendido. Hilo (página, cuentas y cuadernos) pasa a la VPS de Oracle;
+el PC solo presta el modelo por un túnel SSH, y si no responde, el turno lo atiende Claude.
+
+**Implementado (sin commit; desplegado desde el árbol de trabajo):**
+- `respaldo_claude.py`: mezcla `ConClaude` que reemplaza solo `DirectOpenAIRuntime._llamar`
+  (nuevo punto de extensión; `_run` quedó igual). Por eso el Planificador, el Verificador y los
+  controles en código corren idénticos con cualquier modelo. Modelo por agente: Metodólogo
+  `claude-opus-5-5` (redacta lo que lee la persona), resto `claude-sonnet-5-5` (Orquestador,
+  Cliente simulado, auxiliares). Esfuerzo bajo, salida estructurada (esquema limpio y validación
+  con el contrato original, un reintento), `fallbacks: "default"` (beta
+  `server-side-fallback-2026-07-01`) ante negativas.
+- Gasto: `gasto-claude.jsonl` en la carpeta de datos; tope `RUTA_DIA_CLAUDE_TOPE_USD` (24). Al
+  llegar al tope, el turno responde «El modelo de Hilo no está disponible…».
+- `web.py`: `nuevo_runtime()` elige por turno (sonda del modelo local cada 15 s);
+  `/api/status` trae `modelo` (`local`/`claude`/`null`); `TurnResult.modelo` queda guardado en
+  la metadata de cada respuesta (para separar en el análisis turnos de Qwen y de Claude); el
+  consumo por agente trae `modelo` y la interfaz lo muestra («Metodólogo · Opus 5.5»).
+- Apagado por defecto (`RUTA_DIA_RESPALDO_CLAUDE`); solo el servidor lo enciende.
+- 465 pruebas (9 nuevas). Ojo: el commit 6672433 tenía 456, no 458 como se anotó antes.
+- `scripts/prestar_modelo.sh`: abre el túnel `-R 127.0.0.1:18083` y se reconecta solo; lee el
+  servidor de `~/.config/hilo/vps.env` (fuera del repo). Llave `~/.ssh/hilo_tunel`, limitada en
+  el servidor con `restrict,port-forwarding,permitlisten="127.0.0.1:18083",command=nologin`
+  (probado: sin terminal y sin otros puertos).
+
+**Servidor:** `~/hilo/app` (código), `~/hilo/.venv` (uv, Python 3.12), `~/hilo/datos`,
+`~/hilo/.env.hilo` y `~/hilo/.env.claude` (600; la clave de Anthropic la puso el usuario),
+servicio `hilo` en 127.0.0.1:8787, nginx con HTTPS en un subdominio del servidor (la dirección está en la memoria privada). Probado:
+página pública, cambio local → Claude en ~5 s al cerrar el túnel y Claude → local en ~15 s.
+Falta: un turno real con Claude en la VPS (cuesta; lo prueba el usuario) y actualizar la tesis
+y el consentimiento (los turnos de respaldo salen del equipo hacia Anthropic).
+
+### Correcciones halladas al preparar la demo (21 oct 2026, sin commit; desplegadas en la VPS)
+
+Proyecto de demostración en la cuenta de demostración del servidor: caso de salud ficticio («Citas
+sin filas · afiliados mayores»), 15 fichas, 5 tableros llenos, práctica de entrevista, notas,
+avances y agenda. Script: `~/hilo/demo_completa.py` en la VPS (abre una sesión temporal sin
+contraseña y la cierra; las respuestas de Hilo son reales, con el modelo local por el túnel).
+Al correrlo aparecieron fallas reales, corregidas con pruebas (484 pasan):
+- Planificador: «Quiero hacer el árbol de problemas» ya no cuenta como respuesta a una parte
+  (`_PIDE_FICHA`); se reconocen como duda «¿qué diferencia hay entre…?» y «¿qué es un/una…?»;
+  en una duda gana el nombre de parte más largo («causa de fondo» frente a «causa»).
+- Salida segura con Planificador (`planificador.salida_con_plan`, usada en `_degrade`): pregunta
+  por la parte que toca con su definición literal en vez de pegar el paso a paso de la ficha.
+- `runtime.sin_vocativo`: quita «Doña Gloria, …»/«Carolina: …» al inicio de la pregunta del
+  Metodólogo (le hablaba al arquetipo o al entrevistado como si fuera la persona).
+- `sensitive`: «cansada», «no avanza», «no va para ningún lado» cuentan como desánimo.
+- `runtime._alias_patterns`: una ficha se reconoce aunque falten o sobren «de/del/la»
+  («matriz de priorización» → `matriz-priorizacion`; antes quedaba al azar del modelo).
+Pendiente visto: con «Usuario objetivo: …» en el mapa de empatía, un campo validado quedó en
+`piensa_siente`; revisar `named_field_update` con las partes del Planificador.

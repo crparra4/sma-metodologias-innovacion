@@ -164,16 +164,22 @@ Reglas:
 - Si te preguntan directamente si eres real, di que eres un personaje simulado para practicar."""
 
 
-def responder(client, modelo: str, persona: str, reto: str, turnos: list[dict],
-              pregunta: str) -> str:
-    """Respuesta del cliente simulado. `turnos`: [{"rol": "entrevistador"|"cliente", "texto"}]."""
+def mensajes_entrevista(persona: str, reto: str, turnos: list[dict], pregunta: str) -> list[dict]:
+    """La instrucción del personaje, los últimos turnos y la pregunta nueva."""
     mensajes = [{"role": "system", "content": instruccion_personaje(persona, reto)}]
     for turno in turnos[-12:]:
         rol = "user" if turno["rol"] == "entrevistador" else "assistant"
         mensajes.append({"role": rol, "content": turno["texto"]})
     mensajes.append({"role": "user", "content": pregunta})
+    return mensajes
+
+
+def responder(client, modelo: str, persona: str, reto: str, turnos: list[dict],
+              pregunta: str) -> str:
+    """Respuesta del cliente simulado. `turnos`: [{"rol": "entrevistador"|"cliente", "texto"}]."""
     respuesta = client.chat.completions.create(
-        model=modelo, messages=mensajes, max_tokens=220, temperature=0.8,
+        model=modelo, messages=mensajes_entrevista(persona, reto, turnos, pregunta),
+        max_tokens=220, temperature=0.8,
         extra_body={"chat_template_kwargs": {"enable_thinking": False}},
     )
     texto = (respuesta.choices[0].message.content or "").strip()

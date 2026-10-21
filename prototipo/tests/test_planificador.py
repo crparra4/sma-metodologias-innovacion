@@ -24,6 +24,7 @@ from ruta_dia_agents.planificador import (
     es_duda,
     partes_repetidas,
     planear,
+    salida_con_plan,
 )
 from ruta_dia_agents.variantes import PlanificadorConControles
 
@@ -163,3 +164,48 @@ def test_planner_variant_asks_only_for_the_part_that_is_due(catalog):
     veredicto = runtime.verify(candidate, handoff, card, message=mensaje, state=state)
     assert veredicto.verdict == Verdict.REJECTED  # preguntó otra vez por lo político
     assert runtime.progreso_turno["pestel"]["en_curso"] == "economico"
+
+
+@pytest.mark.parametrize("duda", [
+    "¿Qué diferencia hay entre una causa y un efecto?",
+    "¿Cuál es la diferencia entre causa y causa de fondo?",
+    "¿Qué es una causa de fondo?",
+])
+def test_these_doubts_are_clarified_not_taken_as_answers(duda):
+    avance = {"en_curso": "causas", "partes": {}}
+    plan = planear("arbol-problemas", avance, duda, reto="Los mayores no usan la app")
+    assert plan.intencion == "aclarar"
+    assert "causas" not in plan.progreso["partes"]
+
+
+def test_asking_to_start_the_card_is_not_an_answer():
+    avance = {"en_curso": "causas", "partes": {}}
+    plan = planear("arbol-problemas", avance, "Quiero hacer el árbol de problemas.",
+                   reto="Los mayores no usan la app")
+    assert plan.objetivo.id == "causas" and "causas" not in plan.progreso["partes"]
+    # una respuesta de verdad sí cuenta, aunque empiece con «quiero»
+    plan = planear("arbol-problemas", avance, "Quiero decir que la letra de la app es pequeña.",
+                   reto="Los mayores no usan la app")
+    assert plan.progreso["partes"]["causas"]["estado"] == "respondida"
+
+
+def test_a_doubt_quotes_the_longest_part_name_it_mentions():
+    avance = {"en_curso": "causa_de_fondo", "partes": {}}
+    plan = planear("arbol-problemas", avance, "¿Qué es una causa de fondo?", reto="x")
+    assert "causa de fondo" in plan.aclaracion and "anótalas como raíces" not in plan.aclaracion
+
+
+def test_the_safe_exit_follows_the_plan_instead_of_pasting_the_card():
+    avance = {"en_curso": "efectos", "partes": {"causas": {"estado": "respondida", "texto": "x"}}}
+    plan = planear("arbol-problemas", avance, "Pierden la cita y se forman filas largas.",
+                   reto="Los mayores no usan la app")
+    texto = salida_con_plan(plan)
+    assert plan.objetivo.id == "causa_de_fondo" and "**Causa de fondo**" in texto
+    assert "Escribe el **problema central**" not in texto
+    assert salida_con_plan(None) is None
+
+
+def test_the_safe_exit_does_not_quote_the_same_part_twice():
+    avance = {"en_curso": "causa_de_fondo", "partes": {}}
+    plan = planear("arbol-problemas", avance, "¿Qué es una causa de fondo?", reto="x")
+    assert salida_con_plan(plan).count("anida la respuesta") == 1
