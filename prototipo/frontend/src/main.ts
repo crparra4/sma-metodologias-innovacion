@@ -306,7 +306,7 @@ function turnHeader(role: string, createdAt?: string): HTMLElement {
   return header;
 }
 
-const FIXED_REPLY_CODES = ['greeting', 'out_of_scope', 'no_card', 'sensitive_topic'];
+const FIXED_REPLY_CODES = ['greeting', 'out_of_scope', 'no_card', 'sensitive_topic', 'recap'];
 const isFixedReply = (result: Result) => result.verification.findings.some(finding => FIXED_REPLY_CODES.includes(finding.code));
 
 function appendTurn(turn: Turn): HTMLElement {

@@ -78,13 +78,14 @@ class ToolRecommendation(StrictModel):
     reason: str
 
 
-# Qué pide el mensaje. Los cuatro últimos se responden sin Metodólogo ni Verificador, con un
-# texto fijo: un saludo, algo ajeno al proyecto, un concepto que no tiene ficha o un tema
-# sensible (este ni siquiera llega al Orquestador).
+# Qué pide el mensaje. Los cinco últimos se responden sin Metodólogo ni Verificador, con un
+# texto fijo: un saludo, algo ajeno al proyecto, un concepto que no tiene ficha, un tema
+# sensible o un recuento del avance (estos dos ni siquiera llegan al Orquestador).
 RequestKind = Literal[
     "trabajo", "explicacion", "recomendacion", "saludo", "fuera", "concepto", "sensible",
+    "resumen",
 ]
-DIRECT_KINDS = frozenset({"saludo", "fuera", "concepto", "sensible"})
+DIRECT_KINDS = frozenset({"saludo", "fuera", "concepto", "sensible", "resumen"})
 
 
 def has_value(value: Any) -> bool:

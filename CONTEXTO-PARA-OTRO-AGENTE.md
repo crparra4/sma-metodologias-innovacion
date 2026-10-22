@@ -1379,3 +1379,55 @@ Pedido del usuario: que Hilo no solo pregunte, que también sugiera y recomiende
 - En la VPS, `~/hilo/.env.hilo` tenía finales de línea de Windows (venía del `.env` del disco
   compartido): systemd los tolera, `source` en bash no. Se limpiaron.
 490 pruebas pasan.
+
+## Tesis y consentimiento al día con el despliegue en servidor (21 oct 2026, Linux)
+
+- **Consentimiento** (`../tesis/pruebas-participantes/consentimiento-informado.md`): decía que los
+  datos quedaban en el computador de los investigadores y que nada iba a servicios externos. Ahora
+  dice que los datos quedan en un servidor en la nube administrado por los investigadores y que,
+  si el computador del equipo no responde, el turno lo genera Claude (Anthropic); quien acepta
+  autoriza ese envío (Ley 1581, art. 26). Las personas que firmaron la versión anterior deberían
+  ser informadas.
+- **Tesis v11** (`Descargas/Tesis_academica_revisada_v11.docx`, script
+  `../tesis/arquitectura-c4/ajustes_v11.py` con `docx_utils.py`): dos formas de despliegue (un
+  equipo o servidor), Figuras 1, 2 y 5 nuevas (`diagramas.py`), D11, riesgos, RF-35, RO-14,
+  RNF-11, Ley 1581 con transferencia internacional, estilo conversacional solo con el modelo
+  capaz, 490 pruebas, presupuesto con el tope del respaldo (24 USD = $75.752; total $6.591.449).
+  Falta confirmar si la VPS tiene costo para el proyecto.
+
+### Plan: niveles de experiencia (21 oct 2026) — NO implementado, pendiente de aprobación
+
+Idea del usuario: clasificar a la persona (guiado, intermedio, libre) con un cuestionario corto al
+registrarse (5 preguntas que no dicen «nivel»: experiencia, herramientas usadas, dos situaciones
+prácticas que miden criterio, y preferencia de acompañamiento) y actualizar el nivel con la
+conversación (señales del Planificador: partes respondidas sin dudas suben; «no sé», dudas y
+pedir explicación bajan; cambia solo tras 3 turnos). El modo cambia las herramientas a la vista,
+metas cortas por sesión (2 partes en guiado, estilo Duolingo sin puntos ni rachas) y cuánto
+recuerda Hilo los conceptos (por código, con la definición literal). Fundamento: efecto de
+reversión de la experiencia (Kalyuga et al., ya en la tesis). El plan completo está en un doc
+de Claude («Plan de niveles de experiencia en Hilo»). Decisiones pendientes del usuario: las 5
+preguntas, los nombres de los modos, el tamaño de la meta, hablarlo con el director (cambia el
+capítulo 4), y si se repite la evaluación con juez (~6 USD). Transparencia: frase en el
+consentimiento y modo visible y modificable en la cuenta.
+
+## Hilo no pierde el lugar de la persona (22 oct 2026, Linux) — implementado
+
+Caso real en el servidor: con el Customer Journey Map recorrido, la persona preguntó «¿qué es un
+árbol de problemas?»; Hilo explicó y además pasó el cuaderno al árbol (etapa 1). Después, a
+«¿qué realizamos?» y «¿en qué ficha quedamos?» contestó con el árbol, y al repetir el cierre el
+Verificador lo rechazó como `repeated_question` («Ya tengo tu respuesta y no quiero repetirte la
+pregunta»). Cambios:
+- Explicar otra herramienta no cambia la ficha en curso (`memory.save_exchange`); el Planificador
+  responde con un texto fijo: «¿Quieres trabajar X ahora, o seguimos con Y, donde íbamos?», sin
+  aviso de etapa.
+- Recuento del avance: tipo de pedido `resumen` (`planificador.pide_resumen`), respuesta fija del
+  grafo con la etapa, la ficha en curso, sus partes, lo trabajado antes y qué sigue
+  (`resumen_del_avance`); no llama al modelo. Código de hallazgo `recap` (la interfaz lo marca
+  como respuesta fija).
+- El cierre y la oferta anterior son texto del código: se aprueban sin pasar por el chequeo de
+  repetición; si el cierre ya se dijo, sale `cierre_otra_vez`.
+- «Sí»/«dale» después de «¿pasamos a X?» pasa a X (`_pasar_a_la_siguiente`).
+- «Quiero seguir con … bloque «X»» (botones de los tableros) retoma ese bloque aunque ya esté
+  respondido; el Metodólogo recibe lo anotado y pregunta qué ajustar.
+Pruebas: `tests/test_lugar_en_la_ruta.py`; 506 pasan. Desplegado en la VPS el mismo día y el
+cuaderno afectado se devolvió a su ficha (con respaldo previo de la base).

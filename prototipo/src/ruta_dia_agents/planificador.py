@@ -93,7 +93,24 @@ _NO_SE = re.compile(
 )
 _PEDIDO = re.compile(
     r"\b(pasemos|pasamos|pasar|sigamos|seguimos|vamos|empecemos|empezamos|arranquemos|"
-    r"mejor|trabajemos|hagamos)\b"
+    r"mejor|trabajemos|hagamos|revisemos|volvamos|retomemos|"
+    r"(quiero|quisiera|me gustaria|podemos) (seguir|continuar|revisar|volver|retomar))\b"
+)
+# «¿Qué hicimos?», «¿en qué ficha quedamos?», «estoy viendo que vamos en el journey?»: piden
+# un recuento del cuaderno, no trabajar la ficha.
+_RESUMEN = re.compile(
+    r"\b((en )?(que|cual|donde) (ficha |herramienta |parte |etapa |paso |punto )?"
+    r"(vamos|quedamos|ibamos|estamos|estabamos|nos quedamos)(?! a\b)"
+    r"|en (la )?(ficha|herramienta|parte|etapa|paso) (vamos|quedamos|ibamos|estamos)"
+    r"|(que|lo que) (hemos |habiamos )?(hecho|realizado|trabajado|avanzado|hicimos|realizamos|"
+    r"trabajamos|avanzamos|llevamos)"
+    r"|(cuanto|como) (hemos avanzado|llevamos|vamos)(?! a\b)"
+    r"|(observando|creo|pense|entiendo|veo|viendo) que (vamos|estamos|ibamos)"
+    r"|(resumen|resumeme|resume|recapitula\w*) (de )?(lo|todo|el avance|mi avance|lo que))\b"
+)
+_AFIRMA = re.compile(
+    r"^(si+|sip|sii|dale|listo|ok|okay|de una|claro|bueno|perfecto|hagamoslo|vamos|pasemos|"
+    r"sigamos|continuemos|de acuerdo|va|esta bien)\b"
 )
 _DUDA = re.compile(
     r"\b(que (significa|quiere decir|es eso|es esto|seria)|cuenta como|cuentan como|va en|"
@@ -117,6 +134,19 @@ def es_duda(mensaje: str) -> bool:
     «¿Qué hago?» o «¿por dónde empiezo?» no son dudas: piden seguir.
     """
     return "?" in mensaje and bool(_DUDA.search(_plano(mensaje)))
+
+
+def pide_resumen(mensaje: str) -> bool:
+    """La persona pide que le recuerden qué se ha hecho o en qué ficha va."""
+    plano = _plano(mensaje)
+    pregunta = "?" in mensaje or bool(re.search(r"\b(recuerd|record|dime|cuentame|resum)", plano))
+    return pregunta and len(plano.split()) <= 25 and bool(_RESUMEN.search(plano))
+
+
+def acepta_seguir(mensaje: str) -> bool:
+    """«Sí», «dale», «pasemos»: acepta pasar a la herramienta que se le recomendó."""
+    plano = _plano(mensaje).strip(" .!¡")
+    return "?" not in mensaje and len(plano.split()) <= 6 and bool(_AFIRMA.search(plano))
 
 
 def parte_pedida(mensaje: str, partes: tuple[Parte, ...]) -> Parte | None:
@@ -258,9 +288,13 @@ def bloque_para_metodologo(plan: Plan, natural: bool = False) -> str:
         f"- Parte que toca ahora: «{objetivo.nombre}». En la ficha: {_cita(objetivo)}",
     ]
     textos = plan.progreso["partes"]
-    if plan.respondidas:
+    otras = [p for p in plan.respondidas if p.id != objetivo.id]
+    if len(otras) < len(plan.respondidas):
+        lineas.append(f"- La persona pidió volver a esta parte. Ya anotado: "
+                      f"«{textos[objetivo.id]['texto']}». Pregúntale qué quiere ajustar o agregar.")
+    if otras:
         lineas.append("- Ya respondido por la persona (no lo vuelvas a pedir):")
-        lineas += [f"  - {p.nombre}: «{textos[p.id]['texto']}»" for p in plan.respondidas]
+        lineas += [f"  - {p.nombre}: «{textos[p.id]['texto']}»" for p in otras]
     if plan.sin_saber:
         lineas.append("- La persona no lo sabe (no insistas): "
                       + ", ".join(p.nombre for p in plan.sin_saber))
@@ -292,6 +326,51 @@ def cierre(plan: Plan, nombre_ficha: str, siguiente: str = "") -> str:
         return texto + (f" Te recomiendo seguir con **{siguiente}**, la herramienta que viene en "
                         f"la ruta. ¿Quieres revisar alguna parte o pasamos a {siguiente}?")
     return texto + " ¿Quieres revisar alguna parte antes de seguir?"
+
+
+def cierre_otra_vez(nombre_ficha: str, siguiente: str = "") -> str:
+    """El cierre cuando ya se dijo en el turno anterior: no repite el mismo texto."""
+    texto = f"Seguimos en **{nombre_ficha}**, que ya recorrimos parte por parte."
+    if siguiente:
+        return texto + f" ¿Qué parte quieres revisar, o pasamos a **{siguiente}**?"
+    return texto + " ¿Qué parte quieres revisar?"
+
+
+def _lista(nombres: list[str]) -> str:
+    return nombres[0] if len(nombres) == 1 else f"{', '.join(nombres[:-1])} y {nombres[-1]}"
+
+
+def resumen_del_avance(ficha: str, nombres: dict[str, str], progreso: dict,
+                       trabajadas: list[str], siguiente: str = "") -> str:
+    """Recuento fijo del cuaderno: la ficha en curso, sus partes y lo trabajado antes.
+
+    Sale del avance guardado, no del modelo: así no se inventa en qué va la persona.
+    `nombres` va en el orden de la ruta; `trabajadas` son otras fichas con algo anotado.
+    """
+    antes = [nombres.get(t, t) for t in trabajadas if t != ficha]
+    lineas = []
+    if ficha:
+        lineas.append(f"Vamos con **{nombres.get(ficha, ficha)}**.")
+        partes = partes_de(ficha)
+        registro = (progreso.get(ficha) or {}).get("partes", {})
+        hechas = [p.nombre for p in partes if p.id in registro]
+        falta = next((p for p in partes if p.id not in registro), None)
+        if hechas:
+            lineas.append(f"De esa ficha ya pasamos por: {_lista(hechas)}.")
+    if antes:
+        lineas.append(f"Antes trabajamos: {_lista(antes)}.")
+    if not ficha:
+        lineas.append("Todavía no hemos elegido una herramienta. ¿Con cuál quieres empezar?")
+    elif not partes_de(ficha):
+        lineas.append(f"¿Seguimos con {nombres.get(ficha, ficha)}?")
+    elif falta:
+        lineas.append(f"¿Seguimos con «{falta.nombre}»?")
+    elif siguiente:
+        lineas.append(f"Ya pasamos por todas sus partes. ¿Quieres revisar alguna o pasamos a "
+                      f"**{siguiente}**?")
+    else:
+        lineas.append("Ya pasamos por todas sus partes. ¿Quieres revisar alguna?")
+    return " ".join(lineas)
 
 
 def antes_de_la_pregunta(mensaje: str, texto: str) -> str:

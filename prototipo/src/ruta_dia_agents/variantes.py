@@ -43,6 +43,7 @@ from .contracts import (
     ProjectState,
     Severity,
     StrictModel,
+    ToolRecommendation,
     Verdict,
     VerificationAssessment,
     VerificationFinding,
@@ -51,9 +52,11 @@ from .contracts import (
 from .direct_runtime import DirectOpenAIRuntime
 from .knowledge import KnowledgeCatalog
 from .planificador import (
+    acepta_seguir,
     antes_de_la_pregunta,
     bloque_para_metodologo,
     cierre,
+    cierre_otra_vez,
     consejo_de_la_ficha,
     es_duda,
     partes_de,
@@ -276,14 +279,25 @@ class _ConPlanificador:
         super().__init__(*args, **kwargs)
         self.plan = None
         self.progreso_turno: dict | None = None  # lo guarda el grafo con la respuesta
+        self.otra_ficha = ""  # explicación de una ficha que no es la que está en curso
 
     def orchestrate(self, message: str, state: ProjectState, route_index: str):
-        self.plan, self.progreso_turno = None, None
+        self.plan, self.progreso_turno, self.otra_ficha = None, None, ""
         return super().orchestrate(message, state, route_index)
 
     def planificar(self, message: str, state: ProjectState, handoff: HandoffContract,
                    route_index: str) -> HandoffContract:
         """Nodo «plan» del grafo: actualiza el avance y decide la parte que toca."""
+        if (handoff.kind == "explicacion" and not state.locked_tool and state.active_tool
+                and handoff.active_tool not in {"", state.active_tool}):
+            # «¿Qué es un árbol de problemas?» con el journey en curso: se explica la otra ficha
+            # y se ofrece seguir donde iba; el cuaderno no cambia de ficha (`save_exchange`).
+            self.otra_ficha = handoff.active_tool
+            return handoff
+        if (handoff.active_tool == state.active_tool and not state.locked_tool
+                and acepta_seguir(message)):
+            # «Sí» a «¿pasamos a 5 por qués?»: se pasa a la herramienta recomendada.
+            handoff = self._pasar_a_la_siguiente(state, handoff)
         ficha = handoff.active_tool
         if state.locked_tool or not ficha or not partes_de(ficha):
             return handoff
@@ -300,6 +314,15 @@ class _ConPlanificador:
 
     def guide(self, message, state, handoff, tool_card, retry_feedback=None,
               allowed_fields=None):
+        if self.otra_ficha:
+            secciones = re.findall(r"^#{1,6}\s+(.+)$", tool_card, re.MULTILINE)
+            return CandidateResponse(
+                message=(f"¿Quieres trabajar **{self._nombre(self.otra_ficha)}** ahora, o "
+                         f"seguimos con **{self._nombre(state.active_tool)}**, donde íbamos?"),
+                tool_id=handoff.active_tool,
+                next_step="Elegir entre la herramienta explicada y la que está en curso",
+                source_sections=[secciones[0].strip()] if secciones else [],
+            )
         plan = self.plan
         if plan is None:
             return super().guide(message, state, handoff, tool_card, retry_feedback,
@@ -307,9 +330,15 @@ class _ConPlanificador:
         if plan.intencion == "cerrar":
             titulo = re.search(r"^#\s+(.+)$", tool_card, re.MULTILINE)
             secciones = re.findall(r"^#{1,6}\s+(.+)$", tool_card, re.MULTILINE)
+            nombre = titulo.group(1).strip() if titulo else handoff.active_tool
+            siguiente = self._siguiente_ficha(handoff.active_tool)
+            anterior = next((t for t in reversed(state.recent_turns)
+                             if t.startswith("Asistente:")), "")
+            ya_cerrada = f"**{nombre}**" in anterior and (
+                "Ya pasamos por cada parte" in anterior or "ya recorrimos" in anterior)
             return CandidateResponse(
-                message=cierre(plan, titulo.group(1).strip() if titulo else handoff.active_tool,
-                               self._siguiente_ficha(handoff.active_tool)),
+                message=(cierre_otra_vez(nombre, siguiente) if ya_cerrada
+                         else cierre(plan, nombre, siguiente)),
                 tool_id=handoff.active_tool,
                 next_step="Revisar una parte o pasar a la siguiente ficha",
                 source_sections=[secciones[0].strip()] if secciones else [],
@@ -331,18 +360,46 @@ class _ConPlanificador:
             return candidate
         return candidate.model_copy(update={"message": mensaje})
 
-    def _siguiente_ficha(self, tool_id: str) -> str:
-        """Nombre de la herramienta que sigue en la ruta (misma etapa o la siguiente)."""
+    def _ruta(self) -> list[tuple[str, str, int, str]]:
+        """(id, nombre, etapa, fase) de cada herramienta, en el orden de la ruta."""
         if not hasattr(self, "_orden_ruta"):
             ruta = KnowledgeCatalog(self.settings.route_path).route
             nombres = {tool.id: tool.name for tool in ruta.tools}
-            self._orden_ruta = [(t, nombres.get(t, t)) for etapa in ruta.stages
-                                for t in etapa.tools]
-        ids = [t for t, _ in self._orden_ruta]
+            self._orden_ruta = [(t, nombres.get(t, t), etapa.id, etapa.phase)
+                                for etapa in ruta.stages for t in etapa.tools]
+        return self._orden_ruta
+
+    def _nombre(self, tool_id: str) -> str:
+        return next((nombre for t, nombre, *_ in self._ruta() if t == tool_id), tool_id)
+
+    def _siguiente(self, tool_id: str) -> tuple[str, str, int, str] | None:
+        """La herramienta que sigue en la ruta (misma etapa o la siguiente)."""
+        ids = [t for t, *_ in self._ruta()]
         if tool_id not in ids:
-            return ""
-        siguientes = self._orden_ruta[ids.index(tool_id) + 1:]
-        return siguientes[0][1] if siguientes else ""
+            return None
+        siguientes = self._ruta()[ids.index(tool_id) + 1:]
+        return siguientes[0] if siguientes else None
+
+    def _siguiente_ficha(self, tool_id: str) -> str:
+        """Nombre de la herramienta que sigue en la ruta (misma etapa o la siguiente)."""
+        siguiente = self._siguiente(tool_id)
+        return siguiente[1] if siguiente else ""
+
+    def _pasar_a_la_siguiente(self, state: ProjectState,
+                              handoff: HandoffContract) -> HandoffContract:
+        """Si el último mensaje de Hilo recomendó pasar a otra herramienta, se pasa a esa."""
+        siguiente = self._siguiente(state.active_tool)
+        anterior = next((t for t in reversed(state.recent_turns)
+                         if t.startswith("Asistente:")), "")
+        if not siguiente or f"pasamos a {siguiente[1]}" not in anterior.replace("**", ""):
+            return handoff
+        tool_id, nombre, etapa, fase = siguiente
+        return handoff.model_copy(update={
+            "active_tool": tool_id, "stage": etapa, "phase": fase, "kind": "trabajo",
+            "intent": f"Empezar {nombre}, la herramienta que sigue en la ruta.",
+            "recommendations": [ToolRecommendation(
+                tool_id=tool_id, reason="La persona aceptó pasar a la herramienta que sigue.")],
+        })
 
     def _run(self, agent, description, output_model):
         if str(agent) == self.methodologist and self.plan is not None and self.plan.objetivo:
@@ -351,9 +408,14 @@ class _ConPlanificador:
         return super()._run(agent, description, output_model)
 
     def verify(self, candidate, handoff, tool_card, *, message="", state=None):
-        result = super().verify(candidate, handoff, tool_card, message=message, state=state)
         plan = self.plan
-        if plan is None or plan.intencion == "cerrar":
+        if self.otra_ficha or (plan is not None and plan.intencion == "cerrar"):
+            # Texto fijo del código (cierre u oferta de seguir): no hay pregunta del modelo que
+            # revisar, y repetir el cierre no es «volver a preguntar lo mismo».
+            return VerificationResult(verdict=Verdict.APPROVED, severity=Severity.NONE,
+                                      source_tool_id=handoff.active_tool)
+        result = super().verify(candidate, handoff, tool_card, message=message, state=state)
+        if plan is None:
             return result
         repetidas = partes_repetidas(candidate.message, plan)
         if not repetidas:

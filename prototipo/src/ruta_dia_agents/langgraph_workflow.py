@@ -24,7 +24,7 @@ from .contracts import (
 )
 from .guardrails import StructuralViolation, validate_candidate, validate_handoff
 from .knowledge import KnowledgeCatalog
-from .planificador import salida_con_plan
+from .planificador import pide_resumen, resumen_del_avance, salida_con_plan
 from .runtime import AgentRuntime, is_thanks, next_step_hint
 from .sensitive import DISTRESS_OPENING, SENSITIVE_REPLIES, sensitive_topic, shows_distress
 from .service import SAFE_DEGRADATION
@@ -39,6 +39,7 @@ DIRECT_FINDINGS = {
     "fuera": ("out_of_scope", "El mensaje no trata del proyecto: respuesta fija, sin ficha."),
     "concepto": ("no_card", "No hay una ficha validada sobre ese tema."),
     "sensible": ("sensitive_topic", "Tema sensible: respuesta fija del sistema, sin modelo."),
+    "resumen": ("recap", "Recuento del avance: respuesta fija con lo guardado en el cuaderno."),
 }
 
 
@@ -205,6 +206,22 @@ class LangGraphRutaDia:
                 project_state,
             )
             return {"handoff": handoff.model_dump(mode="json")}
+        if pide_resumen(graph_state["message"]):
+            # «¿Qué hicimos?», «¿en qué ficha vamos?»: lo responde el cuaderno, no el modelo,
+            # que tendía a contestar con la ficha que acababa de explicar.
+            stage = self.catalog.stage(project_state.stage)
+            handoff = self._keep_place(
+                HandoffContract(
+                    intent="Recordar el avance del cuaderno.",
+                    phase=stage.phase,
+                    stage=stage.id,
+                    expertise=ExpertiseLevel.NOVEL,
+                    context_summary="Recuento del cuaderno; el mensaje no se envió al modelo.",
+                    kind="resumen",
+                ),
+                project_state,
+            )
+            return {"handoff": handoff.model_dump(mode="json")}
         handoff = self.runtime.orchestrate(
             graph_state["message"],
             project_state,
@@ -286,6 +303,8 @@ class LangGraphRutaDia:
             )
         elif handoff.kind == "fuera":
             message = OUT_OF_SCOPE
+        elif handoff.kind == "resumen":
+            message = f"Estás en la etapa {stage.id}, «{stage.name}». " + self._recuento(state)
         elif listed:
             message = (
                 "Todavía no tengo una ficha validada sobre eso y prefiero no explicarlo de "
@@ -318,6 +337,20 @@ class LangGraphRutaDia:
                 degraded=handoff.kind == "concepto",
             ).model_dump(mode="json"),
         }
+
+    def _recuento(self, state: ProjectState) -> str:
+        """Lo trabajado en el cuaderno, en el orden de la ruta, desde lo guardado."""
+        orden = [tool for stage in self.catalog.route.stages for tool in stage.tools]
+        nombres = {tool: self.catalog.tool(tool).name for tool in orden}
+        trabajadas = [
+            tool for tool in orden
+            if tool in state.completed_tools or state.validated_fields.get(tool)
+            or (state.progreso.get(tool) or {}).get("partes")
+        ]
+        ficha = state.active_tool if state.active_tool in nombres else ""
+        siguientes = orden[orden.index(ficha) + 1:] if ficha else []
+        return resumen_del_avance(ficha, nombres, state.progreso, trabajadas,
+                                  nombres[siguientes[0]] if siguientes else "")
 
     def _knowledge_gap(self, graph_state: RutaDiaGraphState) -> dict:
         handoff = HandoffContract.model_validate(graph_state["handoff"])
@@ -453,6 +486,8 @@ class LangGraphRutaDia:
         """Aviso cuando la ficha pedida es de una etapa posterior a la del cuaderno."""
         if not handoff.active_tool or handoff.stage <= state.stage:
             return ""
+        if handoff.kind == "explicacion" and state.active_tool:
+            return ""  # solo se explica: el cuaderno sigue en su ficha (`save_exchange`)
         here, there = self.catalog.stage(state.stage), self.catalog.stage(handoff.stage)
         name = self.catalog.tool(handoff.active_tool).name
         return (

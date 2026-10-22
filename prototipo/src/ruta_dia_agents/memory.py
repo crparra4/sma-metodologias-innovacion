@@ -465,11 +465,15 @@ class NotebookMemory:
         participant_id: str = "",
     ) -> ProjectState:
         now = datetime.now(UTC).isoformat()
+        # Explicar otra herramienta («¿qué es un árbol de problemas?») no cambia la ficha en
+        # curso: la persona sigue donde iba hasta que pida trabajar la otra.
+        lugar = (previous if result.handoff.kind == "explicacion" and previous.active_tool
+                 and result.handoff.active_tool != previous.active_tool else result.handoff)
         next_state = previous.model_copy(
             update={
-                "phase": result.handoff.phase,
-                "stage": result.handoff.stage,
-                "active_tool": result.handoff.active_tool,
+                "phase": lugar.phase,
+                "stage": lugar.stage,
+                "active_tool": lugar.active_tool,
                 "recent_turns": [
                     *previous.recent_turns,
                     f"Usuario: {message}",
