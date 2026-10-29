@@ -12,10 +12,10 @@ dist/
 build/
 *.egg-info/
 node_modules/
-prototipo/frontend/dist/
+frontend/dist/
 .pnpm-store/
 *.log
-prototipo/data/
+/data/
 # Copias y artefactos locales, incluso si se colocan fuera de data/.
 *.sqlite3
 *.sqlite3-*
@@ -24,4 +24,9 @@ prototipo/data/
 *.part
 *.pem
 *.key
-prototipo/scripts/restore_local_account.py
+scripts/restore_local_account.py
+
+# Notas internas de trabajo: viven en el disco, no en el repositorio público.
+CONTEXTO-PARA-OTRO-AGENTE.md
+01-contexto-y-planteamiento-corregido.md
+.impeccable/

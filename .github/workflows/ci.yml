@@ -1,17 +1,17 @@
 # Integración continua de Hilo: en cada cambio corre el lint y las pruebas automatizadas del
-# servicio en Python y compila la interfaz web. Las versiones coinciden con prototipo/Dockerfile.
+# servicio en Python y compila la interfaz web. Las versiones coinciden con el Dockerfile.
 name: CI
 
 on:
   push:
     branches: [main, develop, staging]
-    paths:
-      - "prototipo/**"
-      - ".github/workflows/ci.yml"
+    paths-ignore:
+      - "docs/**"
+      - "**/*.md"
   pull_request:
-    paths:
-      - "prototipo/**"
-      - ".github/workflows/ci.yml"
+    paths-ignore:
+      - "docs/**"
+      - "**/*.md"
   workflow_dispatch:
 
 concurrency:
@@ -25,16 +25,13 @@ jobs:
   servicio:
     name: Servicio (lint y pruebas)
     runs-on: ubuntu-latest
-    defaults:
-      run:
-        working-directory: prototipo
     steps:
       - uses: actions/checkout@v4
       - uses: astral-sh/setup-uv@v6
         with:
           version: "0.12.21"
           enable-cache: true
-          cache-dependency-glob: prototipo/uv.lock
+          cache-dependency-glob: uv.lock
       - name: Instalar Python (según .python-version)
         run: uv python install
       - name: Instalar dependencias
@@ -49,7 +46,7 @@ jobs:
     runs-on: ubuntu-latest
     defaults:
       run:
-        working-directory: prototipo/frontend
+        working-directory: frontend
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
