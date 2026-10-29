@@ -1,15 +1,19 @@
 import pytest
 
-from ruta_dia_agents.config import Settings
-from ruta_dia_agents.contracts import (
+from ruta_dia_agents.acompanamiento.guardrails import (
+    StructuralViolation,
+    validate_candidate,
+    validate_handoff,
+)
+from ruta_dia_agents.compartido.contracts import (
     CandidateResponse,
     ExpertiseLevel,
     HandoffContract,
     TemplateUpdate,
     ToolRecommendation,
 )
-from ruta_dia_agents.guardrails import StructuralViolation, validate_candidate, validate_handoff
-from ruta_dia_agents.knowledge import KnowledgeCatalog
+from ruta_dia_agents.config import Settings
+from ruta_dia_agents.conocimiento.knowledge import KnowledgeCatalog
 
 
 @pytest.fixture

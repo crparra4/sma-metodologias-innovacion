@@ -2,10 +2,10 @@ import json
 
 import pytest
 
+from ruta_dia_agents.acompanamiento.runtime import explicit_tool_selection, sin_vocativo
+from ruta_dia_agents.acompanamiento.sensitive import shows_distress
 from ruta_dia_agents.config import Settings
-from ruta_dia_agents.knowledge import KnowledgeCatalog
-from ruta_dia_agents.runtime import explicit_tool_selection, sin_vocativo
-from ruta_dia_agents.sensitive import shows_distress
+from ruta_dia_agents.conocimiento.knowledge import KnowledgeCatalog
 
 
 @pytest.mark.parametrize("texto,esperado", [

@@ -5,14 +5,18 @@ import pytest
 from fastapi.testclient import TestClient
 from test_direct_runtime import ExampleOutput, response
 
-from ruta_dia_agents.config import Settings
-from ruta_dia_agents.contracts import (
+from ruta_dia_agents.acompanamiento.variantes import (
+    AGENTE_UNICO,
+    SoloControlesEnCodigo,
+    UnSoloAgente,
+)
+from ruta_dia_agents.compartido.contracts import (
     CandidateResponse,
     HandoffContract,
     ProjectState,
     Verdict,
 )
-from ruta_dia_agents.variantes import AGENTE_UNICO, SoloControlesEnCodigo, UnSoloAgente
+from ruta_dia_agents.config import Settings
 from ruta_dia_agents.web import create_app
 
 

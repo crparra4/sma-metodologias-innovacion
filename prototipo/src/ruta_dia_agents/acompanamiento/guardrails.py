@@ -2,8 +2,8 @@ from __future__ import annotations
 
 import re
 
-from .contracts import DIRECT_KINDS, CandidateResponse, HandoffContract
-from .knowledge import KnowledgeCatalog
+from ..compartido.contracts import DIRECT_KINDS, CandidateResponse, HandoffContract
+from ..conocimiento.knowledge import KnowledgeCatalog
 
 
 class StructuralViolation(ValueError):

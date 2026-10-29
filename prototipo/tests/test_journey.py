@@ -8,8 +8,8 @@ from test_sharing import accept_first_invitation, login, logout, register
 from test_tree_diagnosis import client_with
 from test_why_analysis import RecordingRuntime, chat
 
-from ruta_dia_agents.journey import LANES, JourneyUpdate, context_lines, empty_journey
-from ruta_dia_agents.runtime import named_part
+from ruta_dia_agents.acompanamiento.runtime import named_part
+from ruta_dia_agents.herramientas.journey import LANES, JourneyUpdate, context_lines, empty_journey
 
 
 def note(note_id, text):

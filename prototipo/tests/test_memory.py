@@ -4,7 +4,7 @@ from threading import Barrier
 
 from langgraph.checkpoint.sqlite import SqliteSaver
 
-from ruta_dia_agents.contracts import (
+from ruta_dia_agents.compartido.contracts import (
     HandoffContract,
     NotebookColor,
     ProjectContext,
@@ -15,7 +15,7 @@ from ruta_dia_agents.contracts import (
     Verdict,
     VerificationResult,
 )
-from ruta_dia_agents.memory import NotebookMemory
+from ruta_dia_agents.proyectos.memory import NotebookMemory
 
 
 def result(message="Siguiente pregunta"):

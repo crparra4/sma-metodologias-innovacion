@@ -41,7 +41,7 @@ flowchart LR
     D --> E
 ```
 
-Los nodos y las condiciones están definidos en `src/ruta_dia_agents/langgraph_workflow.py`. El estado
+Los nodos y las condiciones están definidos en `src/ruta_dia_agents/acompanamiento/langgraph_workflow.py`. El estado
 del checkpoint se serializa como JSON, evitando depender de la reconstrucción de clases dinámicas.
 Cada conversación usa `notebook_id` como identificador de hilo.
 

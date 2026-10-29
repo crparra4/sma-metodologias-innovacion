@@ -37,7 +37,7 @@ import re
 
 from pydantic import Field, create_model
 
-from .contracts import (
+from ..compartido.contracts import (
     CandidateResponse,
     HandoffContract,
     ProjectState,
@@ -49,8 +49,8 @@ from .contracts import (
     VerificationFinding,
     VerificationResult,
 )
+from ..conocimiento.knowledge import KnowledgeCatalog
 from .direct_runtime import DirectOpenAIRuntime
-from .knowledge import KnowledgeCatalog
 from .planificador import (
     acepta_seguir,
     antes_de_la_pregunta,

@@ -8,7 +8,7 @@ from test_sharing import accept_first_invitation, login, logout, register
 from test_tree_diagnosis import client_with
 from test_why_analysis import RecordingRuntime, chat
 
-from ruta_dia_agents.pestel import FACTORS, PestelUpdate, context_lines, empty_pestel
+from ruta_dia_agents.herramientas.pestel import FACTORS, PestelUpdate, context_lines, empty_pestel
 
 
 def item(item_id, text, kind="", source="", priority=False):

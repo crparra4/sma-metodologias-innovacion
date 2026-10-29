@@ -9,13 +9,13 @@ from dataclasses import replace
 from datetime import UTC, datetime
 from pathlib import Path
 
-from ruta_dia_agents.audit import JsonlVerificationRecorder
+from ruta_dia_agents.acompanamiento.audit import JsonlVerificationRecorder
+from ruta_dia_agents.acompanamiento.direct_runtime import DirectOpenAIRuntime
+from ruta_dia_agents.acompanamiento.langgraph_workflow import LangGraphRutaDia
+from ruta_dia_agents.compartido.contracts import CandidateResponse, HandoffContract, ProjectState
 from ruta_dia_agents.config import PROJECT_ROOT, Settings
-from ruta_dia_agents.contracts import CandidateResponse, HandoffContract, ProjectState
-from ruta_dia_agents.direct_runtime import DirectOpenAIRuntime
-from ruta_dia_agents.evaluation import structural_checks, write_json
-from ruta_dia_agents.knowledge import KnowledgeCatalog
-from ruta_dia_agents.langgraph_workflow import LangGraphRutaDia
+from ruta_dia_agents.conocimiento.knowledge import KnowledgeCatalog
+from ruta_dia_agents.evaluacion.evaluation import structural_checks, write_json
 
 
 def run_case(case: dict, settings: Settings, output: Path) -> dict:

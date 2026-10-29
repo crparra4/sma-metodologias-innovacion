@@ -12,13 +12,9 @@ from unittest.mock import Mock
 
 import pytest
 
-from ruta_dia_agents.audit import NullRecorder
-from ruta_dia_agents.config import Settings
-from ruta_dia_agents.contracts import ProjectState
-from ruta_dia_agents.knowledge import KnowledgeCatalog
-from ruta_dia_agents.langgraph_workflow import LangGraphRutaDia
-from ruta_dia_agents.memory import NotebookMemory
-from ruta_dia_agents.planificador import (
+from ruta_dia_agents.acompanamiento.audit import NullRecorder
+from ruta_dia_agents.acompanamiento.langgraph_workflow import LangGraphRutaDia
+from ruta_dia_agents.acompanamiento.planificador import (
     RESPONDIDA,
     acepta_seguir,
     bloque_para_metodologo,
@@ -26,7 +22,11 @@ from ruta_dia_agents.planificador import (
     pide_resumen,
     planear,
 )
-from ruta_dia_agents.variantes import PlanificadorConControles
+from ruta_dia_agents.acompanamiento.variantes import PlanificadorConControles
+from ruta_dia_agents.compartido.contracts import ProjectState
+from ruta_dia_agents.config import Settings
+from ruta_dia_agents.conocimiento.knowledge import KnowledgeCatalog
+from ruta_dia_agents.proyectos.memory import NotebookMemory
 
 RETO = "Los afiliados de 60 a 75 años casi no usan la app para agendar sus citas."
 CIERRE_CJM = (

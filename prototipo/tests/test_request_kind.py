@@ -10,9 +10,16 @@ from collections import deque
 
 import pytest
 
-from ruta_dia_agents.audit import NullRecorder
-from ruta_dia_agents.config import Settings
-from ruta_dia_agents.contracts import (
+from ruta_dia_agents.acompanamiento.audit import NullRecorder
+from ruta_dia_agents.acompanamiento.langgraph_workflow import OUT_OF_SCOPE, LangGraphRutaDia
+from ruta_dia_agents.acompanamiento.runtime import (
+    ContractRuntime,
+    grounded_verdict,
+    mentioned_tool,
+    open_question_marks,
+    resolve_kind,
+)
+from ruta_dia_agents.compartido.contracts import (
     CandidateResponse,
     HandoffContract,
     ProjectContext,
@@ -26,16 +33,9 @@ from ruta_dia_agents.contracts import (
     VerificationResult,
     has_value,
 )
-from ruta_dia_agents.knowledge import KnowledgeCatalog, card_section
-from ruta_dia_agents.langgraph_workflow import OUT_OF_SCOPE, LangGraphRutaDia
-from ruta_dia_agents.memory import NotebookMemory
-from ruta_dia_agents.runtime import (
-    ContractRuntime,
-    grounded_verdict,
-    mentioned_tool,
-    open_question_marks,
-    resolve_kind,
-)
+from ruta_dia_agents.config import Settings
+from ruta_dia_agents.conocimiento.knowledge import KnowledgeCatalog, card_section
+from ruta_dia_agents.proyectos.memory import NotebookMemory
 
 
 def catalog() -> KnowledgeCatalog:

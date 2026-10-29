@@ -9,8 +9,8 @@ import sqlite3
 from datetime import UTC, datetime
 from pathlib import Path
 
-from ruta_dia_agents.auth import AuthStore
 from ruta_dia_agents.config import Settings
+from ruta_dia_agents.identidad.auth import AuthStore
 
 
 def reset_password(database: Path, username: str, password: str) -> Path:

@@ -5,7 +5,7 @@ from datetime import UTC, datetime
 from pathlib import Path
 from typing import Protocol
 
-from .contracts import CandidateResponse, HandoffContract, VerificationResult
+from ..compartido.contracts import CandidateResponse, HandoffContract, VerificationResult
 
 
 class VerificationRecorder(Protocol):

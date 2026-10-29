@@ -2,12 +2,14 @@ from __future__ import annotations
 
 import json
 import re
+from typing import TYPE_CHECKING
 
-from openai import OpenAI
-
-from .config import Settings
+from ..config import Settings
+from ..inferencia.modelo_local import cliente_local, llamar_modelo_local
 from .runtime import ContractRuntime, T
-from .tree_diagnosis import ModelReview
+
+if TYPE_CHECKING:
+    from openai import OpenAI
 
 ROLE_INSTRUCTIONS = {
     "orchestrator": (
@@ -46,12 +48,7 @@ class DirectOpenAIRuntime(ContractRuntime):
                 "El runtime LangGraph requiere RUTA_DIA_BASE_URL para el servidor local."
             )
         super().__init__(settings)
-        self.client = client or OpenAI(
-            base_url=settings.base_url,
-            api_key=settings.api_key or "local",
-            timeout=settings.timeout,
-            max_retries=0,
-        )
+        self.client = client or cliente_local(settings)
         self.calls: list[dict] = []
 
     def _run(self, agent: object, description: str, output_model: type[T]) -> T:
@@ -94,32 +91,11 @@ class DirectOpenAIRuntime(ContractRuntime):
         `respaldo_claude.ConClaude` reemplaza solo este paso; todo lo demás del turno (roles,
         Planificador, controles en código) sigue igual con cualquier modelo.
         """
-        options = {
-            "model": self.settings.model,
-            "messages": self._messages(role, description),
-            "temperature": self.settings.temperature,
-            "max_tokens": max_tokens,
-            "response_format": {
-                "type": "json_schema",
-                "json_schema": {
-                    "name": schema_name,
-                    "strict": True,
-                    "schema": output_model.model_json_schema(),
-                },
-            },
-            "extra_body": {
-                "chat_template_kwargs": {"enable_thinking": thinking},
-            },
-        }
-        if self.settings.top_p is not None:
-            options["top_p"] = self.settings.top_p
-        if self.settings.seed is not None:
-            options["seed"] = self.settings.seed + retry
-        response = self.client.chat.completions.create(**options)
-        content = response.choices[0].message.content
-        if not content:
-            raise ValueError(f"{role} no devolvió contenido estructurado")
-        return content, response.usage.model_dump() if response.usage else None
+        return llamar_modelo_local(
+            self.client, self.settings, role=role, messages=self._messages(role, description),
+            schema_name=schema_name, schema=output_model.model_json_schema(),
+            max_tokens=max_tokens, thinking=thinking, retry=retry,
+        )
 
     def modelo_de(self, role: str) -> str:
         """Modelo que responde por este rol (con el modelo local, el mismo para todos)."""
@@ -140,6 +116,7 @@ class DirectOpenAIRuntime(ContractRuntime):
         después que cada una esté literal en el texto."""
         return self._run("journey_extractor", description, output_model)
 
-    def review_tree(self, description: str) -> ModelReview:
-        """Revisión de contenido del árbol; su salida pasa después por `grounded`."""
-        return self._run("tree_reviewer", description, ModelReview)
+    def review_tree(self, description: str, output_model: type[T]) -> T:
+        """Revisión de contenido del árbol; su salida pasa después por
+        `herramientas.tree_diagnosis.grounded`."""
+        return self._run("tree_reviewer", description, output_model)

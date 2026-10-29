@@ -1,7 +1,6 @@
 from __future__ import annotations
 
-from .audit import NullRecorder, VerificationRecorder
-from .contracts import (
+from ..compartido.contracts import (
     ProjectState,
     Severity,
     TurnResult,
@@ -9,8 +8,9 @@ from .contracts import (
     VerificationFinding,
     VerificationResult,
 )
+from ..conocimiento.knowledge import KnowledgeCatalog
+from .audit import NullRecorder, VerificationRecorder
 from .guardrails import StructuralViolation, validate_candidate, validate_handoff
-from .knowledge import KnowledgeCatalog
 from .runtime import AgentRuntime
 
 SAFE_DEGRADATION = (

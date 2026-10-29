@@ -6,13 +6,12 @@ import time
 import uuid
 from pathlib import Path
 
-from fastapi import HTTPException
-
-from .empathy_map import empty_empathy_map
-from .journey import empty_journey
-from .pestel import empty_pestel
-from .problem_tree import MAX_NODES, ProblemTreeUpdate
-from .why_analysis import apply_turn, review_notice
+from ..compartido.errores import Conflicto, NoEncontrado, SinPermiso
+from ..herramientas.empathy_map import empty_empathy_map
+from ..herramientas.journey import empty_journey
+from ..herramientas.pestel import empty_pestel
+from ..herramientas.problem_tree import MAX_NODES, ProblemTreeUpdate
+from ..herramientas.why_analysis import apply_turn, review_notice
 
 
 class SharingStore:
@@ -219,7 +218,7 @@ class SharingStore:
             (project_id, analysis_id),
         ).fetchone()
         if not row:
-            raise HTTPException(404, "El análisis no existe en este proyecto.")
+            raise NoEncontrado("El análisis no existe en este proyecto.")
         return row
 
     def active_why_analysis(self, project_id: str) -> dict | None:
@@ -238,10 +237,10 @@ class SharingStore:
                 "WHERE project_id=? AND status='en_curso'", (project_id,),
             ).fetchone()
             if active:
-                raise HTTPException(409, (
+                raise Conflicto(
                     f"Ya hay un análisis de 5 porqués en curso sobre «{active['cause_text']}». "
                     "Termínalo o descártalo antes de empezar otro."
-                ))
+                )
             row = db.execute(
                 "SELECT content FROM project_problem_trees WHERE project_id=?", (project_id,),
             ).fetchone()
@@ -250,12 +249,12 @@ class SharingStore:
                 (node for node in tree.get("causes", []) if node["id"] == cause_id), None,
             )
             if cause is None:
-                raise HTTPException(404, "Esa causa no está en el árbol guardado.")
+                raise NoEncontrado("Esa causa no está en el árbol guardado.")
             if cause.get("parent"):
-                raise HTTPException(409, (
+                raise Conflicto(
                     "Los 5 porqués parten de una causa principal: una causa de fondo ya no "
                     "admite otra debajo."
-                ))
+                )
             now = int(time.time())
             analysis_id = uuid.uuid4().hex
             db.execute("""
@@ -306,7 +305,7 @@ class SharingStore:
             db.execute("BEGIN IMMEDIATE")
             row = self._why_row(db, project_id, analysis_id)
             if row["status"] != "en_curso":
-                raise HTTPException(409, "El análisis ya terminó; no se puede editar.")
+                raise Conflicto("El análisis ya terminó; no se puede editar.")
             columns = {"steps": "steps_json", "doubts": "doubts_json"}
             texts = [step["text"] for step in json.loads(row["steps_json"])]
             if "steps" in changes and [step["text"] for step in changes["steps"]] != texts:
@@ -327,9 +326,9 @@ class SharingStore:
             db.execute("BEGIN IMMEDIATE")
             row = self._why_row(db, project_id, analysis_id)
             if row["status"] != "en_curso":
-                raise HTTPException(409, "El análisis ya terminó.")
+                raise Conflicto("El análisis ya terminó.")
             if status == "cerrado" and not json.loads(row["steps_json"]):
-                raise HTTPException(409, "Registra al menos una respuesta antes de cerrar.")
+                raise Conflicto("Registra al menos una respuesta antes de cerrar.")
             if reviewing is not None:
                 db.execute("UPDATE project_why_analyses SET reviewing=?, notice='' WHERE id=?",
                            (int(reviewing), analysis_id))
@@ -349,27 +348,27 @@ class SharingStore:
             db.execute("BEGIN IMMEDIATE")
             row = self._why_row(db, project_id, analysis_id)
             if row["status"] != "cerrado":
-                raise HTTPException(409, "Cierra el análisis y elige la causa candidata primero.")
+                raise Conflicto("Cierra el análisis y elige la causa candidata primero.")
             if row["incorporated_node_id"]:
-                raise HTTPException(409, "Esta causa candidata ya está en el árbol.")
+                raise Conflicto("Esta causa candidata ya está en el árbol.")
             tree_row = db.execute(
                 "SELECT content, version FROM project_problem_trees WHERE project_id=?",
                 (project_id,),
             ).fetchone()
             if not tree_row:
-                raise HTTPException(404, "El proyecto ya no tiene árbol guardado.")
+                raise NoEncontrado("El proyecto ya no tiene árbol guardado.")
             tree = json.loads(tree_row["content"])
             origin = next(
                 (node for node in tree["causes"] if node["id"] == row["cause_id"]), None,
             )
             if origin is None:
-                raise HTTPException(409, "La causa de partida ya no está en el árbol.")
+                raise Conflicto("La causa de partida ya no está en el árbol.")
             if origin.get("parent"):
-                raise HTTPException(409, (
+                raise Conflicto(
                     "La causa de partida ahora es una causa de fondo y no admite otra debajo."
-                ))
+                )
             if len(tree["causes"]) >= MAX_NODES:
-                raise HTTPException(409, "El árbol ya tiene el máximo de causas.")
+                raise Conflicto("El árbol ya tiene el máximo de causas.")
             steps = json.loads(row["steps_json"])
             evidence = steps[-1]["evidence"] if steps and steps[-1]["evidence"] else ""
             node_id = f"w{uuid.uuid4().hex[:12]}"
@@ -403,15 +402,14 @@ class SharingStore:
                 WHERE p.id=? AND (p.owner_user_id=? OR m.user_id=?)
             """, (user_id, user_id, project_id, user_id, user_id)).fetchone()
             if not access or access["role"] not in {"owner", "editor"}:
-                raise HTTPException(403, "Tu permiso no permite editar este árbol.")
+                raise SinPermiso("Tu permiso no permite editar este árbol.")
             row = db.execute(
                 "SELECT version FROM project_problem_trees WHERE project_id=?",
                 (project_id,),
             ).fetchone()
             current_version = row["version"] if row else 0
             if current_version != version:
-                raise HTTPException(
-                    409,
+                raise Conflicto(
                     "Otra persona modificó el árbol. "
                     "Actualiza la página para ver la versión actual.",
                 )
@@ -451,13 +449,12 @@ class SharingStore:
                 WHERE p.id=? AND (p.owner_user_id=? OR m.user_id=?)
             """, (user_id, user_id, project_id, user_id, user_id)).fetchone()
             if not access or access["role"] not in {"owner", "editor"}:
-                raise HTTPException(403, f"Tu permiso no permite editar este {name}.")
+                raise SinPermiso(f"Tu permiso no permite editar este {name}.")
             row = db.execute(
                 f"SELECT version FROM {table} WHERE project_id=?", (project_id,),
             ).fetchone()
             if (row["version"] if row else 0) != version:
-                raise HTTPException(
-                    409,
+                raise Conflicto(
                     f"Otra persona modificó el {name}. "
                     "Actualiza la página para ver la versión actual.",
                 )
@@ -530,20 +527,20 @@ class SharingStore:
                 (project_id, owner_id),
             ).fetchone()
             if not project:
-                raise HTTPException(403, "Solo el propietario puede compartir este proyecto.")
+                raise SinPermiso("Solo el propietario puede compartir este proyecto.")
             target = db.execute(
                 "SELECT id, username, display_name FROM users WHERE username=?",
                 (username.strip().lower(),),
             ).fetchone()
             if not target:
-                raise HTTPException(404, "No existe una cuenta con ese usuario.")
+                raise NoEncontrado("No existe una cuenta con ese usuario.")
             if target["id"] == owner_id:
-                raise HTTPException(409, "Ya eres la persona propietaria del proyecto.")
+                raise Conflicto("Ya eres la persona propietaria del proyecto.")
             if db.execute(
                 "SELECT 1 FROM project_members WHERE project_id=? AND user_id=?",
                 (project_id, target["id"]),
             ).fetchone():
-                raise HTTPException(409, "Esa persona ya tiene acceso al proyecto.")
+                raise Conflicto("Esa persona ya tiene acceso al proyecto.")
             invitation_id = uuid.uuid4().hex
             try:
                 db.execute(
@@ -551,7 +548,7 @@ class SharingStore:
                     (invitation_id, project_id, owner_id, target["id"], role, int(time.time())),
                 )
             except sqlite3.IntegrityError as exc:
-                raise HTTPException(409, "Esa persona ya tiene una invitación pendiente.") from exc
+                raise Conflicto("Esa persona ya tiene una invitación pendiente.") from exc
             return {"id": invitation_id, "username": target["username"],
                     "display_name": target["display_name"], "role": role, "status": "pending"}
 
@@ -578,7 +575,7 @@ class SharingStore:
                 (invitation_id, user_id),
             ).fetchone()
             if not invitation:
-                raise HTTPException(404, "La invitación ya no está disponible.")
+                raise NoEncontrado("La invitación ya no está disponible.")
             status = "accepted" if accept else "rejected"
             db.execute(
                 "UPDATE project_invitations SET status=?, responded_at=? WHERE id=?",
@@ -601,7 +598,7 @@ class SharingStore:
                 WHERE p.id=? AND (p.owner_user_id=? OR m.user_id=?)
             """, (requester_id, project_id, requester_id, requester_id)).fetchone()
             if not project:
-                raise HTTPException(403, "No tienes acceso a este proyecto.")
+                raise SinPermiso("No tienes acceso a este proyecto.")
             members = db.execute("""
                 SELECT m.user_id, m.role, u.username, u.display_name,
                        CASE WHEN u.avatar IS NULL THEN 0 ELSE u.avatar_version END AS avatar
@@ -642,18 +639,18 @@ class SharingStore:
                 "SELECT 1 FROM shared_projects WHERE id=? AND owner_user_id=?",
                 (project_id, owner_id),
             ).fetchone():
-                raise HTTPException(403, "Solo el propietario puede administrar el acceso.")
+                raise SinPermiso("Solo el propietario puede administrar el acceso.")
             if role is None:
                 if not db.execute(
                     "DELETE FROM project_members WHERE project_id=? AND user_id=?",
                     (project_id, user_id),
                 ).rowcount:
-                    raise HTTPException(404, "La persona ya no tiene acceso.")
+                    raise NoEncontrado("La persona ya no tiene acceso.")
             elif not db.execute(
                 "UPDATE project_members SET role=? WHERE project_id=? AND user_id=?",
                 (role, project_id, user_id),
             ).rowcount:
-                raise HTTPException(404, "La persona no tiene acceso al proyecto.")
+                raise NoEncontrado("La persona no tiene acceso al proyecto.")
 
     def cancel_invitation(self, invitation_id: str, owner_id: str) -> None:
         with self._connect() as db:
@@ -662,7 +659,7 @@ class SharingStore:
                 WHERE id=? AND status='pending' AND project_id IN
                     (SELECT id FROM shared_projects WHERE owner_user_id=?)
             """, (int(time.time()), invitation_id, owner_id)).rowcount:
-                raise HTTPException(404, "La invitación ya no está disponible.")
+                raise NoEncontrado("La invitación ya no está disponible.")
 
     def leave(self, project_id: str, user_id: str) -> None:
         with self._connect() as db:
@@ -670,7 +667,7 @@ class SharingStore:
                 "DELETE FROM project_members WHERE project_id=? AND user_id=?",
                 (project_id, user_id),
             ).rowcount:
-                raise HTTPException(404, "No formas parte de este proyecto.")
+                raise NoEncontrado("No formas parte de este proyecto.")
 
     def advances(self, project_id: str) -> list[dict]:
         with self._connect() as db:
@@ -694,9 +691,9 @@ class SharingStore:
                 "AND status!='superseded'", (advance_id, project_id),
             ).fetchone()
         if row is None:
-            raise HTTPException(404, "El avance ya no existe.")
+            raise NoEncontrado("El avance ya no existe.")
         if not updated:
-            raise HTTPException(409, "Otra persona corrigió este avance mientras lo editabas. "
+            raise Conflicto("Otra persona corrigió este avance mientras lo editabas. "
                                      "Revisa la versión actual antes de guardar.")
         return dict(row)
 
@@ -708,7 +705,7 @@ class SharingStore:
                 "WHERE id=? AND project_id=? AND status!='superseded'",
                 (int(time.time()), advance_id, project_id),
             ).rowcount:
-                raise HTTPException(404, "El avance ya no existe.")
+                raise NoEncontrado("El avance ya no existe.")
 
     def add_advance(self, project_id: str, user_id: str, author_name: str,
                     content: str, kind: str) -> dict:

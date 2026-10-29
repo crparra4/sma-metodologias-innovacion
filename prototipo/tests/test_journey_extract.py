@@ -7,7 +7,7 @@ from test_sharing import register
 from test_tree_diagnosis import client_with
 from test_why_analysis import RecordingRuntime
 
-from ruta_dia_agents.journey_extract import (
+from ruta_dia_agents.herramientas.journey_extract import (
     MAX_PROPOSALS,
     NotesRequest,
     extraction_model,

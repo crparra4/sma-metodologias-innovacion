@@ -9,19 +9,9 @@ from collections import deque
 
 import pytest
 
-from ruta_dia_agents.audit import NullRecorder
-from ruta_dia_agents.config import Settings
-from ruta_dia_agents.contracts import (
-    CandidateResponse,
-    HandoffContract,
-    ProjectContext,
-    ProjectState,
-    VerificationAssessment,
-    VerificationResult,
-)
-from ruta_dia_agents.knowledge import KnowledgeCatalog
-from ruta_dia_agents.langgraph_workflow import LangGraphRutaDia
-from ruta_dia_agents.runtime import (
+from ruta_dia_agents.acompanamiento.audit import NullRecorder
+from ruta_dia_agents.acompanamiento.langgraph_workflow import LangGraphRutaDia
+from ruta_dia_agents.acompanamiento.runtime import (
     ContractRuntime,
     asks_first_step,
     drop_filler,
@@ -31,13 +21,23 @@ from ruta_dia_agents.runtime import (
     repeats_previous_question,
     unsupported_progress_claims,
 )
-from ruta_dia_agents.sensitive import (
+from ruta_dia_agents.acompanamiento.sensitive import (
     DISTRESS_OPENING,
     SENSITIVE_REPLIES,
     asks_personal_data,
     sensitive_topic,
     shows_distress,
 )
+from ruta_dia_agents.compartido.contracts import (
+    CandidateResponse,
+    HandoffContract,
+    ProjectContext,
+    ProjectState,
+    VerificationAssessment,
+    VerificationResult,
+)
+from ruta_dia_agents.config import Settings
+from ruta_dia_agents.conocimiento.knowledge import KnowledgeCatalog
 
 
 def catalog() -> KnowledgeCatalog:

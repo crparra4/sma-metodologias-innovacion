@@ -3,7 +3,7 @@ import time
 
 import pytest
 
-from ruta_dia_agents.turnos import ModelQueue, ProjectLocks
+from ruta_dia_agents.inferencia.turnos import ModelQueue, ProjectLocks
 
 
 def test_queue_admits_up_to_its_slots_and_then_waits_in_arrival_order():

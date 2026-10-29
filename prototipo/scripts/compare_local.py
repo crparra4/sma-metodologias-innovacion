@@ -222,7 +222,7 @@ def block(model, seed, case_ids, root, port, key, thinking=False):
                 command = [
                     sys.executable,
                     "-m",
-                    "ruta_dia_agents.evaluation",
+                    "ruta_dia_agents.evaluacion.evaluation",
                     "--case",
                     case_id,
                     "--model",

@@ -5,10 +5,10 @@ from dataclasses import replace
 import pytest
 from fastapi.testclient import TestClient
 
-from ruta_dia_agents.auth import AttemptLimiter
+from ruta_dia_agents.compartido.contracts import ProjectState
 from ruta_dia_agents.config import Settings
-from ruta_dia_agents.contracts import ProjectState
-from ruta_dia_agents.memory import NotebookMemory
+from ruta_dia_agents.identidad.auth import AttemptLimiter
+from ruta_dia_agents.proyectos.memory import NotebookMemory
 from ruta_dia_agents.web import MAX_BODY_BYTES, create_app
 
 
@@ -179,7 +179,7 @@ def test_existing_notes_are_claimed_by_the_storage_owner(tmp_path):
         stage = {"notebook_id": "Previo", "stage": 1, "context": {"question": "Reto"}}
         assert client.post("/api/notebooks", json=stage).status_code == 201
         # Nota escrita antes de que existiera el autor.
-        from ruta_dia_agents.notes import NoteRequest
+        from ruta_dia_agents.proyectos.notes import NoteRequest
         with NotebookMemory(settings.memory_path) as memory:
             old = memory.save_note("Previo", NoteRequest(title="Vieja", text="Sin autor"))
         assert old["author_id"] == ""

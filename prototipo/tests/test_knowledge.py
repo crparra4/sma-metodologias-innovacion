@@ -1,5 +1,5 @@
 from ruta_dia_agents.config import Settings
-from ruta_dia_agents.knowledge import KnowledgeCatalog
+from ruta_dia_agents.conocimiento.knowledge import KnowledgeCatalog
 
 
 def test_route_references_only_existing_cards():

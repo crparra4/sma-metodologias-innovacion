@@ -5,10 +5,10 @@ from unittest.mock import Mock
 
 from pydantic import BaseModel
 
+from ruta_dia_agents.acompanamiento.direct_runtime import DirectOpenAIRuntime
+from ruta_dia_agents.compartido.contracts import ProjectContext, ProjectState
 from ruta_dia_agents.config import Settings
-from ruta_dia_agents.contracts import ProjectContext, ProjectState
-from ruta_dia_agents.direct_runtime import DirectOpenAIRuntime
-from ruta_dia_agents.knowledge import KnowledgeCatalog
+from ruta_dia_agents.conocimiento.knowledge import KnowledgeCatalog
 
 
 class ExampleOutput(BaseModel):

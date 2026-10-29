@@ -5,9 +5,9 @@ from fastapi.testclient import TestClient
 from test_langgraph_workflow import FakeRuntime
 from test_sharing import register
 
+from ruta_dia_agents.compartido.contracts import Verdict
 from ruta_dia_agents.config import Settings
-from ruta_dia_agents.contracts import Verdict
-from ruta_dia_agents.tree_diagnosis import (
+from ruta_dia_agents.herramientas.tree_diagnosis import (
     ModelReview,
     grounded,
     rule_findings,
@@ -101,7 +101,7 @@ class ReviewingRuntime(FakeRuntime):
         super().__init__([Verdict.APPROVED])
         self.review, self.error, self.prompts = review, error, []
 
-    def review_tree(self, description):
+    def review_tree(self, description, output_model):
         self.prompts.append(description)
         if self.error:
             raise self.error

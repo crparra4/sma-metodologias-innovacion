@@ -6,17 +6,9 @@ import json
 
 import pytest
 
-from ruta_dia_agents.audit import NullRecorder
-from ruta_dia_agents.config import Settings
-from ruta_dia_agents.contracts import (
-    CandidateResponse,
-    HandoffContract,
-    ProjectState,
-    VerificationAssessment,
-)
-from ruta_dia_agents.knowledge import PROMPT_CARD_LIMIT, KnowledgeCatalog, card_section
-from ruta_dia_agents.langgraph_workflow import OUT_OF_SCOPE, LangGraphRutaDia
-from ruta_dia_agents.runtime import (
+from ruta_dia_agents.acompanamiento.audit import NullRecorder
+from ruta_dia_agents.acompanamiento.langgraph_workflow import OUT_OF_SCOPE, LangGraphRutaDia
+from ruta_dia_agents.acompanamiento.runtime import (
     ContractRuntime,
     answered_block,
     asks_to_confirm_answer,
@@ -30,6 +22,14 @@ from ruta_dia_agents.runtime import (
     resolve_kind,
     state_for_new_card,
 )
+from ruta_dia_agents.compartido.contracts import (
+    CandidateResponse,
+    HandoffContract,
+    ProjectState,
+    VerificationAssessment,
+)
+from ruta_dia_agents.config import Settings
+from ruta_dia_agents.conocimiento.knowledge import PROMPT_CARD_LIMIT, KnowledgeCatalog, card_section
 
 
 def catalog() -> KnowledgeCatalog:

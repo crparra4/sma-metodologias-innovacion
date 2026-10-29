@@ -10,7 +10,7 @@ El propietario invita a otra cuenta a acceder a una misma carpeta de proyecto. L
 
 - `src/ruta_dia_agents/web.py` resuelve memoria y checkpoints según la cuenta autenticada.
 - Cada cuenta dispone de almacenamiento local separado; no existe membresía de proyectos ni infraestructura remota de colaboración.
-- `src/ruta_dia_agents/memory.py` vincula conversaciones, notas y campos validados a `notebook_id`, actualmente usado como nombre e identificador.
+- `src/ruta_dia_agents/proyectos/memory.py` vincula conversaciones, notas y campos validados a `notebook_id`, actualmente usado como nombre e identificador.
 - Las tareas pueden tener `notebook_id` o ser personales. No se debe exponer la agenda completa del propietario al compartir una carpeta.
 - Las cuentas actuales tienen usuario y nombre visible; no disponen de correo verificado ni envío de invitaciones por correo.
 - El botón Compartir actual comparte o copia un resumen de nombre, fase y etapa. Se sustituirá por la gestión de acceso cuando se implemente esta función.

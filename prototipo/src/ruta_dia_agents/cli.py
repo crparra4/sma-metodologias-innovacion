@@ -8,15 +8,15 @@ import sys
 from langgraph.checkpoint.serde.jsonplus import JsonPlusSerializer
 from langgraph.checkpoint.sqlite import SqliteSaver
 
-from .audit import JsonlVerificationRecorder
+from .acompanamiento.audit import JsonlVerificationRecorder
+from .acompanamiento.crewai_runtime import CrewAIRuntime
+from .acompanamiento.langgraph_workflow import LangGraphRutaDia
+from .acompanamiento.service import RutaDiaService
+from .acompanamiento.variantes import VARIANTES
+from .compartido.contracts import ProjectState
 from .config import Settings
-from .contracts import ProjectState
-from .knowledge import KnowledgeCatalog
-from .langgraph_workflow import LangGraphRutaDia
-from .memory import NotebookMemory
-from .runtime import CrewAIRuntime
-from .service import RutaDiaService
-from .variantes import VARIANTES
+from .conocimiento.knowledge import KnowledgeCatalog
+from .proyectos.memory import NotebookMemory
 
 
 def _parser() -> argparse.ArgumentParser:

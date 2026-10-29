@@ -6,16 +6,17 @@ from unittest.mock import Mock
 import pytest
 from fastapi.testclient import TestClient
 
-from ruta_dia_agents.cliente_simulado import (
+from ruta_dia_agents.config import Settings
+from ruta_dia_agents.conocimiento.knowledge import KnowledgeCatalog
+from ruta_dia_agents.practica.cliente_simulado import (
     REGLAS,
     instruccion_personaje,
     responder,
     retroalimentacion,
     revisar_pregunta,
 )
-from ruta_dia_agents.config import Settings
-from ruta_dia_agents.knowledge import KnowledgeCatalog
-from ruta_dia_agents.memory import NotebookMemory
+from ruta_dia_agents.practica.registro import RegistroPracticas
+from ruta_dia_agents.proyectos.memory import NotebookMemory
 from ruta_dia_agents.web import create_app
 
 PERSONA = "Don Hernando, 67 años, pensionado de Ibagué; desconfía de poner la clave en el celular."
@@ -114,9 +115,10 @@ def test_a_practice_belongs_to_whoever_created_it(tmp_path):
         memoria.connection.execute(
             "INSERT INTO notebooks (notebook_id, phase, stage, role, active_tool, "
             "completed_tools_json, created_at, updated_at) VALUES ('p','D',1,'','','[]','x','x')")
-        practica = memoria.crear_practica("p", PERSONA, participant_id="ana")
-        assert memoria.practica("p", practica["id"], "ana") is not None
-        assert memoria.practica("p", practica["id"], "luis") is None
+        registro = RegistroPracticas(memoria.connection)
+        practica = registro.crear("p", PERSONA, participant_id="ana")
+        assert registro.obtener("p", practica["id"], "ana") is not None
+        assert registro.obtener("p", practica["id"], "luis") is None
 
 
 def test_practices_are_listed_newest_first_for_whoever_created_them(app):

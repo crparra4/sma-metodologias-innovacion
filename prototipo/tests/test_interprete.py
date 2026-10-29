@@ -6,15 +6,15 @@ from unittest.mock import Mock
 
 import pytest
 
-from ruta_dia_agents.config import Settings
-from ruta_dia_agents.contracts import ProjectState
-from ruta_dia_agents.knowledge import KnowledgeCatalog
-from ruta_dia_agents.variantes import (
+from ruta_dia_agents.acompanamiento.variantes import (
     InterpreteAmpliado,
     InterpreteAparte,
     SoloControlesEnCodigo,
     aclaracion_breve,
 )
+from ruta_dia_agents.compartido.contracts import ProjectState
+from ruta_dia_agents.config import Settings
+from ruta_dia_agents.conocimiento.knowledge import KnowledgeCatalog
 
 DUDA = "Lo de las bolsas blanca, negra y verde, ¿eso cuenta como político?"
 LECTURA = {

@@ -5,9 +5,9 @@ from test_langgraph_workflow import FakeRuntime
 from test_sharing import register
 from test_tree_diagnosis import FLAWED, client_with, node
 
-from ruta_dia_agents.contracts import Verdict
-from ruta_dia_agents.runtime import five_whys_asks_user_why, locked_tool_selection
-from ruta_dia_agents.why_analysis import (
+from ruta_dia_agents.acompanamiento.runtime import five_whys_asks_user_why, locked_tool_selection
+from ruta_dia_agents.compartido.contracts import Verdict
+from ruta_dia_agents.herramientas.why_analysis import (
     apply_turn,
     as_clause,
     context_text,

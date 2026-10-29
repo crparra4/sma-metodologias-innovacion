@@ -23,8 +23,38 @@ from openai import OpenAI
 from pydantic import BaseModel, Field, field_validator
 from starlette.middleware.trustedhost import TrustedHostMiddleware
 
-from .audit import JsonlVerificationRecorder
-from .auth import (
+from .acompanamiento.audit import JsonlVerificationRecorder
+from .acompanamiento.langgraph_workflow import LangGraphRutaDia
+from .acompanamiento.sensitive import sensitive_topic
+from .acompanamiento.variantes import VARIANTES
+from .compartido.contracts import NotebookColor, ProjectContext, ProjectState, TurnResult
+from .compartido.errores import ErrorDeDominio
+from .config import PROJECT_ROOT, Settings
+from .conocimiento.knowledge import KnowledgeCatalog
+from .herramientas.empathy_map import EmpathyMapUpdate
+from .herramientas.empathy_map import context_lines as empathy_context
+from .herramientas.journey import JourneyUpdate
+from .herramientas.journey import context_lines as journey_context
+from .herramientas.journey_extract import (
+    NotesRequest,
+    extraction_model,
+    extraction_prompt,
+    grounded_quotes,
+)
+from .herramientas.pestel import PestelUpdate
+from .herramientas.pestel import context_lines as pestel_context
+from .herramientas.problem_tree import ProblemTreeUpdate
+from .herramientas.tree_diagnosis import (
+    TREE_TOOL_ID,
+    ModelReview,
+    grounded,
+    review_prompt,
+    rule_findings,
+    summary_text,
+)
+from .herramientas.why_analysis import TOOL_ID as WHY_TOOL_ID
+from .herramientas.why_analysis import WhyClose, WhyStart, WhyUpdate, context_text
+from .identidad.auth import (
     AVATAR_MAX_BYTES,
     COOKIE_NAME,
     SESSION_SECONDS,
@@ -33,38 +63,20 @@ from .auth import (
     User,
     avatar_type,
 )
-from .cliente_simulado import AVISO as AVISO_PRACTICA
-from .cliente_simulado import responder as responder_cliente
-from .cliente_simulado import retroalimentacion, revisar_pregunta
-from .config import PROJECT_ROOT, Settings
-from .contracts import NotebookColor, ProjectContext, ProjectState, TurnResult
-from .empathy_map import EmpathyMapUpdate
-from .empathy_map import context_lines as empathy_context
-from .journey import JourneyUpdate
-from .journey import context_lines as journey_context
-from .journey_extract import NotesRequest, extraction_model, extraction_prompt, grounded_quotes
-from .knowledge import KnowledgeCatalog
-from .langgraph_workflow import LangGraphRutaDia
-from .memory import EditConflict, NotebookMemory
-from .notes import NoteRequest
-from .pestel import PestelUpdate
-from .pestel import context_lines as pestel_context
-from .problem_tree import ProblemTreeUpdate
-from .respaldo_claude import ModeloNoDisponible, Respaldo
-from .sensitive import sensitive_topic
-from .sharing import SharingStore
-from .tasks import TaskRequest
-from .tree_diagnosis import (
-    TREE_TOOL_ID,
-    grounded,
-    review_prompt,
-    rule_findings,
-    summary_text,
+from .inferencia.respaldo_claude import ModeloNoDisponible, Respaldo
+from .inferencia.turnos import ModelQueue, ProjectLocks
+from .practica.cliente_simulado import AVISO as AVISO_PRACTICA
+from .practica.cliente_simulado import (
+    mensajes_entrevista,
+    retroalimentacion,
+    revisar_pregunta,
 )
-from .turnos import ModelQueue, ProjectLocks
-from .variantes import VARIANTES
-from .why_analysis import TOOL_ID as WHY_TOOL_ID
-from .why_analysis import WhyClose, WhyStart, WhyUpdate, context_text
+from .practica.cliente_simulado import responder as responder_cliente
+from .practica.registro import RegistroPracticas
+from .proyectos.memory import EditConflict, NotebookMemory
+from .proyectos.notes import NoteRequest
+from .proyectos.sharing import SharingStore
+from .proyectos.tasks import TaskRequest
 
 logger = logging.getLogger(__name__)
 
@@ -347,6 +359,12 @@ def create_app(
     settings.checkpoint_path.parent.mkdir(parents=True, exist_ok=True)
     restrict_data_dir(settings.memory_path.parent)
     app = FastAPI(title="Ruta DIA local", docs_url=None, redoc_url=None)
+
+    @app.exception_handler(ErrorDeDominio)
+    async def error_de_dominio(_request: Request, exc: ErrorDeDominio) -> JSONResponse:
+        """Los contextos no conocen HTTP: aquí su error pasa a la respuesta con su estado."""
+        return JSONResponse({"detail": exc.mensaje}, status_code=exc.estado)
+
     # El túnel agrega su dominio (p. ej. `*.trycloudflare.com`); sin él solo se entra en local.
     public_hosts = [host.strip() for host in os.getenv("HILO_HOSTS_PUBLICOS", "").split(",")
                     if host.strip()]
@@ -1041,7 +1059,8 @@ def create_app(
 
     def _practica(access: dict, practica_id: str, request: Request, memory) -> dict:
         user = request.state.user
-        practica = memory.practica(access["notebook_id"], practica_id, user.id if user else "")
+        practica = RegistroPracticas(memory.connection).obtener(
+            access["notebook_id"], practica_id, user.id if user else "")
         if practica is None:
             raise HTTPException(404, "La práctica no existe.")
         return practica
@@ -1053,7 +1072,7 @@ def create_app(
         user = request.state.user
         with NotebookMemory(project_memory_path(access)) as memory:
             require_notebook(memory, access["notebook_id"])
-            practica = memory.crear_practica(
+            practica = RegistroPracticas(memory.connection).crear(
                 access["notebook_id"], body.persona.strip(), user.id if user else "")
         return {**practica, "aviso": AVISO_PRACTICA}
 
@@ -1063,7 +1082,8 @@ def create_app(
         access = project_access(project_id)
         user = request.state.user
         with NotebookMemory(project_memory_path(access)) as memory:
-            return memory.practicas(access["notebook_id"], user.id if user else "")
+            return RegistroPracticas(memory.connection).listar(
+                access["notebook_id"], user.id if user else "")
 
     @app.get("/api/projects/{project_id}/practicas/{practica_id}")
     def ver_practica(project_id: str, practica_id: str, request: Request):
@@ -1088,7 +1108,7 @@ def create_app(
             runtime = nuevo_runtime()
             argumentos = (practica["persona"], reto, practica["turnos"], body.texto.strip())
             if hasattr(runtime, "responder_cliente"):  # respaldo con Claude
-                respuesta = runtime.responder_cliente(*argumentos)
+                respuesta = runtime.responder_cliente(mensajes_entrevista(*argumentos))
             else:
                 respuesta = responder_cliente(runtime.client, settings.model, *argumentos)
         except Exception:
@@ -1099,7 +1119,8 @@ def create_app(
                 _close_runtime(runtime)
             model_queue.release()
         with NotebookMemory(project_memory_path(access)) as memory:
-            memory.agregar_turnos_practica(practica_id, body.texto.strip(), respuesta)
+            RegistroPracticas(memory.connection).agregar_turnos(
+                practica_id, body.texto.strip(), respuesta)
         reglas = revisar_pregunta(body.texto)
         return {
             "respuesta": respuesta,
@@ -1147,7 +1168,7 @@ def create_app(
                     model_status = "no_disponible"
                 else:
                     prompt = review_prompt(tree, catalog.tool_card(TREE_TOOL_ID))
-                    content, discarded = grounded(review(prompt), tree)
+                    content, discarded = grounded(review(prompt, ModelReview), tree)
                     findings.extend(content)
                     model_status = "ok"
             except Exception:

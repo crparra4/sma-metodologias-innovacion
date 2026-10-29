@@ -12,7 +12,7 @@ from collections import deque
 from dataclasses import dataclass
 from pathlib import Path
 
-from fastapi import HTTPException
+from ..compartido.errores import Conflicto, NoEncontrado
 
 SESSION_SECONDS = 12 * 60 * 60
 COOKIE_NAME = "hilo_session"
@@ -140,7 +140,7 @@ class AuthStore:
                 )
                 db.commit()
             except sqlite3.IntegrityError as exc:
-                raise HTTPException(409, "Ese usuario ya existe. Elige otro.") from exc
+                raise Conflicto("Ese usuario ya existe. Elige otro.") from exc
         return User(user_id, username, display_name, legacy)
 
     def authenticate(self, username: str, password: str) -> User | None:
@@ -272,7 +272,7 @@ class AuthStore:
     def storage_path(self, user_id: str, legacy_path: Path) -> Path:
         user = self.user(user_id)
         if not user:
-            raise HTTPException(404, "La cuenta propietaria ya no existe.")
+            raise NoEncontrado("La cuenta propietaria ya no existe.")
         return self.memory_path(user, legacy_path)
 
     def memory_path(self, user: User, legacy_path: Path) -> Path:

@@ -6,17 +6,7 @@ from unittest.mock import Mock
 
 import pytest
 
-from ruta_dia_agents.config import Settings
-from ruta_dia_agents.contracts import (
-    HandoffContract,
-    ProjectState,
-    TurnResult,
-    Verdict,
-    VerificationResult,
-)
-from ruta_dia_agents.knowledge import KnowledgeCatalog
-from ruta_dia_agents.memory import NotebookMemory
-from ruta_dia_agents.planificador import (
+from ruta_dia_agents.acompanamiento.planificador import (
     NO_SABE,
     RESPONDIDA,
     _todas,
@@ -29,7 +19,17 @@ from ruta_dia_agents.planificador import (
     planear,
     salida_con_plan,
 )
-from ruta_dia_agents.variantes import PlanificadorConControles
+from ruta_dia_agents.acompanamiento.variantes import PlanificadorConControles
+from ruta_dia_agents.compartido.contracts import (
+    HandoffContract,
+    ProjectState,
+    TurnResult,
+    Verdict,
+    VerificationResult,
+)
+from ruta_dia_agents.config import Settings
+from ruta_dia_agents.conocimiento.knowledge import KnowledgeCatalog
+from ruta_dia_agents.proyectos.memory import NotebookMemory
 
 RETO = "Lanzar una app que pague por reciclar en conjuntos de Bogotá."
 

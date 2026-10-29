@@ -7,8 +7,8 @@ import pytest
 from fastapi.testclient import TestClient
 from test_langgraph_workflow import FakeRuntime
 
+from ruta_dia_agents.compartido.contracts import Verdict
 from ruta_dia_agents.config import Settings
-from ruta_dia_agents.contracts import Verdict
 from ruta_dia_agents.web import create_app
 
 
@@ -101,7 +101,7 @@ def test_tasks_created_before_calendar_default_to_task_kind(settings):
     import sqlite3
     from datetime import UTC, datetime
 
-    from ruta_dia_agents.memory import NotebookMemory
+    from ruta_dia_agents.proyectos.memory import NotebookMemory
 
     NotebookMemory(settings.memory_path).close()
     with sqlite3.connect(settings.memory_path) as db:

@@ -1,7 +1,7 @@
 import pytest
 from pydantic import ValidationError
 
-from ruta_dia_agents.contracts import ExpertiseLevel, HandoffContract, ToolRecommendation
+from ruta_dia_agents.compartido.contracts import ExpertiseLevel, HandoffContract, ToolRecommendation
 
 
 def test_handoff_rejects_more_than_three_recommendations():

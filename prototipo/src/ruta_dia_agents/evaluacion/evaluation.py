@@ -11,12 +11,12 @@ from pathlib import Path
 
 from crewai.llms.hooks.base import BaseInterceptor
 
-from .audit import JsonlVerificationRecorder
-from .config import PROJECT_ROOT, Settings
-from .contracts import CandidateResponse, HandoffContract, ProjectState
-from .knowledge import KnowledgeCatalog
-from .runtime import CrewAIRuntime, build_llm
-from .service import RutaDiaService
+from ..acompanamiento.audit import JsonlVerificationRecorder
+from ..acompanamiento.crewai_runtime import CrewAIRuntime, build_llm
+from ..acompanamiento.service import RutaDiaService
+from ..compartido.contracts import CandidateResponse, HandoffContract, ProjectState
+from ..config import PROJECT_ROOT, Settings
+from ..conocimiento.knowledge import KnowledgeCatalog
 
 
 def write_json(path: Path, value) -> None:

@@ -3,9 +3,9 @@ from unittest.mock import patch
 
 import httpx
 
+from ruta_dia_agents.acompanamiento.crewai_runtime import build_llm
 from ruta_dia_agents.config import Settings
-from ruta_dia_agents.evaluation import WireRecorder, structural_checks
-from ruta_dia_agents.runtime import build_llm
+from ruta_dia_agents.evaluacion.evaluation import WireRecorder, structural_checks
 
 
 def test_local_model_cannot_fall_back_to_default_cloud_provider():
@@ -18,7 +18,7 @@ def test_local_model_cannot_fall_back_to_default_cloud_provider():
         max_tokens=384,
         seed=42,
     )
-    with patch("ruta_dia_agents.runtime.LLM") as factory:
+    with patch("ruta_dia_agents.acompanamiento.crewai_runtime.LLM") as factory:
         build_llm(settings)
     options = factory.call_args.kwargs
     assert options["custom_openai"] is True
@@ -30,7 +30,7 @@ def test_local_model_cannot_fall_back_to_default_cloud_provider():
 
 def test_cloud_default_is_preserved_without_local_endpoint():
     settings = replace(Settings.from_env(), base_url=None, max_tokens=None, seed=None, top_p=None)
-    with patch("ruta_dia_agents.runtime.LLM") as factory:
+    with patch("ruta_dia_agents.acompanamiento.crewai_runtime.LLM") as factory:
         build_llm(settings)
     assert factory.call_args.kwargs == {
         "model": settings.model,

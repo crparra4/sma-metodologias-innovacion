@@ -4,8 +4,8 @@ from dataclasses import replace
 from fastapi.testclient import TestClient
 from test_langgraph_workflow import FakeRuntime
 
+from ruta_dia_agents.compartido.contracts import Verdict
 from ruta_dia_agents.config import Settings
-from ruta_dia_agents.contracts import Verdict
 from ruta_dia_agents.web import create_app
 
 PASSWORD = "una-clave-local-segura"

@@ -8,16 +8,20 @@ from test_sharing import accept_first_invitation, login, logout, register
 from test_tree_diagnosis import client_with
 from test_why_analysis import RecordingRuntime, chat
 
+from ruta_dia_agents.acompanamiento.runtime import grounded_verdict, named_part
+from ruta_dia_agents.compartido.contracts import (
+    CandidateResponse,
+    HandoffContract,
+    VerificationAssessment,
+)
 from ruta_dia_agents.config import Settings
-from ruta_dia_agents.contracts import CandidateResponse, HandoffContract, VerificationAssessment
-from ruta_dia_agents.empathy_map import (
+from ruta_dia_agents.conocimiento.knowledge import KnowledgeCatalog
+from ruta_dia_agents.herramientas.empathy_map import (
     BLOCKS,
     EmpathyMapUpdate,
     context_lines,
     empty_empathy_map,
 )
-from ruta_dia_agents.knowledge import KnowledgeCatalog
-from ruta_dia_agents.runtime import grounded_verdict, named_part
 
 
 def note(note_id, text, basis="", source=""):

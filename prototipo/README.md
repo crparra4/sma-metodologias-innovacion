@@ -13,6 +13,15 @@ CrewAI se conserva como línea base comparativa. Antes del verificador semántic
 estructural sin LLM. Si el verificador rechaza, el grafo vuelve una vez al Metodólogo; un segundo
 rechazo produce una respuesta segura y explícita.
 
+El código es un **monolito modular** organizado por contextos delimitados (DDD): una carpeta por
+contexto dentro de `src/ruta_dia_agents/` (acompañamiento, conocimiento, herramientas, práctica,
+proyectos, identidad, inferencia, evaluación y compartido). Qué hace cada uno, cómo se relacionan
+y qué significa cada término está en [`docs/dominio-ddd.md`](docs/dominio-ddd.md);
+`tests/test_arquitectura.py` comprueba que ningún contexto use otro que no le corresponde.
+
+Para correrlo en un contenedor Docker (un solo contenedor, con los datos montados fuera de la
+imagen) están `Dockerfile` y `compose.yaml`; los pasos, en [`docs/contenedores.md`](docs/contenedores.md).
+
 ## Preparación
 
 Requiere Python 3.10–3.13, `uv`, Node.js y `pnpm`. Funciona en Windows y en Linux

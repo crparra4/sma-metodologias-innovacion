@@ -8,8 +8,7 @@ from langgraph.checkpoint.memory import InMemorySaver
 from langgraph.graph import END, START, StateGraph
 from typing_extensions import TypedDict
 
-from .audit import NullRecorder, VerificationRecorder
-from .contracts import (
+from ..compartido.contracts import (
     DIRECT_KINDS,
     CandidateResponse,
     ExpertiseLevel,
@@ -22,8 +21,9 @@ from .contracts import (
     VerificationResult,
     has_value,
 )
+from ..conocimiento.knowledge import KnowledgeCatalog
+from .audit import NullRecorder, VerificationRecorder
 from .guardrails import StructuralViolation, validate_candidate, validate_handoff
-from .knowledge import KnowledgeCatalog
 from .planificador import pide_resumen, resumen_del_avance, salida_con_plan
 from .runtime import AgentRuntime, is_thanks, next_step_hint
 from .sensitive import DISTRESS_OPENING, SENSITIVE_REPLIES, sensitive_topic, shows_distress

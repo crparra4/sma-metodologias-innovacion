@@ -24,8 +24,7 @@ from pathlib import Path
 
 from pydantic import ValidationError
 
-from .cliente_simulado import mensajes_entrevista
-from .config import Settings
+from ..config import Settings
 
 # USD por millón de tokens (entrada, salida). Un modelo que no esté aquí (por ejemplo, el que
 # responde cuando el pedido se reenvía por una negativa) se cobra con la tarifa más alta.
@@ -158,10 +157,10 @@ class ConClaude:
                   + (getattr(uso, "cache_creation_input_tokens", None) or 0))
         return texto, {"prompt_tokens": leidos, "completion_tokens": uso.output_tokens}
 
-    def responder_cliente(self, persona: str, reto: str, turnos: list[dict],
-                          pregunta: str) -> str:
-        """El Cliente simulado con Claude: el mismo personaje y la misma entrevista."""
-        mensajes = mensajes_entrevista(persona, reto, turnos, pregunta)
+    def responder_cliente(self, mensajes: list[dict]) -> str:
+        """El Cliente simulado con Claude: recibe los mensajes que arma
+        `practica.cliente_simulado.mensajes_entrevista` (el mismo personaje y la misma
+        entrevista que con el modelo local)."""
         respuesta = self._pedir("client", self.settings.claude_modelo, mensajes[0]["content"],
                                 mensajes[1:], {"effort": "low"})
         texto = _texto(respuesta).strip()

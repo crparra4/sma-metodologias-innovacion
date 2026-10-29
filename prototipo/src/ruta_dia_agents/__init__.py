@@ -1,7 +1,7 @@
 """Nucleo multiagente de Ruta DIA."""
 
-from .contracts import ProjectState, TurnResult
-from .service import RutaDiaService
+from .acompanamiento.service import RutaDiaService
+from .compartido.contracts import ProjectState, TurnResult
 
 __all__ = ["ProjectState", "RutaDiaService", "TurnResult"]
 

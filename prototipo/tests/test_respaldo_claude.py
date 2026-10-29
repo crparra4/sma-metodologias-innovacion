@@ -7,9 +7,9 @@ from fastapi.testclient import TestClient
 from pydantic import BaseModel, Field
 
 from ruta_dia_agents import web
+from ruta_dia_agents.acompanamiento.variantes import PlanificadorConControles
 from ruta_dia_agents.config import Settings
-from ruta_dia_agents.respaldo_claude import Gasto, Respaldo, costo, esquema_para_claude
-from ruta_dia_agents.variantes import PlanificadorConControles
+from ruta_dia_agents.inferencia.respaldo_claude import Gasto, Respaldo, costo, esquema_para_claude
 from ruta_dia_agents.web import create_app, origen_del_turno
 
 

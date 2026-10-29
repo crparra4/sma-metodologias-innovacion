@@ -1,13 +1,13 @@
-from ruta_dia_agents.contracts import (
+from ruta_dia_agents.acompanamiento.runtime import (
+    claim_supported_by_user,
+    grounded_verdict,
+    method_step_supported,
+)
+from ruta_dia_agents.compartido.contracts import (
     CandidateResponse,
     HandoffContract,
     TemplateUpdate,
     VerificationAssessment,
-)
-from ruta_dia_agents.runtime import (
-    claim_supported_by_user,
-    grounded_verdict,
-    method_step_supported,
 )
 
 

@@ -1,8 +1,9 @@
 from collections import deque
 
-from ruta_dia_agents.audit import NullRecorder
-from ruta_dia_agents.config import Settings
-from ruta_dia_agents.contracts import (
+from ruta_dia_agents.acompanamiento.audit import NullRecorder
+from ruta_dia_agents.acompanamiento.langgraph_workflow import LangGraphRutaDia
+from ruta_dia_agents.acompanamiento.service import SAFE_DEGRADATION
+from ruta_dia_agents.compartido.contracts import (
     CandidateResponse,
     HandoffContract,
     ProjectState,
@@ -12,9 +13,8 @@ from ruta_dia_agents.contracts import (
     VerificationFinding,
     VerificationResult,
 )
-from ruta_dia_agents.knowledge import KnowledgeCatalog
-from ruta_dia_agents.langgraph_workflow import LangGraphRutaDia
-from ruta_dia_agents.service import SAFE_DEGRADATION
+from ruta_dia_agents.config import Settings
+from ruta_dia_agents.conocimiento.knowledge import KnowledgeCatalog
 
 
 class FakeRuntime:

@@ -21,7 +21,7 @@ from dataclasses import dataclass, field
 from functools import lru_cache
 from pathlib import Path
 
-ARCHIVO = Path(__file__).with_name("partes_fichas.json")
+ARCHIVO = Path(__file__).parents[1] / "conocimiento" / "partes_fichas.json"
 RESPONDIDA = "respondida"
 NO_SABE = "no_sabe"
 LARGO_TEXTO = 200
