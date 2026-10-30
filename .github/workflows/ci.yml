@@ -1,0 +1,60 @@
+# Integración continua de Hilo: en cada cambio corre el lint y las pruebas automatizadas del
+# servicio en Python y compila la interfaz web. Las versiones coinciden con el Dockerfile.
+name: CI
+
+on:
+  push:
+    branches: [main, develop, staging]
+    paths-ignore:
+      - "docs/**"
+      - "**/*.md"
+  pull_request:
+    paths-ignore:
+      - "docs/**"
+      - "**/*.md"
+  workflow_dispatch:
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  servicio:
+    name: Servicio (lint y pruebas)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v6
+        with:
+          version: "0.12.21"
+          enable-cache: true
+          cache-dependency-glob: uv.lock
+      - name: Instalar Python (según .python-version)
+        run: uv python install
+      - name: Instalar dependencias
+        run: uv sync --extra dev --frozen
+      - name: Lint
+        run: uv run --frozen ruff check src tests
+      - name: Pruebas automatizadas
+        run: uv run --frozen pytest
+
+  interfaz:
+    name: Interfaz web (compilación)
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: frontend
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "24"
+      - name: Activar pnpm
+        run: corepack enable
+      - name: Instalar dependencias
+        run: pnpm install --frozen-lockfile
+      - name: Compilar (tsc y Vite)
+        run: pnpm build

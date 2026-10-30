@@ -1,0 +1,115 @@
+{
+  "descripcion": "Partes de cada ficha para el Planificador. Cada definición es texto literal del «Cómo se usa» de la ficha. «prellenar: reto» marca la parte que ya responde el reto del cuaderno. Trabajo de campo no tiene pasos numerados y queda fuera. Vive junto al código porque knowledge/ es de solo lectura en el disco compartido.",
+  "fichas": {
+    "arbol-problemas": [
+      {"id": "problema", "nombre": "Problema central", "alias": ["problema central", "tronco"], "prellenar": "reto", "definicion": "Escribe el **problema central** en una frase (el tronco)."},
+      {"id": "causas", "nombre": "Causas", "alias": ["causas", "causa", "raices", "raiz"], "definicion": "Identifica las **causas**: pregunta \"¿por qué ocurre?\" y anótalas como raíces."},
+      {"id": "causa_de_fondo", "nombre": "Causa de fondo", "alias": ["causa de fondo", "causa raiz", "causas de fondo"], "definicion": "Baja a la **causa de fondo**: sobre cada causa vuelve a preguntar \"¿y por qué ocurre eso?\" y anida la respuesta debajo."},
+      {"id": "efectos", "nombre": "Efectos", "alias": ["efectos", "efecto", "consecuencias", "consecuencia", "ramas"], "definicion": "Identifica los **efectos/consecuencias** del problema (las ramas)."},
+      {"id": "revision", "nombre": "Revisión", "alias": ["revision", "relaciones"], "definicion": "Revisa las relaciones y ajusta. Criterio: cada causa debe poder leerse como \"esto provoca el problema\", y cada efecto como \"el problema provoca esto\"."}
+    ],
+    "cinco-porques": [
+      {"id": "punto_de_partida", "nombre": "Punto de partida", "alias": ["punto de partida"], "prellenar": "reto", "definicion": "Parte de un problema o de una causa concreta."},
+      {"id": "porque_1", "nombre": "Primer porqué", "alias": ["primer porque", "primer por que"], "definicion": "Pregunta: ¿por qué ocurre? → anota la respuesta y, si la tienes, de dónde sale."},
+      {"id": "porque_2", "nombre": "Segundo porqué", "alias": ["segundo porque", "segundo por que"], "definicion": "Sobre esa respuesta, vuelve a preguntar ¿por qué? Pregunta por lo último respondido, no por el punto de partida."},
+      {"id": "porque_3", "nombre": "Tercer porqué", "alias": ["tercer porque", "tercer por que"], "definicion": "Sobre esa respuesta, vuelve a preguntar ¿por qué? Pregunta por lo último respondido, no por el punto de partida."},
+      {"id": "porque_4", "nombre": "Cuarto porqué", "alias": ["cuarto porque", "cuarto por que"], "definicion": "Sobre esa respuesta, vuelve a preguntar ¿por qué? Pregunta por lo último respondido, no por el punto de partida."},
+      {"id": "porque_5", "nombre": "Quinto porqué", "alias": ["quinto porque", "quinto por que"], "definicion": "Sobre esa respuesta, vuelve a preguntar ¿por qué? Pregunta por lo último respondido, no por el punto de partida."},
+      {"id": "revision", "nombre": "Revisión de la cadena", "alias": ["revisar la cadena", "revision de la cadena"], "definicion": "Revisa la cadena cuando decidas detenerte, tengas o no cinco respuestas: cada paso debe explicar el anterior."}
+    ],
+    "pestel": [
+      {"id": "reto", "nombre": "Reto", "alias": ["reto"], "prellenar": "reto", "definicion": "Define el reto o la situación a analizar en una frase."},
+      {"id": "politico", "nombre": "Político", "alias": ["politico", "politica", "politicos", "politicas"], "definicion": "**Político:** normativas, políticas públicas, decisiones de gobierno."},
+      {"id": "economico", "nombre": "Económico", "alias": ["economico", "economica", "economicos", "economia"], "definicion": "**Económico:** costos, presupuesto, situación económica de los clientes o usuarios."},
+      {"id": "social", "nombre": "Social", "alias": ["social", "sociales"], "definicion": "**Social:** comportamientos, expectativas y necesidades de las personas."},
+      {"id": "tecnologico", "nombre": "Tecnológico", "alias": ["tecnologico", "tecnologica", "tecnologia"], "definicion": "**Tecnológico:** canales digitales, automatización, herramientas disponibles."},
+      {"id": "ecologico", "nombre": "Ecológico", "alias": ["ecologico", "ecologica", "ambiental", "sostenibilidad"], "definicion": "**Ecológico:** factores ambientales o de sostenibilidad relevantes."},
+      {"id": "legal", "nombre": "Legal", "alias": ["legal", "legales", "leyes", "ley"], "definicion": "**Legal:** leyes, regulaciones y obligaciones que aplican."},
+      {"id": "oportunidad_amenaza", "nombre": "Oportunidades y amenazas", "alias": ["oportunidad o amenaza", "oportunidades y amenazas"], "definicion": "Marca cada elemento como **oportunidad** o **amenaza**."},
+      {"id": "priorizar", "nombre": "Priorizar", "alias": ["priorizar", "mas relevantes"], "definicion": "Prioriza los 3–5 factores más relevantes para tu reto."}
+    ],
+    "customer-journey": [
+      {"id": "usuario_escenario", "nombre": "Usuario y escenario", "alias": ["usuario", "escenario"], "definicion": "Define el **usuario** y el **escenario** (qué recorrido se analiza)."},
+      {"id": "etapas", "nombre": "Etapas", "alias": ["etapas"], "definicion": "Lista las **etapas** del recorrido, en orden."},
+      {"id": "detalle", "nombre": "Acciones, contactos, emociones y dolores", "alias": ["acciones", "puntos de contacto", "emociones", "emocion", "dolores"], "definicion": "Por cada etapa anota: **acciones**, **puntos de contacto**, **emoción** y **dolores**."},
+      {"id": "oportunidades", "nombre": "Oportunidades de mejora", "alias": ["oportunidades de mejora", "oportunidades", "mejoras"], "definicion": "Identifica **oportunidades de mejora** en las etapas más críticas."}
+    ],
+    "mapa-empatia": [
+      {"id": "usuario", "nombre": "Usuario objetivo", "alias": ["usuario objetivo"], "definicion": "Define el usuario objetivo y completa cada bloque con lo que sabes/observas"},
+      {"id": "piensa_siente", "nombre": "¿Qué piensa y siente?", "alias": ["piensa y siente"], "definicion": "**¿Qué piensa y siente?** sus preocupaciones, aspiraciones."},
+      {"id": "ve", "nombre": "¿Qué ve?", "alias": ["que ve"], "definicion": "**¿Qué ve?** su entorno, lo que le rodea."},
+      {"id": "oye", "nombre": "¿Qué oye?", "alias": ["que oye"], "definicion": "**¿Qué oye?** lo que dicen amigos, jefe, influencias."},
+      {"id": "dice_hace", "nombre": "¿Qué dice y hace?", "alias": ["dice y hace"], "definicion": "**¿Qué dice y hace?** su comportamiento y discurso."},
+      {"id": "dolores", "nombre": "Dolores", "alias": ["dolores", "pains"], "definicion": "**Dolores (pains):** frustraciones, miedos, obstáculos."},
+      {"id": "necesidades", "nombre": "Necesidades", "alias": ["necesidades", "gains"], "definicion": "**Necesidades (gains):** deseos, metas, qué considera éxito."}
+    ],
+    "canvas-propuesta-valor": [
+      {"id": "trabajos", "nombre": "Trabajos del cliente", "alias": ["trabajos"], "definicion": "**Perfil del cliente:** define sus **trabajos** (lo que intenta lograr), **dolores** y **alegrías**."},
+      {"id": "dolores", "nombre": "Dolores", "alias": ["dolores"], "definicion": "**Perfil del cliente:** define sus **trabajos** (lo que intenta lograr), **dolores** y **alegrías**."},
+      {"id": "alegrias", "nombre": "Alegrías", "alias": ["alegrias"], "definicion": "**Perfil del cliente:** define sus **trabajos** (lo que intenta lograr), **dolores** y **alegrías**."},
+      {"id": "productos", "nombre": "Productos y servicios", "alias": ["productos", "servicios"], "definicion": "**Mapa de valor:** define tus **productos/servicios**, los **aliviadores de dolor** y los **generadores de alegría**."},
+      {"id": "aliviadores", "nombre": "Aliviadores de dolor", "alias": ["aliviadores"], "definicion": "**Mapa de valor:** define tus **productos/servicios**, los **aliviadores de dolor** y los **generadores de alegría**."},
+      {"id": "generadores", "nombre": "Generadores de alegría", "alias": ["generadores"], "definicion": "**Mapa de valor:** define tus **productos/servicios**, los **aliviadores de dolor** y los **generadores de alegría**."},
+      {"id": "encaje", "nombre": "Encaje", "alias": ["encaje"], "definicion": "Busca el **encaje**: que cada aliviador/generador responda a un dolor/alegría real."}
+    ],
+    "arquetipo-usuario": [
+      {"id": "nombre_rol", "nombre": "Nombre y rol", "alias": ["nombre y rol"], "definicion": "Dale un **nombre y rol** ficticio."},
+      {"id": "datos", "nombre": "Datos", "alias": ["datos", "ocupacion"], "definicion": "Anota **datos** (edad, contexto, ocupación)."},
+      {"id": "necesidades", "nombre": "Necesidades y motivaciones", "alias": ["necesidades", "motivaciones"], "definicion": "Define sus **necesidades** y **motivaciones**."},
+      {"id": "frustraciones", "nombre": "Frustraciones y comportamiento", "alias": ["frustraciones", "comportamiento"], "definicion": "Define sus **frustraciones** y su **comportamiento** típico."}
+    ],
+    "scamper": [
+      {"id": "sustituir", "nombre": "Sustituir", "alias": ["sustituir", "sustitucion"], "definicion": "**S**ustituir — ¿qué se puede reemplazar?"},
+      {"id": "combinar", "nombre": "Combinar", "alias": ["combinar", "combinacion"], "definicion": "**C**ombinar — ¿qué se puede unir?"},
+      {"id": "adaptar", "nombre": "Adaptar", "alias": ["adaptar", "adaptacion"], "definicion": "**A**daptar — ¿qué se puede ajustar de otro contexto?"},
+      {"id": "modificar", "nombre": "Modificar", "alias": ["modificar", "modificacion"], "definicion": "**M**odificar — ¿qué se puede aumentar/reducir?"},
+      {"id": "otros_usos", "nombre": "Poner otros usos", "alias": ["otros usos", "otro uso"], "definicion": "**P**oner otros usos — ¿para qué más sirve?"},
+      {"id": "eliminar", "nombre": "Eliminar", "alias": ["eliminar"], "definicion": "**E**liminar — ¿qué se puede quitar?"},
+      {"id": "reorganizar", "nombre": "Reorganizar o invertir", "alias": ["reorganizar", "invertir"], "definicion": "**R**eorganizar/invertir — ¿qué se puede reordenar?"}
+    ],
+    "sit": [
+      {"id": "sustraccion", "nombre": "Sustracción", "alias": ["sustraccion"], "definicion": "**Sustracción** — quita un componente esencial y observa qué surge."},
+      {"id": "division", "nombre": "División", "alias": ["division"], "definicion": "**División** — separa el producto en partes y reorganízalas."},
+      {"id": "multiplicacion", "nombre": "Multiplicación", "alias": ["multiplicacion"], "definicion": "**Multiplicación** — duplica un componente cambiándolo."},
+      {"id": "unificacion", "nombre": "Unificación de tareas", "alias": ["unificacion"], "definicion": "**Unificación de tareas** — asigna una nueva función a un componente existente."},
+      {"id": "dependencia", "nombre": "Dependencia de atributos", "alias": ["dependencia de atributos", "dependencia"], "definicion": "**Dependencia de atributos** — haz que dos atributos varíen juntos."}
+    ],
+    "seis-sombreros": [
+      {"id": "blanco", "nombre": "Sombrero blanco", "alias": ["blanco"], "definicion": "**Blanco** — datos y hechos objetivos."},
+      {"id": "rojo", "nombre": "Sombrero rojo", "alias": ["rojo"], "definicion": "**Rojo** — emociones e intuición."},
+      {"id": "negro", "nombre": "Sombrero negro", "alias": ["negro"], "definicion": "**Negro** — riesgos y dificultades."},
+      {"id": "amarillo", "nombre": "Sombrero amarillo", "alias": ["amarillo"], "definicion": "**Amarillo** — beneficios y oportunidades."},
+      {"id": "verde", "nombre": "Sombrero verde", "alias": ["verde"], "definicion": "**Verde** — creatividad y alternativas."},
+      {"id": "azul", "nombre": "Sombrero azul", "alias": ["azul"], "definicion": "**Azul** — control del proceso y conclusiones."}
+    ],
+    "moscow": [
+      {"id": "must", "nombre": "Must", "alias": ["must", "imprescindible"], "definicion": "**Must (M)** — imprescindible, sin esto no funciona."},
+      {"id": "should", "nombre": "Should", "alias": ["should"], "definicion": "**Should (S)** — importante, debería estar."},
+      {"id": "could", "nombre": "Could", "alias": ["could", "deseable"], "definicion": "**Could (C)** — deseable, podría estar si hay tiempo."},
+      {"id": "wont", "nombre": "Won't", "alias": ["wont", "won't", "no por ahora"], "definicion": "**Won't (W)** — no por ahora (queda para después)."}
+    ],
+    "matriz-priorizacion": [
+      {"id": "ideas", "nombre": "Ideas candidatas", "alias": ["ideas candidatas", "lista de ideas"], "definicion": "Lista las ideas candidatas."},
+      {"id": "evaluar", "nombre": "Impacto y esfuerzo", "alias": ["impacto", "esfuerzo"], "definicion": "Evalúa cada idea por **impacto** (bajo/alto) y **esfuerzo** (bajo/alto)."},
+      {"id": "cuadrantes", "nombre": "Cuadrantes", "alias": ["cuadrantes", "cuadrante"], "definicion": "Ubícalas en 4 cuadrantes."},
+      {"id": "priorizar", "nombre": "Priorizar", "alias": ["priorizar", "quick wins"], "definicion": "**Prioriza** las de **alto impacto / bajo esfuerzo** (quick wins)."}
+    ],
+    "ficha-hipotesis": [
+      {"id": "hipotesis", "nombre": "Hipótesis", "alias": ["hipotesis"], "definicion": "Redacta la **hipótesis**: \"Creemos que [acción/solución] logrará [resultado] para [usuario].\""},
+      {"id": "metrica", "nombre": "Métrica", "alias": ["metrica"], "definicion": "Define la **métrica** que lo demuestra."},
+      {"id": "criterio", "nombre": "Criterio de validación", "alias": ["criterio", "umbral"], "definicion": "Define el **criterio de validación** (umbral): \"Lo sabremos si [métrica] alcanza [valor].\""},
+      {"id": "experimento", "nombre": "Experimento", "alias": ["experimento"], "definicion": "Describe el **experimento** mínimo para probarlo."}
+    ],
+    "lean-canvas": [
+      {"id": "problema", "nombre": "Problema", "alias": ["problema", "problemas"], "definicion": "**Problema** — los 3 problemas principales."},
+      {"id": "segmentos", "nombre": "Segmentos de cliente", "alias": ["segmentos", "segmento"], "definicion": "**Segmentos de cliente** — a quién va dirigido."},
+      {"id": "propuesta", "nombre": "Propuesta única de valor", "alias": ["propuesta de valor", "propuesta unica"], "definicion": "**Propuesta única de valor** — por qué eres diferente."},
+      {"id": "solucion", "nombre": "Solución", "alias": ["solucion"], "definicion": "**Solución** — las funcionalidades clave."},
+      {"id": "canales", "nombre": "Canales", "alias": ["canales"], "definicion": "**Canales** — cómo llegas al cliente."},
+      {"id": "ingresos", "nombre": "Fuentes de ingreso", "alias": ["fuentes de ingreso", "ingresos"], "definicion": "**Fuentes de ingreso** — cómo se gana dinero."},
+      {"id": "costos", "nombre": "Estructura de costos", "alias": ["estructura de costos", "costos"], "definicion": "**Estructura de costos** — los costos principales."},
+      {"id": "metricas", "nombre": "Métricas clave", "alias": ["metricas clave", "metricas"], "definicion": "**Métricas clave** — qué medir."},
+      {"id": "ventaja", "nombre": "Ventaja injusta", "alias": ["ventaja injusta", "ventaja"], "definicion": "**Ventaja injusta** — lo difícil de copiar."}
+    ]
+  }
+}

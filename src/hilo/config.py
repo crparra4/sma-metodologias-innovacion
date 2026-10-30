@@ -1,0 +1,95 @@
+from __future__ import annotations
+
+import os
+from dataclasses import dataclass, field
+from pathlib import Path
+
+from dotenv import load_dotenv
+
+PROJECT_ROOT = Path(__file__).resolve().parents[2]
+
+
+def _local_root() -> Path:
+    """Carpeta local para la memoria, fuera de carpetas sincronizadas o compartidas.
+
+    En Linux, SQLite no debe quedar en un disco NTFS compartido con Windows: va en la
+    carpeta de datos del usuario, igual que `scripts/local_runtime.py`.
+    """
+    appdata = os.getenv("LOCALAPPDATA")
+    if appdata:
+        return Path(appdata) / "RutaDIA"
+    if os.name != "nt":
+        return Path(os.getenv("XDG_DATA_HOME") or Path.home() / ".local" / "share") / "RutaDIA"
+    return PROJECT_ROOT / "data" / "RutaDIA"
+
+
+def _as_bool(value: str | None, default: bool = False) -> bool:
+    if value is None:
+        return default
+    return value.strip().lower() in {"1", "true", "yes", "si", "sí", "on"}
+
+
+@dataclass(frozen=True)
+class Settings:
+    model: str
+    verbose: bool
+    route_path: Path
+    audit_path: Path
+    memory_path: Path
+    checkpoint_path: Path
+    base_url: str | None = None
+    api_key: str | None = field(default=None, repr=False)
+    temperature: float = 0
+    max_tokens: int | None = None
+    timeout: float = 240
+    seed: int | None = None
+    agent_max_retry_limit: int = 2
+    top_p: float | None = None
+    thinking: bool = False
+    runtime: str = "langgraph"
+    # Respuestas que el modelo local genera a la vez (ranuras de llama-server). 6 es el punto
+    # medido en la RTX 4060 Ti de 8 GB; con más ranuras el modelo deja de caber en la GPU.
+    parallel: int = 6
+    # Variante del agente (ver `variantes.py`). Desde el 20 oct 2026, (g): Planificador con el
+    # avance de la ficha + Metodólogo + Verificador en código. En la evaluación exigente superó
+    # al agente único con la misma información y a (c) en escucha y avance.
+    variant: str = "g"
+    # Respaldo con Claude cuando el modelo local no responde (`respaldo_claude.py`). Apagado por
+    # defecto: solo se enciende en el servidor de las pruebas, que tiene la clave de la API.
+    respaldo_claude: bool = False
+    claude_metodologo: str = "claude-opus-5-5"
+    claude_modelo: str = "claude-sonnet-5-5"  # Orquestador, Cliente simulado y auxiliares
+    claude_tope_usd: float = 24.0
+    claude_gasto_path: Path | None = None
+
+    @classmethod
+    def from_env(cls) -> Settings:
+        load_dotenv(PROJECT_ROOT / ".env")
+        data_root = Path(os.getenv("RUTA_DIA_DATA_DIR", str(_local_root()))).expanduser()
+        return cls(
+            model=os.getenv("RUTA_DIA_MODEL", "gemini/gemini-3.6-flash"),
+            verbose=_as_bool(os.getenv("RUTA_DIA_VERBOSE")),
+            route_path=PROJECT_ROOT / "knowledge" / "routes" / "ruta-dia.json",
+            audit_path=PROJECT_ROOT / "data" / "verifications.jsonl",
+            memory_path=data_root / "notebooks.sqlite3",
+            checkpoint_path=data_root / "checkpoints.sqlite3",
+            base_url=os.getenv("RUTA_DIA_BASE_URL") or None,
+            api_key=os.getenv("RUTA_DIA_API_KEY") or None,
+            temperature=float(os.getenv("RUTA_DIA_TEMPERATURE", "0")),
+            max_tokens=(
+                int(os.environ["RUTA_DIA_MAX_TOKENS"]) if os.getenv("RUTA_DIA_MAX_TOKENS") else None
+            ),
+            timeout=float(os.getenv("RUTA_DIA_TIMEOUT", "240")),
+            seed=int(os.environ["RUTA_DIA_SEED"]) if os.getenv("RUTA_DIA_SEED") else None,
+            top_p=float(os.environ["RUTA_DIA_TOP_P"]) if os.getenv("RUTA_DIA_TOP_P") else None,
+            agent_max_retry_limit=int(os.getenv("RUTA_DIA_AGENT_RETRIES", "2")),
+            thinking=_as_bool(os.getenv("RUTA_DIA_THINKING")),
+            runtime=os.getenv("RUTA_DIA_RUNTIME", "langgraph").strip().lower(),
+            parallel=max(1, int(os.getenv("RUTA_DIA_PARALLEL", "6"))),
+            variant=os.getenv("RUTA_DIA_VARIANTE", "g").strip().lower(),
+            respaldo_claude=_as_bool(os.getenv("RUTA_DIA_RESPALDO_CLAUDE")),
+            claude_metodologo=os.getenv("RUTA_DIA_CLAUDE_METODOLOGO", "claude-opus-5-5"),
+            claude_modelo=os.getenv("RUTA_DIA_CLAUDE_MODELO", "claude-sonnet-5-5"),
+            claude_tope_usd=float(os.getenv("RUTA_DIA_CLAUDE_TOPE_USD", "24")),
+            claude_gasto_path=data_root / "gasto-claude.jsonl",
+        )

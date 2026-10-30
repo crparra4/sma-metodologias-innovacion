@@ -1,0 +1,52 @@
+# Hilo en un contenedor Docker (despliegue planeado para noviembre de 2026; ver docs/contenedores.md).
+#
+# Uso en el servidor, desde la carpeta del código:
+#   docker compose up -d --build      construye la imagen y la pone en marcha
+#   docker compose logs -f            registro del servicio
+#   docker compose down               lo detiene (los datos quedan en las carpetas montadas)
+#
+# Las rutas por defecto son las del servidor actual (~/hilo/app con ~/hilo/datos y los .env al
+# lado). Se pueden cambiar con variables o con un archivo .env junto a este; en el servidor
+# actual ese .env lleva HILO_UID=1001 y HILO_GID=1001.
+name: hilo
+
+services:
+  aplicacion:
+    build:
+      context: .
+      args:
+        UID: ${HILO_UID:-1000}
+        GID: ${HILO_GID:-1000}
+    image: hilo:${HILO_VERSION:-local}
+    container_name: hilo
+    # El mismo usuario dueño de las carpetas montadas (en el servidor actual, 1001: `id -u`).
+    user: "${HILO_UID:-1000}:${HILO_GID:-1000}"
+    # Red del host: la aplicación sigue escuchando en 127.0.0.1 detrás del nginx del servidor y
+    # alcanza el túnel del modelo en 127.0.0.1:18083 sin abrir puertos nuevos.
+    network_mode: host
+    env_file:
+      - path: ${HILO_CONFIG:-../.env.hilo}
+        required: true
+      - path: ${HILO_SECRETOS:-../.env.claude}
+        required: false
+    environment:
+      RUTA_DIA_DATA_DIR: /datos
+      HILO_PUERTO: ${HILO_PUERTO:-8787}
+    volumes:
+      - ${HILO_DATOS:-../datos}:/datos
+      - ${HILO_REGISTROS:-./data}:/app/data
+    # Endurecimiento: sistema de archivos de solo lectura, sin privilegios ni capacidades extra.
+    read_only: true
+    tmpfs:
+      - /tmp
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
+    restart: unless-stopped
+    stop_grace_period: 30s
+    logging:
+      driver: json-file
+      options:
+        max-size: 10m
+        max-file: "3"
