@@ -73,6 +73,7 @@ from .practica.cliente_simulado import (
 )
 from .practica.cliente_simulado import responder as responder_cliente
 from .practica.registro import RegistroPracticas
+from .proyectos.calendario_ics import generar_ics
 from .proyectos.memory import EditConflict, NotebookMemory
 from .proyectos.notes import NoteRequest
 from .proyectos.sharing import SharingStore
@@ -681,6 +682,10 @@ def create_app(
         if not user:
             with NotebookMemory(memory_path()) as memory:
                 return memory.list_tasks()
+        return tasks_for(user)
+
+    def tasks_for(user: User) -> list[dict]:
+        """Las entradas propias y las de los proyectos a los que la cuenta tiene acceso."""
         sync_owned_projects(user)
         results: list[dict] = []
         with NotebookMemory(auth.memory_path(user, settings.memory_path)) as personal:
@@ -777,6 +782,40 @@ def create_app(
                 memory.delete_task(task_id)
                 return {"deleted": task_id}
         raise HTTPException(404, "La tarea no existe.")
+
+    def feed_answer(feed: dict | None) -> dict:
+        return {"path": f"/calendario/{feed['token']}.ics" if feed else None,
+                "created_at": feed["created_at"] if feed else None}
+
+    def feed_owner() -> User:
+        user = current_user()
+        if not user:
+            raise HTTPException(400, "El enlace del calendario necesita una cuenta de Hilo.")
+        return user
+
+    @app.get("/api/calendar-feed")
+    def get_calendar_feed():
+        return feed_answer(auth.calendar_feed(feed_owner()))
+
+    @app.post("/api/calendar-feed")
+    def create_calendar_feed():
+        return feed_answer(auth.create_calendar_feed(feed_owner()))
+
+    @app.delete("/api/calendar-feed")
+    def delete_calendar_feed():
+        auth.delete_calendar_feed(feed_owner())
+        return feed_answer(None)
+
+    # Público a propósito: Google y Outlook lo leen sin sesión. El token largo hace de llave.
+    @app.get("/calendario/{token}.ics")
+    def calendar_feed(token: str):
+        user = auth.calendar_feed_user(token) if len(token) <= 64 else None
+        if not user:
+            raise HTTPException(404, "Este enlace de calendario no existe o fue cambiado.")
+        return Response(generar_ics(tasks_for(user)), media_type="text/calendar; charset=utf-8",
+                        headers={"Cache-Control": "private, no-cache",
+                                 "Content-Disposition": 'inline; filename="hilo.ics"',
+                                 "X-Robots-Tag": "noindex", "Referrer-Policy": "no-referrer"})
 
     @app.get("/api/catalog")
     def get_catalog():

@@ -13,6 +13,9 @@ const PROFILE_FIELDS: [keyof Profile, string][] = [
   ['phone', 'settings-phone'], ['email', 'settings-email'],
 ];
 type Role = 'owner' | 'editor' | 'viewer';
+type CalendarFeed = { path: string | null; created_at: number | null };
+// Desde estas direcciones Google y Outlook no llegan a Hilo: el enlace no les serviría.
+const LOCAL_HOSTNAMES = new Set(['localhost', '127.0.0.1', '[::1]']);
 export type SettingsProject = { project_id: string; notebook_id: string; role: Role; stage: number; color: string; owner_name: string };
 export type SettingsInvitation = { notebook_id: string; owner_name: string };
 
@@ -37,6 +40,8 @@ export class SettingsController {
   private readonly dialog = $<HTMLDialogElement>('settings-dialog');
   private details: Details | null = null;
   private profile: Profile | null = null;
+  private feed: CalendarFeed | null = null;
+  private feedConfirm: (() => Promise<void>) | null = null;
 
   constructor(private readonly hooks: SettingsHooks) {
     this.dialog.querySelectorAll<HTMLButtonElement>('.settings-tab').forEach(tab => {
@@ -56,6 +61,20 @@ export class SettingsController {
     });
     onThemeChange(() => this.renderTheme());
     this.renderTheme();
+    $('settings-feed-create').addEventListener('click', () => void this.feedRequest('POST', 'Enlace creado. Cópialo y agrégalo en tu calendario.'));
+    $('settings-feed-copy').addEventListener('click', () => void this.copyFeed());
+    $('settings-feed-url').addEventListener('focus', event => (event.target as HTMLInputElement).select());
+    $('settings-feed-renew').addEventListener('click', () => this.askFeed(
+      'El enlace actual dejará de funcionar: tendrás que agregar el nuevo en Google u Outlook.', 'Cambiar enlace',
+      () => this.feedRequest('POST', 'Enlace nuevo listo. El anterior ya no funciona.')));
+    $('settings-feed-delete').addEventListener('click', () => this.askFeed(
+      'Google y Outlook dejarán de recibir tus entradas. Puedes crear otro enlace cuando quieras.', 'Desactivar',
+      () => this.feedRequest('DELETE', 'Enlace desactivado.')));
+    $('settings-feed-confirm-no').addEventListener('click', () => this.closeFeedConfirm(true));
+    $('settings-feed-confirm-yes').addEventListener('click', () => {
+      const action = this.feedConfirm; this.closeFeedConfirm(false);
+      if (action) void action();
+    });
     $('settings-password-form').addEventListener('submit', event => { event.preventDefault(); void this.savePassword(); });
     $('settings-guide').addEventListener('click', () => { this.dialog.close(); hooks.openGuide(); });
     $('settings-open-notifications').addEventListener('click', () => { this.dialog.close(); hooks.openNotifications(); });
@@ -66,7 +85,10 @@ export class SettingsController {
   async open(section: SettingsSection = 'perfil') {
     this.renderAccount();
     this.renderProjects();
-    for (const id of ['settings-profile-status', 'settings-photo-status', 'settings-password-status', 'settings-session-error']) this.status(id, '');
+    for (const id of ['settings-profile-status', 'settings-photo-status', 'settings-password-status', 'settings-session-error', 'settings-feed-status']) this.status(id, '');
+    this.closeFeedConfirm(false);
+    $('settings-feed-local').hidden = !LOCAL_HOSTNAMES.has(location.hostname);
+    void this.loadFeed();
     $<HTMLFormElement>('settings-password-form').reset();
     this.show(section, false);
     if (!this.dialog.open) this.dialog.showModal();
@@ -224,6 +246,61 @@ export class SettingsController {
     } catch (error) {
       this.status('settings-password-status', (error as Error).message, 'error');
     } finally { button.disabled = false; }
+  }
+
+  private async loadFeed() {
+    try { this.feed = await this.hooks.api<CalendarFeed>('/calendar-feed'); }
+    catch (error) { this.feed = null; this.status('settings-feed-status', (error as Error).message, 'error'); }
+    this.renderFeed();
+  }
+
+  private renderFeed() {
+    const path = this.feed?.path;
+    $('settings-feed-empty').hidden = Boolean(path);
+    $('settings-feed-ready').hidden = !path;
+    $<HTMLInputElement>('settings-feed-url').value = path ? new URL(path, location.origin).href : '';
+  }
+
+  private async feedRequest(method: 'POST' | 'DELETE', done: string) {
+    const buttons = ['settings-feed-create', 'settings-feed-renew', 'settings-feed-delete'].map(id => $<HTMLButtonElement>(id));
+    buttons.forEach(button => { button.disabled = true; });
+    try {
+      this.feed = await this.hooks.api<CalendarFeed>('/calendar-feed', { method });
+      this.renderFeed();
+      this.status('settings-feed-status', done, 'ok');
+      (method === 'POST' ? $('settings-feed-copy') : $('settings-feed-create')).focus();
+    } catch (error) {
+      this.status('settings-feed-status', (error as Error).message, 'error');
+    } finally { buttons.forEach(button => { button.disabled = false; }); }
+  }
+
+  private async copyFeed() {
+    const input = $<HTMLInputElement>('settings-feed-url');
+    try {
+      await navigator.clipboard.writeText(input.value);
+      this.status('settings-feed-status', 'Enlace copiado.', 'ok');
+    } catch {
+      // Sin permiso para el portapapeles (o sin HTTPS): queda seleccionado para copiarlo a mano.
+      input.focus(); input.select();
+      this.status('settings-feed-status', 'Selecciona el enlace y cópialo con Ctrl+C.', '');
+    }
+  }
+
+  private askFeed(text: string, confirm: string, action: () => Promise<void>) {
+    this.feedConfirm = action;
+    $('settings-feed-confirm-text').textContent = text;
+    $('settings-feed-confirm-yes').textContent = confirm;
+    $('settings-feed-confirm').hidden = false;
+    $('settings-feed-actions').hidden = true;
+    this.status('settings-feed-status', '');
+    $('settings-feed-confirm-no').focus();
+  }
+
+  private closeFeedConfirm(focus: boolean) {
+    this.feedConfirm = null;
+    $('settings-feed-confirm').hidden = true;
+    $('settings-feed-actions').hidden = false;
+    if (focus) $('settings-feed-renew').focus();
   }
 
   private renderProjects() {

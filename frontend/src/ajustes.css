@@ -74,6 +74,23 @@
 .settings-facts li{display:flex;gap:10px;font-size:13px;line-height:1.5;color:#40506c}
 .settings-fact-dot{width:10px;height:10px;flex:none;margin-top:5px;border-radius:50%;background:var(--tone)}
 
+
+/* Enlace del calendario (.ics) para Google u Outlook */
+.settings-feed .button{display:inline-flex;align-items:center;gap:7px}
+.settings-feed .icon{width:16px;height:16px}
+.settings-feed-url{flex:1;min-width:0;min-height:40px;padding:0 12px;border:1px solid #cbd4e2;border-radius:10px;background:#f2f5fa;font-family:ui-monospace,SFMono-Regular,Consolas,monospace;font-size:12px;color:#26324d;text-overflow:ellipsis}
+.settings-feed-url:focus{outline:none;border-color:#294eb8;box-shadow:0 0 0 3px #294eb826}
+.settings-feed-local{display:flex;gap:8px;margin:0 0 12px;padding:10px 12px;border-radius:10px;background:#fff6e5;color:#7a4b00;font-size:13px;line-height:1.5}
+.settings-feed-local .icon{margin-top:2px}
+.settings-feed-help{margin:14px 0 10px;font-size:13px;color:#40506c}
+.settings-feed-help summary{cursor:pointer;font-weight:600;color:#294eb8}
+.settings-feed-help ol{margin:10px 0 0;padding-left:20px;display:grid;gap:8px;line-height:1.5}
+.settings-feed-warn{margin:0 0 8px}
+.settings-feed-actions{display:flex;flex-wrap:wrap;gap:4px;margin-left:-13px}
+.settings-feed-off{color:#a53c3c}
+.settings-feed-confirm{display:flex;flex-wrap:wrap;align-items:center;gap:8px;margin:8px 0 0;padding:12px;border-radius:10px;background:#fbefef}
+.settings-feed-confirm p{flex-basis:100%;margin:0 0 4px;font-size:13px;line-height:1.5;color:#7c3434}
+
 /* Tema */
 .settings-themes{display:grid;grid-template-columns:repeat(3,minmax(0,190px));gap:14px;margin-top:10px}
 .settings-theme{display:grid;gap:2px;padding:10px;border:2px solid #e1e6ef;border-radius:14px;background:#fff;color:#26324d;text-align:left;font:inherit;cursor:pointer}

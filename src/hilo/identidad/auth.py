@@ -104,6 +104,11 @@ class AuthStore:
                     expires_at INTEGER NOT NULL
                 );
                 CREATE INDEX IF NOT EXISTS sessions_user ON sessions(user_id);
+                -- Enlace secreto de suscripción al calendario (.ics), uno por cuenta.
+                CREATE TABLE IF NOT EXISTS calendar_feeds (
+                    user_id TEXT PRIMARY KEY REFERENCES users(id) ON DELETE CASCADE,
+                    token TEXT NOT NULL UNIQUE, created_at INTEGER NOT NULL
+                );
             """)
             present = {row[1] for row in db.execute("PRAGMA table_info(users)")}
             for column, kind in _PROFILE_COLUMNS.items():
@@ -266,6 +271,37 @@ class AuthStore:
             row = db.execute(
                 f"SELECT u.id, u.username, u.display_name, u.legacy, {_AVATAR} FROM users u "
                 "WHERE u.id=?", (user_id,)
+            ).fetchone()
+        return User(row[0], row[1], row[2], bool(row[3]), row[4]) if row else None
+
+    # El token del calendario se guarda tal cual, a diferencia del de sesión: la persona tiene
+    # que poder copiar el enlace otra vez (para el celular, para Outlook) sin romper la
+    # suscripción que ya hizo. Solo da lectura del calendario, que vive en la misma carpeta.
+    def calendar_feed(self, user: User) -> dict | None:
+        with self._connect() as db:
+            row = db.execute("SELECT token, created_at FROM calendar_feeds WHERE user_id=?",
+                             (user.id,)).fetchone()
+        return {"token": row[0], "created_at": row[1]} if row else None
+
+    def create_calendar_feed(self, user: User) -> dict:
+        """Crea el enlace o lo cambia por uno nuevo; el anterior deja de funcionar."""
+        token, created = secrets.token_urlsafe(32), int(time.time())
+        with self._connect() as db:
+            db.execute("INSERT INTO calendar_feeds VALUES (?, ?, ?) ON CONFLICT(user_id) "
+                       "DO UPDATE SET token=excluded.token, created_at=excluded.created_at",
+                       (user.id, token, created))
+        return {"token": token, "created_at": created}
+
+    def delete_calendar_feed(self, user: User) -> None:
+        with self._connect() as db:
+            db.execute("DELETE FROM calendar_feeds WHERE user_id=?", (user.id,))
+
+    def calendar_feed_user(self, token: str) -> User | None:
+        with self._connect() as db:
+            row = db.execute(
+                f"SELECT u.id, u.username, u.display_name, u.legacy, {_AVATAR} "
+                "FROM calendar_feeds f JOIN users u ON u.id=f.user_id WHERE f.token=?",
+                (token,),
             ).fetchone()
         return User(row[0], row[1], row[2], bool(row[3]), row[4]) if row else None
 
