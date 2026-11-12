@@ -1,5 +1,6 @@
-# Integración continua de Hilo: en cada cambio corre el lint y las pruebas automatizadas del
-# servicio en Python y compila la interfaz web. Las versiones coinciden con el Dockerfile.
+# Integración continua de Hilo: en cada cambio corre el lint y las pruebas del servicio en
+# Python, compila la interfaz web y corre sus pruebas. Las versiones coinciden con el
+# Dockerfile.
 name: CI
 
 on:
@@ -37,7 +38,7 @@ jobs:
       - name: Instalar dependencias
         run: uv sync --extra dev --frozen
       - name: Lint
-        run: uv run --frozen ruff check src tests
+        run: uv run --frozen ruff check src tests scripts
       - name: Pruebas automatizadas
         run: uv run --frozen pytest
 
@@ -58,3 +59,5 @@ jobs:
         run: pnpm install --frozen-lockfile
       - name: Compilar (tsc y Vite)
         run: pnpm build
+      - name: Pruebas de la interfaz
+        run: pnpm test

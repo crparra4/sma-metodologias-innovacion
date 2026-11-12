@@ -404,11 +404,6 @@ def consejo_de_la_ficha(parte: Parte, tool_card: str) -> str:
     return resto
 
 
-def _recorte(texto: str, largo: int = 90) -> str:
-    texto = " ".join(texto.split())
-    return texto if len(texto) <= largo else texto[:largo].rsplit(" ", 1)[0] + "…"
-
-
 def partes_repetidas(mensaje: str, plan: Plan) -> list[Parte]:
     """Partes ya respondidas (o que la persona no sabe) por las que vuelve a preguntar."""
     cerradas = [p for p in (*plan.respondidas, *plan.sin_saber)

@@ -23,6 +23,7 @@ documento.
 - [Desarrollo y pruebas](#desarrollo-y-pruebas)
 - [Ramas](#ramas)
 - [Problemas frecuentes](#problemas-frecuentes)
+- [Licencia](#licencia)
 
 ## Funciones disponibles
 
@@ -322,9 +323,11 @@ solo use los contextos que le corresponden. El detalle está en
 ├── scripts/                  # Instalación del modelo, arranque y parada (.ps1 y .sh)
 ├── evaluation/               # Casos y protocolo de evaluación
 ├── docs/                     # Arquitectura, dominio, contenedores, interfaz y pruebas
+│   └── historico/            # Informes con fecha y decisiones que ya no están vigentes
 ├── Dockerfile, compose.yaml  # Imagen y despliegue en contenedor
 ├── pyproject.toml, uv.lock   # Dependencias de Python
-└── .github/workflows/        # Integración continua y despliegue automático
+├── .github/workflows/        # Integración continua y despliegue automático
+└── LICENSE                   # Licencia MIT
 ```
 
 ## Documentación
@@ -336,17 +339,17 @@ solo use los contextos que le corresponden. El detalle está en
 | [`docs/calendarios-externos.md`](docs/calendarios-externos.md) | Calendarios de Google y Outlook: enlace .ics y conexión de la cuenta |
 | [`docs/despliegue-automatico.md`](docs/despliegue-automatico.md) | Publicación automática de `main` en la VPS (GHCR + SSH restringido) |
 | [`docs/guia-de-pruebas.md`](docs/guia-de-pruebas.md) | Pruebas manuales del árbol, el diagnóstico y los cinco porqués |
-| [`docs/recuperacion-qwen-2026-09-29.md`](docs/recuperacion-qwen-2026-09-29.md) | Diagnóstico y arreglo del motor de llama.cpp |
+| [`docs/historico/recuperacion-qwen-2026-09-29.md`](docs/historico/recuperacion-qwen-2026-09-29.md) | Diagnóstico y arreglo del motor de llama.cpp |
 | [`docs/arquitectura-langgraph.md`](docs/arquitectura-langgraph.md) | Flujo LangGraph, responsabilidades y persistencia |
-| [`docs/arquitectura.md`](docs/arquitectura.md) | Decisión inicial con CrewAI; documento histórico |
+| [`docs/historico/arquitectura.md`](docs/historico/arquitectura.md) | Decisión inicial con CrewAI; documento histórico |
 | [`docs/plan-compartir-proyectos.md`](docs/plan-compartir-proyectos.md) | Primera versión local y ampliaciones de colaboración pendientes |
-| [`docs/configuracion-qwen3.5-4b-2026-09-09.md`](docs/configuracion-qwen3.5-4b-2026-09-09.md) | Configuración de Qwen y batería técnica |
-| [`docs/comparacion-local-qwen-2026-09-07.md`](docs/comparacion-local-qwen-2026-09-07.md) | Comparación exploratoria de modelos |
-| [`docs/prueba-qwen-local-2026-09-07.md`](docs/prueba-qwen-local-2026-09-07.md) | Prueba exploratoria del modelo de 27B |
+| [`docs/historico/configuracion-qwen3.5-4b-2026-09-09.md`](docs/historico/configuracion-qwen3.5-4b-2026-09-09.md) | Configuración de Qwen y batería técnica |
+| [`docs/historico/comparacion-local-qwen-2026-09-07.md`](docs/historico/comparacion-local-qwen-2026-09-07.md) | Comparación exploratoria de modelos |
+| [`docs/historico/prueba-qwen-local-2026-09-07.md`](docs/historico/prueba-qwen-local-2026-09-07.md) | Prueba exploratoria del modelo de 27B |
 | [`evaluation/PROTOCOL.md`](evaluation/PROTOCOL.md) y [`cases.json`](evaluation/cases.json) | Protocolo y casos del piloto |
-| [`knowledge/frameworks/README.md`](knowledge/frameworks/README.md) | Marcos teóricos; fichas ejecutables en [`knowledge/tools/`](knowledge/tools/) |
+| [`knowledge/frameworks/README.md`](knowledge/frameworks/README.md) | Marcos teóricos de consulta (el programa no los lee); las fichas que sí usa están en [`knowledge/tools/`](knowledge/tools/) |
 
-Los informes con fecha describen ejecuciones concretas; sus cifras de pruebas
+Los informes de `docs/historico/` describen ejecuciones concretas; sus cifras de pruebas
 no representan necesariamente el estado más reciente del repositorio.
 
 ## Desarrollo y pruebas
@@ -385,9 +388,10 @@ y `/api/chat`. `/api/status` permite comprobar interfaz y modelo.
 | --- | --- |
 | `main` | Versión estable; la que se congela para la validación con participantes |
 | `develop` | Desarrollo del día a día |
-| `staging` | Pruebas de una versión antes de pasarla a `main` |
+| `staging` | Foto de la versión del 16 de octubre de 2026; se conserva como historial |
 
-Los cambios se hacen en `develop`, se prueban en `staging` y pasan a `main`.
+Los cambios se hacen en `develop` y pasan a `main` con un pull request, cuando la
+integración continua está en verde. `staging` ya no recibe cambios.
 
 ## Problemas frecuentes
 
@@ -405,3 +409,8 @@ Los cambios se hacen en `develop`, se prueban en `staging` y pasan a `main`.
 Los registros de la interfaz se guardan en `%LOCALAPPDATA%\RutaDIA` y el del
 modelo en `%LOCALAPPDATA%\QwenLocalTest\ruta-dia-server.log`. En Linux están en
 `~/.local/share/RutaDIA` y `~/.local/share/QwenLocalTest/ruta-dia-server.log`.
+
+## Licencia
+
+El código se publica con la licencia [MIT](LICENSE): se puede usar, copiar y modificar
+siempre que se conserve el aviso de autoría.

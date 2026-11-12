@@ -154,7 +154,7 @@ no se habilitan todavía. `hilo validate` vuelve este faltante visible y evita q
 complete los vacíos con conocimiento general.
 
 La justificación y los límites de la arquitectura están en
-[`docs/arquitectura.md`](arquitectura.md).
+[`docs/historico/arquitectura.md`](historico/arquitectura.md).
 
 ## Evaluación real con modelos locales
 
@@ -194,7 +194,7 @@ La línea base CrewAI ejecutó ocho escenarios con dos semillas y obtuvo **16/16
 mecánicos**. La implementación LangGraph obtuvo **8/8** en su batería completa final y volvió a
 probar con ambas semillas los controles afectados por las últimas correcciones. El informe y los
 límites de la línea base están en
-[`docs/configuracion-qwen3.5-4b-2026-09-09.md`](configuracion-qwen3.5-4b-2026-09-09.md).
+[`docs/historico/configuracion-qwen3.5-4b-2026-09-09.md`](historico/configuracion-qwen3.5-4b-2026-09-09.md).
 La arquitectura de la nueva implementación está en
 [`docs/arquitectura-langgraph.md`](arquitectura-langgraph.md).
 

@@ -35,8 +35,8 @@ interactivo. No adoptar todavía ninguna configuración como validada para sesio
 - Se verificaron SHA-256 de los modelos y que los archivos del prototipo permanecieran
   idénticos al manifiesto durante la comparación.
 
-El [protocolo](../evaluation/PROTOCOL.md) fija el diseño y sus límites. Los
-[casos](../evaluation/cases.json) conservan las expectativas anteriores a la ejecución.
+El [protocolo](../../evaluation/PROTOCOL.md) fija el diseño y sus límites. Los
+[casos](../../evaluation/cases.json) conservan las expectativas anteriores a la ejecución.
 La prueba previa de conexión no se incluyó en los resultados comparativos.
 
 ## Tiempos medidos
@@ -127,7 +127,7 @@ adicionales; no debe agregarse sin más como un acierto de fidelidad completa.
 
 - Conexión configurable de CrewAI a un servidor local mediante `RUTA_DIA_BASE_URL`, sin modificar
   los prompts metodológicos para esta línea base.
-- Banco de casos versionado y [ejecutor comparativo](../scripts/compare_local.py).
+- Banco de casos versionado y [ejecutor comparativo](../../scripts/compare_local.py).
 - Registros de contratos, solicitudes/respuestas HTTP, tokens, tiempos, errores y auditoría.
 - Manifiesto y copia congelada de fuentes, fichas y parámetros para reproducibilidad.
 - Revisión cualitativa separada de controles mecánicos y del propio modelo evaluado.
@@ -149,11 +149,14 @@ el efecto del número de parámetros. Dos repeticiones por caso no permiten gene
 
 ## Evidencia y reproducción
 
-- [Resumen de las 16 observaciones](../data/evaluations/20260907T163510Z/summary.md)
-- [Resultados completos](../data/evaluations/20260907T163510Z/summary.json)
-- [Métricas agregadas](../data/evaluations/20260907T163510Z/metrics.json)
-- [Revisión textual con evidencia](../data/evaluations/20260907T163510Z/review-assistant.json)
-- [Manifiesto de versiones y hashes](../data/evaluations/20260907T163510Z/manifest.json)
+Los archivos de `data/evaluations/` quedaron en el equipo donde se corrió la prueba: la carpeta
+`data/` no se sube al repositorio, así que estos cinco enlaces solo abren en ese equipo.
+
+- [Resumen de las 16 observaciones](../../data/evaluations/20260907T163510Z/summary.md)
+- [Resultados completos](../../data/evaluations/20260907T163510Z/summary.json)
+- [Métricas agregadas](../../data/evaluations/20260907T163510Z/metrics.json)
+- [Revisión textual con evidencia](../../data/evaluations/20260907T163510Z/review-assistant.json)
+- [Manifiesto de versiones y hashes](../../data/evaluations/20260907T163510Z/manifest.json)
 
 Los resultados originales permanecen en `data/evaluations/20260907T163510Z/`, excluidos de Git.
 Los dos modelos y llama.cpp permanecen en `%LOCALAPPDATA%/QwenLocalTest`, fuera de OneDrive.
