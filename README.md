@@ -324,7 +324,7 @@ solo use los contextos que le corresponden. El detalle está en
 ├── docs/                     # Arquitectura, dominio, contenedores, interfaz y pruebas
 ├── Dockerfile, compose.yaml  # Imagen y despliegue en contenedor
 ├── pyproject.toml, uv.lock   # Dependencias de Python
-└── .github/workflows/        # Integración continua (lint, pruebas y compilación)
+└── .github/workflows/        # Integración continua y despliegue automático
 ```
 
 ## Documentación
@@ -334,6 +334,7 @@ solo use los contextos que le corresponden. El detalle está en
 | [`docs/guia-del-prototipo.md`](docs/guia-del-prototipo.md) | CLI, memoria y evaluación del núcleo multiagente |
 | [`docs/interfaz-local.md`](docs/interfaz-local.md) | Interfaz, cuentas, proyectos, Post-its, agenda y árbol |
 | [`docs/calendarios-externos.md`](docs/calendarios-externos.md) | Calendarios de Google y Outlook: enlace .ics y conexión de la cuenta |
+| [`docs/despliegue-automatico.md`](docs/despliegue-automatico.md) | Publicación automática de `main` en la VPS (GHCR + SSH restringido) |
 | [`docs/guia-de-pruebas.md`](docs/guia-de-pruebas.md) | Pruebas manuales del árbol, el diagnóstico y los cinco porqués |
 | [`docs/recuperacion-qwen-2026-09-29.md`](docs/recuperacion-qwen-2026-09-29.md) | Diagnóstico y arreglo del motor de llama.cpp |
 | [`docs/arquitectura-langgraph.md`](docs/arquitectura-langgraph.md) | Flujo LangGraph, responsabilidades y persistencia |
