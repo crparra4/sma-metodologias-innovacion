@@ -1,3 +1,18 @@
+"""API HTTP de Hilo: todo lo que la interfaz web le pide al servicio.
+
+`create_app` arma la aplicación FastAPI. Sus rutas están agrupadas en secciones, cada una
+con un título que se puede buscar (`# --- Cuentas`, `# --- Chat`…):
+
+    Datos de cada cuenta · Seguridad · Cuentas · Estado · Calendario · Enlace .ics ·
+    Calendarios de Google y Outlook · Catálogo · Cuadernos · Proyectos compartidos ·
+    Tableros del equipo · Práctica · Cinco porqués · Avances · Chat · Interfaz web
+
+Este archivo solo traduce entre HTTP y los contextos: revisa la sesión y el permiso, llama al
+contexto que corresponde y devuelve su respuesta. Las reglas viven en cada contexto, no aquí.
+
+La ruta central es `POST /api/chat`: corre un turno del agente y va enviando su avance.
+"""
+
 from __future__ import annotations
 
 import asyncio
@@ -399,6 +414,7 @@ def create_app(
     login_attempts = AttemptLimiter(LOGIN_ATTEMPTS_PER_MINUTE)
     current_account: ContextVar[User | None] = ContextVar("hilo_account", default=None)
 
+    # --- Datos de cada cuenta y permisos sobre los proyectos --------------------------------------
     def memory_path() -> Path:
         user = current_account.get()
         return auth.memory_path(user, settings.memory_path) if user else settings.memory_path
@@ -515,6 +531,7 @@ def create_app(
             items.append(context_text(analysis))
         return items[-40:]
 
+    # --- Seguridad: mismo origen y sesión en cada petición ----------------------------------------
     @app.middleware("http")
     async def same_origin(request: Request, call_next):
         origin = request.headers.get("origin")
@@ -550,6 +567,7 @@ def create_app(
     def remote(request: Request) -> bool:
         return (request.url.hostname or "") not in LOCAL_HOSTS
 
+    # --- Cuentas: registro, inicio de sesión, perfil y foto ---------------------------------------
     @app.get("/api/auth/registration")
     def registration(request: Request):
         # La pantalla de acceso pregunta si debe pedir el código antes de mostrar el formulario.
@@ -675,6 +693,7 @@ def create_app(
         response.delete_cookie(COOKIE_NAME, path="/")
         return response
 
+    # --- Estado: si la interfaz y el modelo responden ---------------------------------------------
     @app.get("/api/status")
     def status(project: str | None = None):
         return {
@@ -691,6 +710,7 @@ def create_app(
             "memory": "SQLite local",
         }
 
+    # --- Calendario: tareas, recordatorios y reuniones --------------------------------------------
     @app.get("/api/tasks")
     def list_tasks():
         user = current_user()
@@ -798,6 +818,7 @@ def create_app(
                 return {"deleted": task_id}
         raise HTTPException(404, "La tarea no existe.")
 
+    # --- Enlace .ics para ver el calendario de Hilo en Google u Outlook ---------------------------
     def feed_answer(feed: dict | None) -> dict:
         return {"path": f"/calendario/{feed['token']}.ics" if feed else None,
                 "created_at": feed["created_at"] if feed else None}
@@ -832,7 +853,7 @@ def create_app(
                                  "Content-Disposition": 'inline; filename="hilo.ics"',
                                  "X-Robots-Tag": "noindex", "Referrer-Policy": "no-referrer"})
 
-    # --- Calendarios de Google y Outlook (solo lectura) -------------------------------------
+    # --- Calendarios de Google y Outlook (solo lectura) -------------------------------------------
     CALENDAR_COOKIE = "hilo_calendario"
 
     def calendar_owner() -> User:
@@ -893,6 +914,7 @@ def create_app(
             raise HTTPException(400, "Las fechas deben incluir zona horaria.")
         return calendarios.eventos(calendar_owner().id, desde, hasta)
 
+    # --- Catálogo: la ruta, sus etapas y las fichas -----------------------------------------------
     @app.get("/api/catalog")
     def get_catalog():
         runtime = runtime_factory(settings)
@@ -921,6 +943,7 @@ def create_app(
         except KeyError as exc:
             raise HTTPException(404, "La ficha no existe.") from exc
 
+    # --- Cuadernos (proyectos) y sus post-its -----------------------------------------------------
     @app.get("/api/notebooks")
     def list_notebooks():
         user = current_user()
@@ -1067,6 +1090,7 @@ def create_app(
         finally:
             project_locks.release(access["project_id"])
 
+    # --- Proyectos compartidos: invitaciones recibidas y miembros ---------------------------------
     @app.get("/api/sharing/invitations")
     def list_invitations(request: Request):
         return sharing.invitations(request.state.user.id)
@@ -1081,6 +1105,7 @@ def create_app(
         project_access(project_id)
         return sharing.members(project_id, request.state.user.id)
 
+    # --- Tableros del equipo: árbol de problemas, PESTEL y recorrido ------------------------------
     @app.get("/api/projects/{project_id}/problem-tree")
     def get_problem_tree(project_id: str):
         access = project_access(project_id)
@@ -1170,7 +1195,7 @@ def create_app(
             "elapsed_ms": round((time.perf_counter() - started) * 1000),
         }
 
-    # ---------------------------------------------------- práctica con el cliente simulado
+    # --- Práctica de entrevista con el cliente simulado -------------------------------------------
 
     def _practica(access: dict, practica_id: str, request: Request, memory) -> dict:
         user = request.state.user
@@ -1246,6 +1271,7 @@ def create_app(
             "aviso": AVISO_PRACTICA,
         }
 
+    # --- Tableros del equipo: mapa de empatía y diagnóstico del árbol -----------------------------
     @app.get("/api/projects/{project_id}/empathy-map")
     def get_empathy_map(project_id: str):
         access = project_access(project_id)
@@ -1303,6 +1329,7 @@ def create_app(
             "elapsed_ms": round((time.perf_counter() - started) * 1000),
         }
 
+    # --- Cinco porqués: análisis guiado de una causa del árbol ------------------------------------
     def why_access(project_id: str, request: Request) -> dict:
         access = project_access(project_id)
         require_edit(access)
@@ -1360,6 +1387,7 @@ def create_app(
             access["project_id"], analysis_id, request.state.user.id,
         )
 
+    # --- Proyectos compartidos: invitar, cambiar roles y salir ------------------------------------
     @app.post("/api/projects/{project_id}/invitations", status_code=201)
     def invite_to_project(project_id: str, body: InvitationRequest, request: Request):
         access = project_access(project_id)
@@ -1390,6 +1418,7 @@ def create_app(
         sharing.leave(project_id, request.state.user.id)
         return {"left": project_id}
 
+    # --- Avances que el equipo deja como contexto común -------------------------------------------
     @app.post("/api/projects/{project_id}/advances", status_code=201)
     def save_project_advance(project_id: str, body: AdvanceRequest, request: Request):
         access = project_access(project_id)
@@ -1413,8 +1442,17 @@ def create_app(
         sharing.retire_advance(access["project_id"], advance_id)
         return {"retired": advance_id}
 
+    # --- Chat: un turno del agente ----------------------------------------------------------------
     @app.post("/api/chat")
     async def chat(body: ChatRequest, request: Request):
+        """Corre un turno del agente y envía su avance en vivo (Server-Sent Events).
+
+        Pasos: (1) revisa el acceso y aparta el proyecto, porque cada proyecto genera una sola
+        respuesta a la vez; (2) espera cupo en la fila del modelo y le muestra a la persona su
+        lugar; (3) carga el cuaderno y corre el grafo de LangGraph; (4) vuelve a revisar el
+        permiso y guarda el turno. El trabajo corre en otro hilo y termina de guardar aunque
+        la persona cierre el navegador.
+        """
         access = project_access(body.project_id or body.notebook_id)
         user = request.state.user
         project_id = access["project_id"]
@@ -1575,6 +1613,7 @@ def create_app(
             headers={"Cache-Control": "no-cache", "X-Accel-Buffering": "no"},
         )
 
+    # --- Interfaz web ya compilada (frontend/dist) ------------------------------------------------
     dist = frontend_path or PROJECT_ROOT / "frontend" / "dist"
     if dist.is_dir():
         app.mount("/", StaticFiles(directory=dist, html=True), name="interface")

@@ -1,3 +1,11 @@
+"""Cuentas y sesiones: registro, inicio de sesión, perfil, foto y enlace .ics del calendario.
+
+Todo se guarda en `auth.sqlite3`. La contraseña nunca se guarda: se guarda su hash (scrypt)
+con una sal distinta por cuenta. La sesión es una cookie (`hilo_session`) de la que también
+se guarda solo el hash, y vence a las 12 horas. Cada cuenta tiene su propia carpeta de datos
+(`users/<id>/`); `memory_path` y `checkpoint_path` dicen dónde queda.
+"""
+
 from __future__ import annotations
 
 import hashlib

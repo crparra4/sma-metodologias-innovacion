@@ -1,3 +1,21 @@
+"""El grafo de un turno de conversación: en qué orden trabajan los agentes.
+
+Es el flujo que usa la interfaz web. Para cada mensaje:
+
+    Orquestador ──► Planificador ──► Metodólogo ──► Verificador ──► respuesta
+                                          ▲              │
+                                          └─ un reintento ┘  (si la respuesta se rechaza)
+
+- Un saludo, un tema ajeno, un tema sensible o un recuento se responden con un texto fijo,
+  sin pasar por el Metodólogo ni el Verificador (`_direct_reply`).
+- Si la etapa no tiene fichas, se dice así en vez de inventar pasos (`_knowledge_gap`).
+- Si el segundo intento también se rechaza, `_degrade` entrega una salida segura tomada de
+  la ficha.
+
+Aquí solo está el orden. Lo que hace cada agente (sus instrucciones y reglas) está en
+`runtime.py`, y el avance de cada ficha, en `planificador.py`.
+"""
+
 from __future__ import annotations
 
 import time

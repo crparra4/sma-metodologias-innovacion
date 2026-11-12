@@ -1,3 +1,16 @@
+"""Contratos: la forma exacta de los datos que se pasan los agentes.
+
+- `ProjectState`: el cuaderno de un proyecto (etapa, ficha en curso y datos ya validados).
+- `HandoffContract` (Contrato 1): lo que decide el Orquestador: etapa, ficha y tipo de pedido.
+- `CandidateResponse` (Contrato 2): la respuesta que propone el Metodólogo.
+- `VerificationAssessment`: lo que el Verificador marca al revisar esa respuesta.
+- `VerificationResult`: el veredicto final, con sus hallazgos.
+- `TurnResult`: lo que sale del turno hacia la interfaz y la memoria.
+
+Todos rechazan campos que no estén declarados: si el modelo inventa uno, su respuesta no se
+acepta.
+"""
+
 from __future__ import annotations
 
 from enum import StrEnum

@@ -1,3 +1,11 @@
+"""Configuración de Hilo: se lee una sola vez desde las variables de entorno (archivo `.env`).
+
+`Settings.from_env()` reúne el modelo, las carpetas de los datos y las opciones del agente.
+Estas variables empiezan por `RUTA_DIA_`, el nombre que tuvo el proyecto al comienzo; las más
+nuevas empiezan por `HILO_` y se leen en el módulo que las usa. Todas están explicadas en
+`.env.example`.
+"""
+
 from __future__ import annotations
 
 import os

@@ -1,3 +1,8 @@
+"""Recorrido del cliente (customer journey) del tablero: los datos que guarda el equipo.
+
+Valida lo que envía la interfaz y lo convierte en frases para el contexto del agente.
+"""
+
 from __future__ import annotations
 
 from pydantic import BaseModel, ConfigDict, Field, model_validator

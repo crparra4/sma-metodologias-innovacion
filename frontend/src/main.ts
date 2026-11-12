@@ -1,3 +1,26 @@
+// Página principal de Hilo: arranca la interfaz y une sus vistas (inicio, chat, tablero del
+// proyecto, calendario y ajustes). Cada herramienta del tablero tiene su propio archivo
+// (problem-tree.ts, pestel.ts, empatia.ts, journey.ts, practica.ts, why-analysis.ts).
+//
+// El archivo es largo. Está dividido en secciones que se pueden buscar por su título
+// («// ==== … Chat»), en este orden:
+//    1. Estado de la página y tipos
+//    2. Llamadas a la API y avisos
+//    3. Chat: mensajes de la conversación
+//    4. Proyectos: lista y tarjetas
+//    5. Navegación entre vistas
+//    6. Grafo de agentes y envío de un mensaje
+//    7. Formulario de proyecto
+//    8. Compartir proyecto y avances
+//    9. Post-its y tablero del proyecto
+//   10. Herramientas (fichas)
+//   11. Perfil, miembros y menú de la cuenta
+//   12. Inicio: actividad y tareas
+//   13. Calendario
+//   14. Invitaciones y notificaciones
+//   15. Inicio: herramientas destacadas
+//   16. Acceso e inicio de la página
+
 import './style.css';
 import './home-cuaderno.css';
 import './calendario-cuaderno.css';
@@ -24,6 +47,7 @@ import { initTheme } from './tema';
 // Primero el tema: las hojas de estilo ya están cargadas y la página espera oculta hasta aquí.
 initTheme();
 
+// ============================================================ Estado de la página y tipos
 let tasks: Task[] = [];
 let taskFilter: 'today' | 'upcoming' | 'all' = 'upcoming';
 let editingTask: Task | null = null;
@@ -146,6 +170,7 @@ new ResizeObserver(() => {
   if (keepLatestVisible) requestAnimationFrame(scrollChat);
 }).observe(messageBox);
 
+// ============================================================ Llamadas a la API y avisos
 function errorMessage(detail: unknown): string {
   if (typeof detail === 'string') return detail;
   if (Array.isArray(detail)) return detail.map(item => String(item.msg || 'Revisa los datos ingresados.')).join(' ');
@@ -280,6 +305,7 @@ async function refreshStatus() {
   syncControls();
 }
 
+// ============================================================ Chat: mensajes de la conversación
 function toolName(id: string) { return tools.find(tool => tool.id === id)?.name || id; }
 function stageName(id: number) { return stages.find(stage => stage.id === id)?.name || `Etapa ${id}`; }
 function scrollChat() {
@@ -451,6 +477,7 @@ function updateHeader() {
   renderMemory(); syncControls();
 }
 
+// ============================================================ Proyectos: lista y tarjetas
 async function refreshNotebooks() {
   notebooks = await api<Notebook[]>('/notebooks');
   renderNotebooks();
@@ -535,6 +562,7 @@ function renderProjects() {
   syncControls();
 }
 
+// ============================================================ Navegación entre vistas
 function canNavigateAwayFromTree(): boolean {
   if (currentView === 'practice') {
     if (practice.canLeave()) return true;
@@ -775,6 +803,8 @@ const paths: Record<string, string> = {
   'verify>degrade': 'M234 262H285V313', 'finalize>__end__': 'M110 360V384H144V396',
   'degrade>__end__': 'M285 360V384H144V396', 'knowledge_gap>__end__': 'M335 128H338V418H144V411',
 };
+
+// ============================================================ Grafo de agentes y envío de un mensaje
 const svgNS = 'http://www.w3.org/2000/svg';
 const svgElement = (tag: string, attrs: Record<string, string>) => { const node = document.createElementNS(svgNS, tag); for (const [key, value] of Object.entries(attrs)) node.setAttribute(key, value); return node; };
 
@@ -981,6 +1011,8 @@ document.addEventListener('pointerdown', event => {
   const recentMenu = el<HTMLDetailsElement>('recent-menu');
   if (!recentMenu.contains(event.target as Node)) recentMenu.open = false;
 });
+
+// ============================================================ Formulario de proyecto
 function selectedColor(): Color {
   return el<HTMLFormElement>('notebook-form').querySelector<HTMLInputElement>('input[name="notebook-color"]:checked')!.value as Color;
 }
@@ -1032,6 +1064,7 @@ for (const id of ['new-notebook', 'home-new-project', 'empty-new-project']) el(i
 el('edit-project').addEventListener('click', () => { openProjectForm(true); });
 const advanceNames: Record<Advance['kind'], string> = { decision: 'Decisión', finding: 'Hallazgo', hypothesis: 'Hipótesis', next_step: 'Próximo paso', other: 'Otro' };
 
+// ============================================================ Compartir proyecto y avances
 function sharingError(message = '') {
   el('sharing-error').textContent = message; el('sharing-error').hidden = !message;
 }
@@ -1229,6 +1262,7 @@ el('confirm-delete').addEventListener('click', async () => {
   finally { loadingNotebook = false; syncControls(); }
 });
 
+// ============================================================ Post-its y tablero del proyecto
 function noteAuthor(note: Note): Member {
   // Sin autor guardado (modo sin cuentas o nota aun no reclamada) la nota es de la
   // cuenta duena del almacenamiento, que es la que esta viendo el cuaderno.
@@ -1454,6 +1488,7 @@ el('note-form').addEventListener('submit', async event => {
   finally { noteSaving = false; el('note-form').querySelectorAll<HTMLInputElement>('button, input, select, textarea').forEach(node => { node.disabled = false; }); syncControls(); }
 });
 
+// ============================================================ Herramientas (fichas)
 function renderTools() {
   const grid = el('tools-grid'); grid.replaceChildren();
   for (const tool of tools) {
@@ -1496,6 +1531,7 @@ async function openTool(tool: Tool) {
   }
 }
 
+// ============================================================ Perfil, miembros y menú de la cuenta
 function profileName(): string {
   return account?.display_name || 'Tu cuenta';
 }
@@ -1640,6 +1676,7 @@ async function endAccountSession() {
 }
 for (const id of ['account-switch', 'account-logout']) el(id).addEventListener('click', () => { void endAccountSession(); });
 
+// ============================================================ Inicio: actividad y tareas
 const dayKey = (value: string | Date) => {
   const date = typeof value === 'string' ? new Date(value) : value;
   if (Number.isNaN(date.getTime())) return '';
@@ -2199,6 +2236,7 @@ function tasksChanged() {
   renderCalendar(); renderTasks(); renderCalendarView(); renderNotifications(); renderHero();
 }
 
+// ============================================================ Invitaciones y notificaciones
 async function loadInvitations() {
   invitations = await api<Invitation[]>('/sharing/invitations');
   renderNotifications();
@@ -2325,6 +2363,7 @@ el('calv-form').addEventListener('submit', async event => {
 // La hora avanza: vencidas y la linea de "ahora" se recalculan cada minuto.
 setInterval(() => { renderNotifications(); if (currentView === 'calendar' && !calvSaving && !el('calendar-view').contains(document.activeElement)) renderCalendarView(); }, 60000);
 
+// ============================================================ Inicio: herramientas destacadas
 function featuredTools(): Tool[] {
   // Criterio real y comprobable: son las unicas fichas que alimentan la memoria
   // verificada. El prototipo no registra uso, asi que no hay "mas usadas".
@@ -2411,6 +2450,7 @@ el('cal-prev').addEventListener('click', () => shiftMonth(-1));
 el('cal-next').addEventListener('click', () => shiftMonth(1));
 el('home-tools-link').addEventListener('click', () => { if (!busy && !loadingNotebook) showTools(); });
 
+// ============================================================ Acceso e inicio de la página
 function renderAuthLanguage() {
   const view = el('auth-view');
   view.lang = authLanguage;

@@ -1,3 +1,11 @@
+"""La metodología como datos: carga la ruta y las fichas desde la carpeta `knowledge/`.
+
+`KnowledgeCatalog` lee `knowledge/routes/ruta-dia.json` (fases, etapas y herramientas
+habilitadas) y las fichas en Markdown a las que ese archivo apunta. Es la única fuente de la
+que los agentes pueden tomar pasos: para cambiar o agregar una herramienta se edita esa
+carpeta, no el código. `validate()` revisa que cada herramienta tenga su ficha.
+"""
+
 from __future__ import annotations
 
 import json

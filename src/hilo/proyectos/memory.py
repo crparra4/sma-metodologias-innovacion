@@ -1,3 +1,14 @@
+"""Memoria de los cuadernos: lo que Hilo recuerda de cada proyecto entre una sesión y otra.
+
+`NotebookMemory` guarda en SQLite, en un archivo por cuenta, cinco cosas: los cuadernos
+(etapa y ficha en curso), los turnos de la conversación, los datos ya validados de cada
+ficha, los post-its y las entradas del calendario.
+
+Las dos operaciones centrales son `load`, que arma el estado que ven los agentes, y
+`save_exchange`, que guarda un turno terminado. Un dato de una ficha solo se guarda si el
+Verificador aprobó la respuesta.
+"""
+
 from __future__ import annotations
 
 import json
@@ -329,6 +340,10 @@ class NotebookMemory:
 
     def load(self, default: ProjectState, participant_id: str | None = None,
              shared_context: list[str] | None = None) -> ProjectState:
+        """Arma el estado que ven los agentes: el cuaderno, sus últimos ocho mensajes, el
+        avance de las fichas y los datos ya validados. Si el cuaderno no existe, devuelve
+        `default`. Con `participant_id`, solo cuenta la conversación de esa persona.
+        """
         row = self.connection.execute(
             "SELECT * FROM notebooks WHERE notebook_id = ?", (default.notebook_id,)
         ).fetchone()
@@ -406,6 +421,9 @@ class NotebookMemory:
         self, message: str, result: TurnResult, previous: ProjectState,
         participant_id: str = "",
     ) -> ProjectState:
+        """Guarda un turno terminado: el mensaje, la respuesta, el lugar en la ruta y los datos
+        de la ficha que el Verificador aprobó. Devuelve el estado ya actualizado.
+        """
         now = datetime.now(UTC).isoformat()
         # Explicar otra herramienta («¿qué es un árbol de problemas?») no cambia la ficha en
         # curso: la persona sigue donde iba hasta que pida trabajar la otra.

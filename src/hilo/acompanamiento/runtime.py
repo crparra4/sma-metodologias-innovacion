@@ -1,3 +1,21 @@
+"""Qué hace cada agente: la tarea que recibe el modelo y las reglas que el código aplica encima.
+
+`ContractRuntime` arma las tres tareas de un turno y fija la forma de cada respuesta:
+
+- `orchestrate`: ubica la etapa y elige la ficha (Contrato 1, `HandoffContract`).
+- `guide`: el Metodólogo propone la respuesta para la persona (Contrato 2,
+  `CandidateResponse`).
+- `verify`: el Verificador revisa esa respuesta, y `grounded_verdict` decide el veredicto.
+
+El modelo local es pequeño y se equivoca, así que casi todo el archivo son funciones que
+corrigen o descartan lo que propone: no cambiar de ficha en medio de una respuesta, no repetir
+una pregunta ya contestada, no guardar datos que la persona no dijo. Cada función explica en
+su comentario el error que evita.
+
+Este archivo no llama al modelo. Eso lo hacen las clases que heredan de `ContractRuntime`:
+`direct_runtime.py`, `variantes.py` y `crewai_runtime.py`.
+"""
+
 from __future__ import annotations
 
 import json
@@ -697,6 +715,21 @@ _DISTRESS_GUIDANCE = (
 
 
 def grounded_verdict(assessment, candidate, handoff, tool_card, message, state=None):
+    """Decide el veredicto de una respuesta del Metodólogo. Es el corazón del Verificador.
+
+    El modelo solo marca sospechas (`assessment`); quien decide es este código, que además
+    hace sus propias revisiones sin modelo. Una respuesta se rechaza si:
+
+    - no hace una sola pregunta ni pide una sola acción;
+    - vuelve a preguntar lo que la persona ya contestó, o solo le pide confirmarlo;
+    - afirma algo que ni la persona ni la ficha dijeron;
+    - inventa un paso, se adelanta o invierte los roles (lo marca el modelo, y aquí se
+      descartan sus falsas alarmas más comunes);
+    - toca un tema sensible o pide datos personales.
+
+    Si lo único malo es un dato para guardar que la persona no dijo, la respuesta se muestra
+    pero el dato no se guarda (veredicto «observado»).
+    """
     def normalize(text):
         return " ".join(text.casefold().split())
 
@@ -899,6 +932,14 @@ class ContractRuntime:
         raise NotImplementedError
 
     def orchestrate(self, message: str, state: ProjectState, route_index: str) -> HandoffContract:
+        """Orquestador: decide la etapa, la ficha y qué tipo de pedido hace la persona.
+
+        El modelo elige una opción de una lista cerrada (`etapa:herramienta`) y el código la
+        corrige con reglas que pesan más que él. En orden: la herramienta que la persona pidió
+        por su nombre; seguir en la ficha en curso si solo está respondiendo; la ficha nombrada
+        cuando pide una explicación y, por último, la herramienta de un análisis en curso
+        (`locked_tool`), que gana sobre todas.
+        """
         description = f"""
 Analiza el mensaje y devuelve el Contrato 1.
 
@@ -1017,6 +1058,13 @@ Reglas:
         retry_feedback: VerificationResult | None = None,
         allowed_fields: list[str] | None = None,
     ) -> CandidateResponse:
+        """Metodólogo: redacta la respuesta candidata para la persona, usando solo la ficha.
+
+        Tiene tres partes: (1) arma la tarea con el mensaje, el estado, la ficha y, si es un
+        reintento, lo que rechazó el Verificador; (2) limita la respuesta del modelo a la
+        herramienta en curso, a encabezados reales de la ficha y a los campos permitidos, y
+        (3) limpia lo que llega: descarta datos que la persona no dijo y frases de relleno.
+        """
         feedback = (
             retry_feedback.model_dump_json(indent=2)
             if retry_feedback is not None
@@ -1181,6 +1229,11 @@ Reglas de acompañamiento:
         message: str = "",
         state: ProjectState | None = None,
     ) -> VerificationResult:
+        """Verificador: le pide al modelo marcar afirmaciones sin respaldo y errores de método.
+
+        El modelo solo puede elegir entre frases que de verdad están en la respuesta, para que
+        no invente hallazgos. El veredicto no lo da él: lo decide `grounded_verdict`.
+        """
         updates = [update.model_dump(mode="json") for update in candidate.template_updates]
         description = f"""
 Comprueba el respaldo de esta orientación. No decidas el veredicto; completa la evaluación.

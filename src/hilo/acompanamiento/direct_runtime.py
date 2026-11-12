@@ -1,3 +1,11 @@
+"""Llamadas directas al modelo local: una por rol, sin CrewAI.
+
+Cada rol (Orquestador, Metodólogo, Verificador y los dos auxiliares del árbol y del
+recorrido) recibe solo su instrucción y su tarea, y debe responder un JSON con la forma de su
+contrato. Las tareas y las reglas de cada rol están en `runtime.ContractRuntime`; aquí solo
+se hace la llamada, se repite una vez si el JSON llega cortado y se anota el consumo.
+"""
+
 from __future__ import annotations
 
 import json

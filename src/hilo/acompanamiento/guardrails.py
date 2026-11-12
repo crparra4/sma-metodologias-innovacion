@@ -1,3 +1,11 @@
+"""Comprobaciones de estructura hechas en código, sin modelo de lenguaje.
+
+Revisan que la salida de cada agente respete la ruta: que la fase corresponda a la etapa, que
+la herramienta esté habilitada en esa etapa, que el Metodólogo solo llene campos de la ficha
+y que cite encabezados que existen. Si algo falla lanzan `StructuralViolation`, y el flujo lo
+trata igual que un rechazo del Verificador.
+"""
+
 from __future__ import annotations
 
 import re

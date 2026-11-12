@@ -1,3 +1,13 @@
+"""Proyectos compartidos: quién puede ver o editar cada proyecto y qué construye el equipo.
+
+`SharingStore` guarda, en la misma base de las cuentas, los proyectos con sus miembros e
+invitaciones, y los tableros comunes: árbol de problemas, cinco porqués, PESTEL, recorrido
+del cliente, mapa de empatía y avances.
+
+`access` es la puerta de entrada: dice qué rol tiene una cuenta en un proyecto (`owner`,
+`editor` o `viewer`) o devuelve `None` si no puede entrar.
+"""
+
 from __future__ import annotations
 
 import json
