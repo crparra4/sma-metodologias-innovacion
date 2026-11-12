@@ -3,6 +3,7 @@
 
 import { paintAvatar, preparePhoto } from './avatar';
 import { onThemeChange, savedTheme, setTheme, type Theme } from './tema';
+import type { ProviderId, ProviderStatus } from './calendarios-externos';
 
 export type SettingsSection = 'perfil' | 'seguridad' | 'preferencias' | 'proyectos' | 'datos';
 type Account = { id: string; username: string; display_name: string; avatar: number };
@@ -27,6 +28,7 @@ export type SettingsHooks = {
   pendingTasks: () => number;
   onAccountChanged: (account: Account) => void;
   openProject: (projectId: string) => void;
+  onCalendarsChanged: () => void;
   openNotifications: () => void;
   openGuide: () => void;
   endSession: () => Promise<void>;
@@ -61,6 +63,9 @@ export class SettingsController {
     });
     onThemeChange(() => this.renderTheme());
     this.renderTheme();
+    this.dialog.querySelectorAll<HTMLButtonElement>('[data-connect-action]').forEach(button => {
+      button.addEventListener('click', () => void this.connectAction(button.closest<HTMLElement>('[data-provider]')!.dataset.provider as ProviderId));
+    });
     $('settings-feed-create').addEventListener('click', () => void this.feedRequest('POST', 'Enlace creado. Cópialo y agrégalo en tu calendario.'));
     $('settings-feed-copy').addEventListener('click', () => void this.copyFeed());
     $('settings-feed-url').addEventListener('focus', event => (event.target as HTMLInputElement).select());
@@ -89,6 +94,7 @@ export class SettingsController {
     this.closeFeedConfirm(false);
     $('settings-feed-local').hidden = !LOCAL_HOSTNAMES.has(location.hostname);
     void this.loadFeed();
+    void this.loadConnections();
     $<HTMLFormElement>('settings-password-form').reset();
     this.show(section, false);
     if (!this.dialog.open) this.dialog.showModal();
@@ -246,6 +252,55 @@ export class SettingsController {
     } catch (error) {
       this.status('settings-password-status', (error as Error).message, 'error');
     } finally { button.disabled = false; }
+  }
+
+  private connections: ProviderStatus[] = [];
+
+  private async loadConnections() {
+    this.status('settings-connect-status', '');
+    try { this.connections = (await this.hooks.api<{ proveedores: ProviderStatus[] }>('/calendarios')).proveedores; }
+    catch (error) { this.connections = []; this.status('settings-connect-status', (error as Error).message, 'error'); }
+    this.renderConnections();
+  }
+
+  private renderConnections() {
+    for (const item of this.dialog.querySelectorAll<HTMLElement>('.settings-connect-item')) {
+      const info = this.connections.find(entry => entry.id === item.dataset.provider);
+      const state = item.querySelector<HTMLElement>('.settings-connect-state')!;
+      const button = item.querySelector<HTMLButtonElement>('[data-connect-action]')!;
+      item.dataset.state = !info ? 'unknown' : !info.configurado ? 'off' : info.conectado ? 'on' : 'ready';
+      state.textContent = !info ? 'Sin datos' : !info.configurado ? 'No disponible en este servidor todavía'
+        : info.conectado ? `Conectado${info.cuenta ? ` como ${info.cuenta}` : ''}` : 'Sin conectar';
+      button.hidden = !info || !info.configurado;
+      button.textContent = info?.conectado ? 'Desconectar' : 'Conectar';
+      button.className = info?.conectado ? 'button quiet settings-connect-off' : 'button primary';
+      const name = item.querySelector('strong')!.textContent;
+      button.setAttribute('aria-label', `${button.textContent} ${name}`);
+    }
+  }
+
+  private async connectAction(provider: ProviderId) {
+    const info = this.connections.find(entry => entry.id === provider);
+    if (!info) return;
+    const buttons = [...this.dialog.querySelectorAll<HTMLButtonElement>('[data-connect-action]')];
+    buttons.forEach(button => { button.disabled = true; });
+    try {
+      if (info.conectado) {
+        this.connections = (await this.hooks.api<{ proveedores: ProviderStatus[] }>(`/calendarios/${provider}`, { method: 'DELETE' })).proveedores;
+        this.renderConnections();
+        this.status('settings-connect-status', `${info.nombre} desconectado. Sus eventos ya no se muestran en Hilo.`, 'ok');
+        this.hooks.onCalendarsChanged();
+      } else {
+        this.status('settings-connect-status', `Abriendo ${info.nombre}…`);
+        const { url } = await this.hooks.api<{ url: string }>(`/calendarios/${provider}/conectar`, { method: 'POST' });
+        // Google o Microsoft piden permiso y luego devuelven a Hilo, que avisa el resultado.
+        location.assign(url);
+        return;
+      }
+    } catch (error) {
+      this.status('settings-connect-status', (error as Error).message, 'error');
+    }
+    buttons.forEach(button => { button.disabled = false; });
   }
 
   private async loadFeed() {

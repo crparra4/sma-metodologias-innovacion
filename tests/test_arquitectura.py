@@ -19,6 +19,7 @@ PERMITIDOS = {
     "practica": {"compartido"},
     "identidad": {"compartido"},
     "inferencia": set(),
+    "integraciones": {"compartido"},
     "proyectos": {"compartido", "herramientas"},
     "acompanamiento": {"compartido", "conocimiento", "inferencia"},
     "evaluacion": {"acompanamiento", "compartido", "conocimiento", "inferencia"},

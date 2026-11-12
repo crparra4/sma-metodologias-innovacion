@@ -75,6 +75,18 @@
 .settings-fact-dot{width:10px;height:10px;flex:none;margin-top:5px;border-radius:50%;background:var(--tone)}
 
 
+/* Calendarios de Google y Outlook conectados (solo lectura) */
+.settings-connect-list{display:grid;grid-template-columns:minmax(0,1fr);gap:10px;margin:14px 0 0;padding:0;list-style:none}
+.settings-connect-item{display:flex;align-items:center;gap:14px;padding:12px 14px;border:1px solid #e1e6ef;border-radius:12px;background:#fbfcfe}
+.settings-connect-item[data-state="on"]{border-color:#b9dcc9;background:#f3faf6}
+.settings-connect-logo{width:26px;height:26px;flex:none}
+.settings-connect-item>div{flex:1;min-width:0}
+.settings-connect-item strong{display:block;font-size:14px;color:#1f2d4a}
+.settings-connect-state{display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:12px;color:#5f6d82}
+.settings-connect-item[data-state="on"] .settings-connect-state{color:#267054}
+.settings-connect-item .button{flex:none}
+.settings-connect-off{color:#a53c3c}
+
 /* Enlace del calendario (.ics) para Google u Outlook */
 .settings-feed .button{display:inline-flex;align-items:center;gap:7px}
 .settings-feed .icon{width:16px;height:16px}

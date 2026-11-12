@@ -23,9 +23,10 @@ contextos de los que puede depender. Esa lista no es solo documentación: la pru
 | `conocimiento` | La metodología como datos: ruta, fichas y partes; solo lectura | `knowledge`, `partes_fichas.json` | compartido |
 | `herramientas` | Forma y reglas de los tableros (mapa de empatía, recorrido, PESTEL, árbol, cinco porqués) | `empathy_map`, `journey`, `journey_extract`, `pestel`, `problem_tree`, `tree_diagnosis`, `why_analysis` | compartido |
 | `practica` | Cliente simulado y registro de prácticas de entrevista | `cliente_simulado`, `registro` | compartido |
-| `proyectos` | Cuaderno del proyecto, notas, tareas y proyectos compartidos | `memory`, `notes`, `tasks`, `sharing` | compartido, herramientas |
+| `proyectos` | Cuaderno del proyecto, notas, tareas, proyectos compartidos y enlace .ics del calendario | `memory`, `notes`, `tasks`, `sharing`, `calendario_ics` | compartido, herramientas |
 | `identidad` | Cuentas, sesiones y perfil | `auth` | compartido |
 | `inferencia` | Acceso a los modelos: servidor local, respaldo con Claude y fila de turnos | `modelo_local`, `respaldo_claude`, `turnos` | — |
+| `integraciones` | Calendarios de Google y Outlook conectados con la cuenta de cada persona (OAuth, solo lectura) | `calendarios` | compartido |
 | `evaluacion` | Mediciones para la investigación (la web no la usa) | `evaluation` | acompanamiento, compartido, conocimiento, inferencia |
 
 Fuera de los contextos solo queda la **capa de entrada**, que arma la aplicación y puede usarlos

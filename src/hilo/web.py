@@ -10,12 +10,13 @@ import sqlite3
 import time
 from contextlib import closing
 from contextvars import ContextVar
+from datetime import datetime
 from pathlib import Path
 from typing import Literal
-from urllib.parse import urlparse
+from urllib.parse import urlencode, urlparse
 
 from fastapi import FastAPI, HTTPException, Request
-from fastapi.responses import JSONResponse, Response, StreamingResponse
+from fastapi.responses import JSONResponse, RedirectResponse, Response, StreamingResponse
 from fastapi.staticfiles import StaticFiles
 from langgraph.checkpoint.serde.jsonplus import JsonPlusSerializer
 from langgraph.checkpoint.sqlite import SqliteSaver
@@ -65,6 +66,12 @@ from .identidad.auth import (
 )
 from .inferencia.respaldo_claude import ModeloNoDisponible, Respaldo
 from .inferencia.turnos import ModelQueue, ProjectLocks
+from .integraciones.calendarios import (
+    CalendariosExternos,
+    ErrorCalendario,
+    clave_de_cifrado,
+    proveedores_desde_entorno,
+)
 from .practica.cliente_simulado import AVISO as AVISO_PRACTICA
 from .practica.cliente_simulado import (
     mensajes_entrevista,
@@ -331,6 +338,8 @@ def create_app(
     model_probe=model_available,
     frontend_path: Path | None = None,
     require_auth: bool = True,
+    calendar_providers=None,
+    calendar_transport=None,
 ) -> FastAPI:
     settings = settings or Settings.from_env()
     if runtime_factory is None:
@@ -379,6 +388,12 @@ def create_app(
     app.state.jobs = set()
     auth = AuthStore(settings.memory_path.parent / "auth.sqlite3")
     sharing = SharingStore(settings.memory_path.parent / "auth.sqlite3")
+    calendarios = CalendariosExternos(
+        settings.memory_path.parent / "auth.sqlite3",
+        clave_de_cifrado(settings.memory_path.parent),
+        calendar_providers or proveedores_desde_entorno(),
+        transporte=calendar_transport,
+    )
     # Registro e inicio de sesión cuestan un hash cada uno: comparten el cupo por origen.
     access_attempts = AttemptLimiter(ACCESS_ATTEMPTS_PER_MINUTE)
     login_attempts = AttemptLimiter(LOGIN_ATTEMPTS_PER_MINUTE)
@@ -816,6 +831,67 @@ def create_app(
                         headers={"Cache-Control": "private, no-cache",
                                  "Content-Disposition": 'inline; filename="hilo.ics"',
                                  "X-Robots-Tag": "noindex", "Referrer-Policy": "no-referrer"})
+
+    # --- Calendarios de Google y Outlook (solo lectura) -------------------------------------
+    CALENDAR_COOKIE = "hilo_calendario"
+
+    def calendar_owner() -> User:
+        user = current_user()
+        if not user:
+            raise HTTPException(400, "Conectar un calendario necesita una cuenta de Hilo.")
+        return user
+
+    def calendar_redirect(request: Request, provider: str) -> str:
+        # Debe coincidir letra por letra con la dirección registrada en Google o Microsoft.
+        base = os.getenv("HILO_URL_PUBLICA", "").strip() or str(request.base_url)
+        return f"{base.rstrip('/')}/calendarios/{provider}/vuelta"
+
+    @app.get("/api/calendarios")
+    def calendar_status():
+        return {"proveedores": calendarios.estado(calendar_owner().id)}
+
+    @app.post("/api/calendarios/{provider}/conectar")
+    def calendar_connect(provider: str, request: Request):
+        url, browser = calendarios.iniciar(calendar_owner().id, provider,
+                                           calendar_redirect(request, provider))
+        response = JSONResponse({"url": url})
+        # Lax (no Strict): tiene que llegar en la vuelta, que es una navegación desde Google.
+        response.set_cookie(CALENDAR_COOKIE, browser, max_age=600, httponly=True,
+                            samesite="lax", secure=request.url.scheme == "https",
+                            path="/calendarios/")
+        return response
+
+    @app.get("/calendarios/{provider}/vuelta")
+    def calendar_callback(provider: str, request: Request, code: str = "", state: str = "",
+                          error: str = ""):
+        result, reason = "ok", ""
+        if error or not code or not state:
+            result = "cancelado" if error == "access_denied" else "error"
+            reason = "" if result == "cancelado" else "El proveedor no devolvió la autorización."
+        else:
+            try:
+                calendarios.completar(provider, state[:200], request.cookies.get(CALENDAR_COOKIE),
+                                      code[:4096], calendar_redirect(request, provider))
+            except ErrorCalendario as exc:
+                result, reason = "error", exc.mensaje
+        query = {"calendario": provider if provider in {"google", "microsoft"} else "",
+                 "resultado": result, **({"motivo": reason} if reason else {})}
+        response = RedirectResponse(f"/?{urlencode(query)}#calendario", status_code=303)
+        response.delete_cookie(CALENDAR_COOKIE, path="/calendarios/")
+        response.headers["Referrer-Policy"] = "no-referrer"
+        return response
+
+    @app.delete("/api/calendarios/{provider}")
+    def calendar_disconnect(provider: str):
+        user = calendar_owner()
+        calendarios.desconectar(user.id, provider)
+        return {"proveedores": calendarios.estado(user.id)}
+
+    @app.get("/api/calendario-externo")
+    def calendar_events(desde: datetime, hasta: datetime):
+        if desde.tzinfo is None or hasta.tzinfo is None:
+            raise HTTPException(400, "Las fechas deben incluir zona horaria.")
+        return calendarios.eventos(calendar_owner().id, desde, hasta)
 
     @app.get("/api/catalog")
     def get_catalog():
