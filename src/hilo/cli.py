@@ -1,3 +1,11 @@
+"""Línea de comandos `hilo`. Sirve para usar el agente sin abrir la interfaz web.
+
+Comandos: `validate` revisa que la ruta y las fichas estén completas; `chat` corre un solo
+turno; `interactive` mantiene una conversación; `memory` muestra o borra un cuaderno, y `web`
+arranca la interfaz. Con `--runtime crewai` se usa la línea base de comparación en lugar del
+flujo de LangGraph.
+"""
+
 from __future__ import annotations
 
 import argparse

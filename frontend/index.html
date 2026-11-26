@@ -756,6 +756,44 @@
               <button class="settings-theme" type="button" role="radio" data-theme-choice="sistema" aria-checked="false"><span class="settings-theme-preview" data-theme="sistema" aria-hidden="true"><i></i><i></i><i></i></span><strong>Automático</strong><span>Sigue al sistema operativo</span></button>
             </div>
           </div>
+          <div class="settings-card settings-connect">
+            <h3>Ver tus calendarios de Google u Outlook en Hilo</h3>
+            <p class="settings-hint">Conecta tu cuenta y sus eventos aparecen en el calendario de Hilo, en modo solo lectura: Hilo no los cambia, no los guarda y no se los pasa al asistente.</p>
+            <ul class="settings-connect-list">
+              <li class="settings-connect-item" data-provider="google">
+                <svg class="settings-connect-logo" aria-hidden="true" viewBox="0 0 24 24"><path fill="#4285f4" d="M21.6 12.23c0-.71-.06-1.39-.18-2.05H12v3.88h5.38a4.6 4.6 0 0 1-1.99 3.02v2.51h3.23c1.89-1.74 2.98-4.31 2.98-7.36Z"/><path fill="#34a853" d="M12 22c2.7 0 4.96-.9 6.62-2.41l-3.23-2.51c-.9.6-2.05.96-3.39.96-2.6 0-4.81-1.76-5.6-4.13H3.06v2.59A10 10 0 0 0 12 22Z"/><path fill="#fbbc05" d="M6.4 13.91A6 6 0 0 1 6.09 12c0-.66.11-1.3.31-1.91V7.5H3.06A10 10 0 0 0 2 12c0 1.61.38 3.13 1.06 4.5l3.34-2.59Z"/><path fill="#ea4335" d="M12 5.96c1.47 0 2.79.5 3.83 1.5l2.87-2.87A9.61 9.61 0 0 0 12 2a10 10 0 0 0-8.94 5.5l3.34 2.59c.79-2.37 3-4.13 5.6-4.13Z"/></svg>
+                <div><strong>Google Calendar</strong><span class="settings-connect-state">Cargando…</span></div>
+                <button class="button" type="button" data-connect-action hidden></button>
+              </li>
+              <li class="settings-connect-item" data-provider="microsoft">
+                <svg class="settings-connect-logo" aria-hidden="true" viewBox="0 0 24 24"><path fill="#f25022" d="M2 2h9.5v9.5H2z"/><path fill="#7fba00" d="M12.5 2H22v9.5h-9.5z"/><path fill="#00a4ef" d="M2 12.5h9.5V22H2z"/><path fill="#ffb900" d="M12.5 12.5H22V22h-9.5z"/></svg>
+                <div><strong>Outlook</strong><span class="settings-connect-state">Cargando…</span></div>
+                <button class="button" type="button" data-connect-action hidden></button>
+              </li>
+            </ul>
+            <p class="settings-status" id="settings-connect-status" role="status"></p>
+          </div>
+          <div class="settings-card settings-feed">
+            <h3>Llevar tu calendario de Hilo a Google u Outlook</h3>
+            <p class="settings-hint">Crea un enlace privado y agrégalo allá como calendario suscrito: verás tus tareas, recordatorios y reuniones de Hilo junto a tus otros eventos. Es de solo lectura; los cambios se hacen en Hilo y Google puede tardar varias horas en mostrarlos.</p>
+            <p class="settings-feed-local" id="settings-feed-local" hidden><svg class="icon" aria-hidden="true"><use href="#i-info"/></svg><span>Estás en Hilo desde este mismo computador. Google y Outlook no pueden leer esta dirección: el enlace sirve cuando abres Hilo con su dirección pública, la del servidor.</span></p>
+            <div class="settings-actions" id="settings-feed-empty"><button class="button primary" id="settings-feed-create" type="button"><svg class="icon" aria-hidden="true"><use href="#i-calendar"/></svg>Crear enlace</button></div>
+            <div id="settings-feed-ready" hidden>
+              <label class="sr-only" for="settings-feed-url">Enlace del calendario</label>
+              <div class="settings-row"><input class="settings-feed-url" id="settings-feed-url" readonly spellcheck="false" /><button class="button" id="settings-feed-copy" type="button"><svg class="icon" aria-hidden="true"><use href="#i-copy"/></svg>Copiar</button></div>
+              <details class="settings-feed-help">
+                <summary>Cómo agregarlo</summary>
+                <ol>
+                  <li><strong>Google Calendar</strong>, en el computador: junto a «Otros calendarios», pulsa <b>+</b> y elige <b>Desde URL</b>. Pega el enlace y confirma.</li>
+                  <li><strong>Outlook</strong> en la web: <b>Agregar calendario</b> → <b>Suscribirse desde la web</b>. Pega el enlace, ponle nombre y guarda.</li>
+                </ol>
+              </details>
+              <p class="settings-hint settings-feed-warn">Quien tenga este enlace puede ver tus entradas, aunque no tenga cuenta en Hilo. Si lo compartiste por error, cámbialo.</p>
+              <div class="settings-feed-confirm" id="settings-feed-confirm" hidden><p id="settings-feed-confirm-text"></p><button class="button danger" id="settings-feed-confirm-yes" type="button"></button><button class="button quiet" id="settings-feed-confirm-no" type="button">Cancelar</button></div>
+              <div class="settings-feed-actions" id="settings-feed-actions"><button class="button quiet" id="settings-feed-renew" type="button"><svg class="icon" aria-hidden="true"><use href="#i-refresh"/></svg>Cambiar enlace</button><button class="button quiet settings-feed-off" id="settings-feed-delete" type="button"><svg class="icon" aria-hidden="true"><use href="#i-trash"/></svg>Desactivar</button></div>
+            </div>
+            <p class="settings-status" id="settings-feed-status" role="status"></p>
+          </div>
           <div class="settings-card settings-inline">
             <div><h3>Guía de inicio rápido</h3><p class="settings-hint">Repasa cómo empezar un proyecto, usar el chat y guardar post-its.</p></div>
             <button class="button quiet" id="settings-guide" type="button">Abrir guía</button>

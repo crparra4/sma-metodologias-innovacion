@@ -3,6 +3,7 @@
 
 import { paintAvatar, preparePhoto } from './avatar';
 import { onThemeChange, savedTheme, setTheme, type Theme } from './tema';
+import type { ProviderId, ProviderStatus } from './calendarios-externos';
 
 export type SettingsSection = 'perfil' | 'seguridad' | 'preferencias' | 'proyectos' | 'datos';
 type Account = { id: string; username: string; display_name: string; avatar: number };
@@ -13,6 +14,9 @@ const PROFILE_FIELDS: [keyof Profile, string][] = [
   ['phone', 'settings-phone'], ['email', 'settings-email'],
 ];
 type Role = 'owner' | 'editor' | 'viewer';
+type CalendarFeed = { path: string | null; created_at: number | null };
+// Desde estas direcciones Google y Outlook no llegan a Hilo: el enlace no les serviría.
+const LOCAL_HOSTNAMES = new Set(['localhost', '127.0.0.1', '[::1]']);
 export type SettingsProject = { project_id: string; notebook_id: string; role: Role; stage: number; color: string; owner_name: string };
 export type SettingsInvitation = { notebook_id: string; owner_name: string };
 
@@ -24,6 +28,7 @@ export type SettingsHooks = {
   pendingTasks: () => number;
   onAccountChanged: (account: Account) => void;
   openProject: (projectId: string) => void;
+  onCalendarsChanged: () => void;
   openNotifications: () => void;
   openGuide: () => void;
   endSession: () => Promise<void>;
@@ -37,6 +42,8 @@ export class SettingsController {
   private readonly dialog = $<HTMLDialogElement>('settings-dialog');
   private details: Details | null = null;
   private profile: Profile | null = null;
+  private feed: CalendarFeed | null = null;
+  private feedConfirm: (() => Promise<void>) | null = null;
 
   constructor(private readonly hooks: SettingsHooks) {
     this.dialog.querySelectorAll<HTMLButtonElement>('.settings-tab').forEach(tab => {
@@ -56,6 +63,23 @@ export class SettingsController {
     });
     onThemeChange(() => this.renderTheme());
     this.renderTheme();
+    this.dialog.querySelectorAll<HTMLButtonElement>('[data-connect-action]').forEach(button => {
+      button.addEventListener('click', () => void this.connectAction(button.closest<HTMLElement>('[data-provider]')!.dataset.provider as ProviderId));
+    });
+    $('settings-feed-create').addEventListener('click', () => void this.feedRequest('POST', 'Enlace creado. Cópialo y agrégalo en tu calendario.'));
+    $('settings-feed-copy').addEventListener('click', () => void this.copyFeed());
+    $('settings-feed-url').addEventListener('focus', event => (event.target as HTMLInputElement).select());
+    $('settings-feed-renew').addEventListener('click', () => this.askFeed(
+      'El enlace actual dejará de funcionar: tendrás que agregar el nuevo en Google u Outlook.', 'Cambiar enlace',
+      () => this.feedRequest('POST', 'Enlace nuevo listo. El anterior ya no funciona.')));
+    $('settings-feed-delete').addEventListener('click', () => this.askFeed(
+      'Google y Outlook dejarán de recibir tus entradas. Puedes crear otro enlace cuando quieras.', 'Desactivar',
+      () => this.feedRequest('DELETE', 'Enlace desactivado.')));
+    $('settings-feed-confirm-no').addEventListener('click', () => this.closeFeedConfirm(true));
+    $('settings-feed-confirm-yes').addEventListener('click', () => {
+      const action = this.feedConfirm; this.closeFeedConfirm(false);
+      if (action) void action();
+    });
     $('settings-password-form').addEventListener('submit', event => { event.preventDefault(); void this.savePassword(); });
     $('settings-guide').addEventListener('click', () => { this.dialog.close(); hooks.openGuide(); });
     $('settings-open-notifications').addEventListener('click', () => { this.dialog.close(); hooks.openNotifications(); });
@@ -66,7 +90,11 @@ export class SettingsController {
   async open(section: SettingsSection = 'perfil') {
     this.renderAccount();
     this.renderProjects();
-    for (const id of ['settings-profile-status', 'settings-photo-status', 'settings-password-status', 'settings-session-error']) this.status(id, '');
+    for (const id of ['settings-profile-status', 'settings-photo-status', 'settings-password-status', 'settings-session-error', 'settings-feed-status']) this.status(id, '');
+    this.closeFeedConfirm(false);
+    $('settings-feed-local').hidden = !LOCAL_HOSTNAMES.has(location.hostname);
+    void this.loadFeed();
+    void this.loadConnections();
     $<HTMLFormElement>('settings-password-form').reset();
     this.show(section, false);
     if (!this.dialog.open) this.dialog.showModal();
@@ -224,6 +252,110 @@ export class SettingsController {
     } catch (error) {
       this.status('settings-password-status', (error as Error).message, 'error');
     } finally { button.disabled = false; }
+  }
+
+  private connections: ProviderStatus[] = [];
+
+  private async loadConnections() {
+    this.status('settings-connect-status', '');
+    try { this.connections = (await this.hooks.api<{ proveedores: ProviderStatus[] }>('/calendarios')).proveedores; }
+    catch (error) { this.connections = []; this.status('settings-connect-status', (error as Error).message, 'error'); }
+    this.renderConnections();
+  }
+
+  private renderConnections() {
+    for (const item of this.dialog.querySelectorAll<HTMLElement>('.settings-connect-item')) {
+      const info = this.connections.find(entry => entry.id === item.dataset.provider);
+      const state = item.querySelector<HTMLElement>('.settings-connect-state')!;
+      const button = item.querySelector<HTMLButtonElement>('[data-connect-action]')!;
+      item.dataset.state = !info ? 'unknown' : !info.configurado ? 'off' : info.conectado ? 'on' : 'ready';
+      state.textContent = !info ? 'Sin datos' : !info.configurado ? 'No disponible en este servidor todavía'
+        : info.conectado ? `Conectado${info.cuenta ? ` como ${info.cuenta}` : ''}` : 'Sin conectar';
+      button.hidden = !info || !info.configurado;
+      button.textContent = info?.conectado ? 'Desconectar' : 'Conectar';
+      button.className = info?.conectado ? 'button quiet settings-connect-off' : 'button primary';
+      const name = item.querySelector('strong')!.textContent;
+      button.setAttribute('aria-label', `${button.textContent} ${name}`);
+    }
+  }
+
+  private async connectAction(provider: ProviderId) {
+    const info = this.connections.find(entry => entry.id === provider);
+    if (!info) return;
+    const buttons = [...this.dialog.querySelectorAll<HTMLButtonElement>('[data-connect-action]')];
+    buttons.forEach(button => { button.disabled = true; });
+    try {
+      if (info.conectado) {
+        this.connections = (await this.hooks.api<{ proveedores: ProviderStatus[] }>(`/calendarios/${provider}`, { method: 'DELETE' })).proveedores;
+        this.renderConnections();
+        this.status('settings-connect-status', `${info.nombre} desconectado. Sus eventos ya no se muestran en Hilo.`, 'ok');
+        this.hooks.onCalendarsChanged();
+      } else {
+        this.status('settings-connect-status', `Abriendo ${info.nombre}…`);
+        const { url } = await this.hooks.api<{ url: string }>(`/calendarios/${provider}/conectar`, { method: 'POST' });
+        // Google o Microsoft piden permiso y luego devuelven a Hilo, que avisa el resultado.
+        location.assign(url);
+        return;
+      }
+    } catch (error) {
+      this.status('settings-connect-status', (error as Error).message, 'error');
+    }
+    buttons.forEach(button => { button.disabled = false; });
+  }
+
+  private async loadFeed() {
+    try { this.feed = await this.hooks.api<CalendarFeed>('/calendar-feed'); }
+    catch (error) { this.feed = null; this.status('settings-feed-status', (error as Error).message, 'error'); }
+    this.renderFeed();
+  }
+
+  private renderFeed() {
+    const path = this.feed?.path;
+    $('settings-feed-empty').hidden = Boolean(path);
+    $('settings-feed-ready').hidden = !path;
+    $<HTMLInputElement>('settings-feed-url').value = path ? new URL(path, location.origin).href : '';
+  }
+
+  private async feedRequest(method: 'POST' | 'DELETE', done: string) {
+    const buttons = ['settings-feed-create', 'settings-feed-renew', 'settings-feed-delete'].map(id => $<HTMLButtonElement>(id));
+    buttons.forEach(button => { button.disabled = true; });
+    try {
+      this.feed = await this.hooks.api<CalendarFeed>('/calendar-feed', { method });
+      this.renderFeed();
+      this.status('settings-feed-status', done, 'ok');
+      (method === 'POST' ? $('settings-feed-copy') : $('settings-feed-create')).focus();
+    } catch (error) {
+      this.status('settings-feed-status', (error as Error).message, 'error');
+    } finally { buttons.forEach(button => { button.disabled = false; }); }
+  }
+
+  private async copyFeed() {
+    const input = $<HTMLInputElement>('settings-feed-url');
+    try {
+      await navigator.clipboard.writeText(input.value);
+      this.status('settings-feed-status', 'Enlace copiado.', 'ok');
+    } catch {
+      // Sin permiso para el portapapeles (o sin HTTPS): queda seleccionado para copiarlo a mano.
+      input.focus(); input.select();
+      this.status('settings-feed-status', 'Selecciona el enlace y cópialo con Ctrl+C.', '');
+    }
+  }
+
+  private askFeed(text: string, confirm: string, action: () => Promise<void>) {
+    this.feedConfirm = action;
+    $('settings-feed-confirm-text').textContent = text;
+    $('settings-feed-confirm-yes').textContent = confirm;
+    $('settings-feed-confirm').hidden = false;
+    $('settings-feed-actions').hidden = true;
+    this.status('settings-feed-status', '');
+    $('settings-feed-confirm-no').focus();
+  }
+
+  private closeFeedConfirm(focus: boolean) {
+    this.feedConfirm = null;
+    $('settings-feed-confirm').hidden = true;
+    $('settings-feed-actions').hidden = false;
+    if (focus) $('settings-feed-renew').focus();
   }
 
   private renderProjects() {

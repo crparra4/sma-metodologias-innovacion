@@ -1,3 +1,10 @@
+"""Flujo original de un turno, sin LangGraph: Orquestador → Metodólogo → Verificador.
+
+Se conserva como línea base de comparación (`hilo chat --runtime crewai` y la evaluación del
+piloto). La interfaz web no lo usa: usa `langgraph_workflow.py`, que hace lo mismo y agrega
+el Planificador, las respuestas fijas y la salida segura por ficha.
+"""
+
 from __future__ import annotations
 
 from ..compartido.contracts import (
@@ -20,6 +27,8 @@ SAFE_DEGRADATION = (
 
 
 class RutaDiaService:
+    """Corre un turno con los tres agentes, uno tras otro, sin grafo."""
+
     def __init__(
         self,
         catalog: KnowledgeCatalog,
@@ -32,6 +41,12 @@ class RutaDiaService:
         self.recorder = recorder or NullRecorder()
 
     def handle_turn(self, message: str, state: ProjectState) -> TurnResult:
+        """Corre un turno completo y devuelve la respuesta que verá la persona.
+
+        El Metodólogo tiene dos intentos. Si el Verificador rechaza los dos, se responde con
+        un mensaje seguro (`SAFE_DEGRADATION`) en lugar de mostrar una orientación dudosa.
+        Los datos de la ficha solo se aceptan cuando el veredicto es «aprobado».
+        """
         if not message.strip():
             raise ValueError("El mensaje no puede estar vacío")
 

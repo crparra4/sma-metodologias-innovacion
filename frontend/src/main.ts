@@ -1,3 +1,26 @@
+// Página principal de Hilo: arranca la interfaz y une sus vistas (inicio, chat, tablero del
+// proyecto, calendario y ajustes). Cada herramienta del tablero tiene su propio archivo
+// (problem-tree.ts, pestel.ts, empatia.ts, journey.ts, practica.ts, why-analysis.ts).
+//
+// El archivo es largo. Está dividido en secciones que se pueden buscar por su título
+// («// ==== … Chat»), en este orden:
+//    1. Estado de la página y tipos
+//    2. Llamadas a la API y avisos
+//    3. Chat: mensajes de la conversación
+//    4. Proyectos: lista y tarjetas
+//    5. Navegación entre vistas
+//    6. Grafo de agentes y envío de un mensaje
+//    7. Formulario de proyecto
+//    8. Compartir proyecto y avances
+//    9. Post-its y tablero del proyecto
+//   10. Herramientas (fichas)
+//   11. Perfil, miembros y menú de la cuenta
+//   12. Inicio: actividad y tareas
+//   13. Calendario
+//   14. Invitaciones y notificaciones
+//   15. Inicio: herramientas destacadas
+//   16. Acceso e inicio de la página
+
 import './style.css';
 import './home-cuaderno.css';
 import './calendario-cuaderno.css';
@@ -6,6 +29,7 @@ import './tablero-cuaderno.css';
 import DOMPurify from 'dompurify';
 import { marked } from 'marked';
 import { taskTiming, localDateKey, kindLabels, kindIcons, dayLanes, notificationGroups, type Task, type EntryKind } from './agenda';
+import { ExternalCalendars, eventsOn, providerNames, type ExternalEvent } from './calendarios-externos';
 import { authText, translateAuthError, loadAuthLanguage, saveAuthLanguage, type AuthTextKey } from './auth-language';
 import { EmpathyController } from './empatia';
 import { JourneyController } from './journey';
@@ -22,6 +46,8 @@ import { initTheme } from './tema';
 
 // Primero el tema: las hojas de estilo ya están cargadas y la página espera oculta hasta aquí.
 initTheme();
+
+// ============================================================ Estado de la página y tipos
 let tasks: Task[] = [];
 let taskFilter: 'today' | 'upcoming' | 'all' = 'upcoming';
 let editingTask: Task | null = null;
@@ -144,6 +170,7 @@ new ResizeObserver(() => {
   if (keepLatestVisible) requestAnimationFrame(scrollChat);
 }).observe(messageBox);
 
+// ============================================================ Llamadas a la API y avisos
 function errorMessage(detail: unknown): string {
   if (typeof detail === 'string') return detail;
   if (Array.isArray(detail)) return detail.map(item => String(item.msg || 'Revisa los datos ingresados.')).join(' ');
@@ -266,10 +293,15 @@ async function refreshStatus() {
     available = status.available;
     serverBusy = status.busy;
     el('model-dot').className = `status-dot ${available ? 'online' : 'offline'}`;
-    el('profile').title = `${status.model} · ${available ? 'disponible' : 'sin conexión'}`;
+    // «claude-opus-5-5» se muestra como «Claude Opus 5.5»; el modelo local, con su nombre.
+    const claude = status.model.match(/^claude-([a-z]+)-(\d+)(?:-(\d+))?/);
+    const nombreModelo = claude
+      ? `Claude ${claude[1][0].toUpperCase()}${claude[1].slice(1)} ${claude[2]}${claude[3] ? `.${claude[3]}` : ''}`
+      : status.model;
+    el('profile').title = `${nombreModelo} · ${available ? 'disponible' : 'sin conexión'}`;
     if (!busy) el('run-status').firstElementChild!.textContent = available
       ? (serverBusy ? 'Hay una respuesta en curso. Se guardará al terminar; recarga el cuaderno después.' : 'Una pregunta a la vez, con respaldo metodológico.')
-      : 'Inicia Qwen para conversar. La conexión se comprueba automáticamente.';
+      : 'El modelo no está disponible en este momento. La conexión se comprueba automáticamente.';
   } catch {
     available = false;
     el('profile').title = 'Sin conexión al servidor';
@@ -278,6 +310,7 @@ async function refreshStatus() {
   syncControls();
 }
 
+// ============================================================ Chat: mensajes de la conversación
 function toolName(id: string) { return tools.find(tool => tool.id === id)?.name || id; }
 function stageName(id: number) { return stages.find(stage => stage.id === id)?.name || `Etapa ${id}`; }
 function scrollChat() {
@@ -449,6 +482,7 @@ function updateHeader() {
   renderMemory(); syncControls();
 }
 
+// ============================================================ Proyectos: lista y tarjetas
 async function refreshNotebooks() {
   notebooks = await api<Notebook[]>('/notebooks');
   renderNotebooks();
@@ -533,6 +567,7 @@ function renderProjects() {
   syncControls();
 }
 
+// ============================================================ Navegación entre vistas
 function canNavigateAwayFromTree(): boolean {
   if (currentView === 'practice') {
     if (practice.canLeave()) return true;
@@ -773,6 +808,8 @@ const paths: Record<string, string> = {
   'verify>degrade': 'M234 262H285V313', 'finalize>__end__': 'M110 360V384H144V396',
   'degrade>__end__': 'M285 360V384H144V396', 'knowledge_gap>__end__': 'M335 128H338V418H144V411',
 };
+
+// ============================================================ Grafo de agentes y envío de un mensaje
 const svgNS = 'http://www.w3.org/2000/svg';
 const svgElement = (tag: string, attrs: Record<string, string>) => { const node = document.createElementNS(svgNS, tag); for (const [key, value] of Object.entries(attrs)) node.setAttribute(key, value); return node; };
 
@@ -979,6 +1016,8 @@ document.addEventListener('pointerdown', event => {
   const recentMenu = el<HTMLDetailsElement>('recent-menu');
   if (!recentMenu.contains(event.target as Node)) recentMenu.open = false;
 });
+
+// ============================================================ Formulario de proyecto
 function selectedColor(): Color {
   return el<HTMLFormElement>('notebook-form').querySelector<HTMLInputElement>('input[name="notebook-color"]:checked')!.value as Color;
 }
@@ -1030,6 +1069,7 @@ for (const id of ['new-notebook', 'home-new-project', 'empty-new-project']) el(i
 el('edit-project').addEventListener('click', () => { openProjectForm(true); });
 const advanceNames: Record<Advance['kind'], string> = { decision: 'Decisión', finding: 'Hallazgo', hypothesis: 'Hipótesis', next_step: 'Próximo paso', other: 'Otro' };
 
+// ============================================================ Compartir proyecto y avances
 function sharingError(message = '') {
   el('sharing-error').textContent = message; el('sharing-error').hidden = !message;
 }
@@ -1227,6 +1267,7 @@ el('confirm-delete').addEventListener('click', async () => {
   finally { loadingNotebook = false; syncControls(); }
 });
 
+// ============================================================ Post-its y tablero del proyecto
 function noteAuthor(note: Note): Member {
   // Sin autor guardado (modo sin cuentas o nota aun no reclamada) la nota es de la
   // cuenta duena del almacenamiento, que es la que esta viendo el cuaderno.
@@ -1452,6 +1493,7 @@ el('note-form').addEventListener('submit', async event => {
   finally { noteSaving = false; el('note-form').querySelectorAll<HTMLInputElement>('button, input, select, textarea').forEach(node => { node.disabled = false; }); syncControls(); }
 });
 
+// ============================================================ Herramientas (fichas)
 function renderTools() {
   const grid = el('tools-grid'); grid.replaceChildren();
   for (const tool of tools) {
@@ -1494,6 +1536,7 @@ async function openTool(tool: Tool) {
   }
 }
 
+// ============================================================ Perfil, miembros y menú de la cuenta
 function profileName(): string {
   return account?.display_name || 'Tu cuenta';
 }
@@ -1604,6 +1647,7 @@ const settings = new SettingsController({
     renderProfile(); renderNotes();
   },
   openProject: id => { void loadNotebook(id); },
+  onCalendarsChanged: () => { void externalCalendars.refresh(); },
   openNotifications: () => { el<HTMLDetailsElement>('header-notifications').open = true; el('header-notifications').querySelector('summary')!.focus(); },
   openGuide: () => { el<HTMLDetailsElement>('header-help').open = true; el('header-help').querySelector('summary')!.focus(); },
   endSession: endAccountSession,
@@ -1637,6 +1681,7 @@ async function endAccountSession() {
 }
 for (const id of ['account-switch', 'account-logout']) el(id).addEventListener('click', () => { void endAccountSession(); });
 
+// ============================================================ Inicio: actividad y tareas
 const dayKey = (value: string | Date) => {
   const date = typeof value === 'string' ? new Date(value) : value;
   if (Number.isNaN(date.getTime())) return '';
@@ -1868,8 +1913,33 @@ function entryChip(task: Task, className = 'calv-chip'): HTMLButtonElement {
   return chip;
 }
 
+const externalCalendars = new ExternalCalendars(api, () => renderCalendarView(), error => {
+  showToast('warning', providerNames[error.proveedor], error.reconectar ? `${error.mensaje} Hazlo desde Ajustes → Preferencias.` : error.mensaje);
+});
+const externalTime = (event: ExternalEvent) => event.todo_el_dia ? 'Todo el día' : `${timeFmt.format(new Date(event.inicio))}–${timeFmt.format(new Date(event.fin))}`;
+const externalLabel = (event: ExternalEvent) => `${providerNames[event.proveedor]}: ${event.titulo}, ${externalTime(event)}. Solo lectura.`;
+
+/** Evento de Google u Outlook: no se edita en Hilo; al pulsarlo se abre su día. */
+function externalChip(event: ExternalEvent, day: string, className = 'calv-chip'): HTMLButtonElement {
+  const chip = document.createElement('button'); chip.type = 'button'; chip.className = `${className} is-external`;
+  chip.dataset.eventColor = event.proveedor;
+  chip.setAttribute('aria-label', externalLabel(event)); chip.title = externalLabel(event);
+  chip.innerHTML = `${icon('calendar')}<span class="calv-chip-time"></span><span class="calv-chip-title"></span>`;
+  chip.querySelector('.calv-chip-time')!.textContent = event.todo_el_dia ? '' : timeFmt.format(new Date(event.inicio));
+  chip.querySelector('.calv-chip-title')!.textContent = event.titulo;
+  chip.addEventListener('click', clickEvent => { clickEvent.stopPropagation(); selectDay(day); });
+  return chip;
+}
+
+/** Rango que muestra la vista actual, para pedir solo esos eventos externos. */
+function visibleRange(): [Date, Date] {
+  const start = calvMode === 'month' ? mondayOf(new Date(calvCursor.getFullYear(), calvCursor.getMonth(), 1)) : mondayOf(calvCursor);
+  return [start, addDays(start, calvMode === 'month' ? 42 : 7)];
+}
+
 function renderCalendarView() {
   if (currentView !== 'calendar') return;
+  externalCalendars.ensure(...visibleRange());
   document.querySelectorAll<HTMLButtonElement>('[data-calv-mode]').forEach(button => button.setAttribute('aria-pressed', String(button.dataset.calvMode === calvMode)));
   if (calvMode === 'month') renderMonth(); else renderWeek();
   renderDayPanel(); renderFilters();
@@ -1894,7 +1964,8 @@ function renderMonth() {
     if (key === calvSelected) cell.classList.add('is-selected');
     const top = document.createElement('div'); top.className = 'calv-cell-top';
     const number = document.createElement('button'); number.type = 'button'; number.className = 'calv-daynum'; number.textContent = String(date.getDate());
-    number.setAttribute('aria-label', `${capital(weekdayName.format(date))} ${longDay.format(date)}: ${entries.length ? `${entries.length} ${entries.length === 1 ? 'entrada' : 'entradas'}` : 'sin entradas'}`);
+    const count = entries.length + eventsOn(externalCalendars.visible(), key).length;
+    number.setAttribute('aria-label', `${capital(weekdayName.format(date))} ${longDay.format(date)}: ${count ? `${count} ${count === 1 ? 'entrada' : 'entradas'}` : 'sin entradas'}`);
     if (key === calvSelected) number.setAttribute('aria-current', 'date');
     number.addEventListener('click', () => selectDay(key));
     const add = document.createElement('button'); add.type = 'button'; add.className = 'calv-add'; add.innerHTML = icon('plus');
@@ -1903,14 +1974,22 @@ function renderMonth() {
     const list = document.createElement('div'); list.className = 'calv-cell-entries';
     // Se pintan hasta cuatro y fitMonthCells esconde las que no quepan en el alto real
     // de la fila; lo escondido se cuenta en «+N más» y se lee completo en el panel del dia.
-    cell.dataset.total = String(entries.length);
-    for (const task of entries.slice(0, 4)) list.append(entryChip(task));
+    // Los externos se mezclan con las tareas por hora; los de todo el día van primero.
+    const externals = eventsOn(externalCalendars.visible(), key);
+    const items = [
+      ...externals.filter(event => event.todo_el_dia).map(event => ({ at: -Infinity, chip: () => externalChip(event, key), color: event.proveedor as string })),
+      ...[...entries.map(task => ({ at: Date.parse(task.due_at), chip: () => entryChip(task), color: entryColor(task) })),
+        ...externals.filter(event => !event.todo_el_dia).map(event => ({ at: Date.parse(event.inicio), chip: () => externalChip(event, key), color: event.proveedor as string }))]
+        .sort((a, b) => a.at - b.at),
+    ];
+    cell.dataset.total = String(items.length);
+    for (const item of items.slice(0, 4)) list.append(item.chip());
     const more = document.createElement('button'); more.type = 'button'; more.className = 'calv-more'; more.hidden = true;
     more.addEventListener('click', event => { event.stopPropagation(); selectDay(key); });
     list.append(more);
     // En pantallas angostas el dia muestra puntos de color en lugar de textos.
     const dots = document.createElement('div'); dots.className = 'calv-dots'; dots.setAttribute('aria-hidden', 'true');
-    for (const task of entries.slice(0, 4)) { const dot = document.createElement('i'); dot.dataset.eventColor = entryColor(task); dots.append(dot); }
+    for (const item of items.slice(0, 4)) { const dot = document.createElement('i'); dot.dataset.eventColor = item.color; dots.append(dot); }
     cell.append(list, dots);
     cell.addEventListener('click', event => { if (!(event.target as HTMLElement).closest('button')) selectDay(key); });
     body.append(cell);
@@ -1944,6 +2023,10 @@ function renderWeek() {
   const hours = document.createElement('div'); hours.className = 'calv-hours'; hours.setAttribute('aria-hidden', 'true');
   for (let hour = 1; hour < 24; hour += 1) { const label = document.createElement('span'); label.style.top = `${hour * HOUR_PX}px`; label.textContent = `${String(hour).padStart(2, '0')}:00`; hours.append(label); }
   board.append(hours);
+  // Los eventos externos de todo el día van en una franja sobre las horas.
+  const allDay = document.createElement('div'); allDay.className = 'calv-week-allday';
+  const allDayLabel = document.createElement('span'); allDayLabel.textContent = 'Todo el día'; allDay.append(allDayLabel);
+  let anyAllDay = false;
   let earliest = 8 * 60;
   for (let offset = 0; offset < 7; offset += 1) {
     const date = addDays(start, offset); const key = localDateKey(date);
@@ -1965,7 +2048,26 @@ function renderWeek() {
       openEntry(undefined, key, `${String(hour).padStart(2, '0')}:00`);
     });
     const entries = visibleTasks().filter(task => localDateKey(new Date(task.due_at)) === key);
-    const lanes = dayLanes(entries);
+    const externals = eventsOn(externalCalendars.visible(), key);
+    const allDayCell = document.createElement('div');
+    for (const event of externals.filter(item => item.todo_el_dia)) { allDayCell.append(externalChip(event, key)); anyAllDay = true; }
+    allDay.append(allDayCell);
+    const timed = externals.filter(event => !event.todo_el_dia);
+    // Los carriles se reparten entre tareas y eventos externos, para que no se tapen.
+    const lanes = dayLanes([...entries, ...timed.map(event => ({ id: event.id, due_at: event.inicio, ends_at: event.fin } as Task))]);
+    for (const event of timed) {
+      const begin = new Date(event.inicio); const minutes = begin.getHours() * 60 + begin.getMinutes();
+      earliest = Math.min(earliest, minutes);
+      const span = Math.max(20, (Date.parse(event.fin) - begin.getTime()) / 60000);
+      const block = externalChip(event, key, 'calv-block');
+      const place = lanes.get(event.id) || { lane: 0, lanes: 1 };
+      block.style.top = `${minutes * HOUR_PX / 60}px`;
+      block.style.height = `${Math.min(span, 24 * 60 - minutes) * HOUR_PX / 60}px`;
+      block.style.left = `calc(${place.lane / place.lanes * 100}% + 2px)`;
+      block.style.width = `calc(${100 / place.lanes}% - 4px)`;
+      const range = document.createElement('span'); range.className = 'calv-block-range'; range.textContent = externalTime(event); block.append(range);
+      column.append(block);
+    }
     for (const task of entries) {
       const begin = new Date(task.due_at); const minutes = begin.getHours() * 60 + begin.getMinutes();
       earliest = Math.min(earliest, minutes);
@@ -1985,7 +2087,7 @@ function renderWeek() {
     }
     board.append(column);
   }
-  scroller.append(board); grid.append(head, scroller);
+  scroller.append(board); grid.append(head, ...(anyAllDay ? [allDay] : []), scroller);
   scroller.scrollTop = Math.max(0, (earliest - 30) * HOUR_PX / 60);
 }
 
@@ -1996,7 +2098,9 @@ function renderDayPanel() {
   const list = el('calv-day-list'); list.replaceChildren();
   const entries = visibleTasks().filter(task => localDateKey(new Date(task.due_at)) === calvSelected)
     .sort((a, b) => Date.parse(a.due_at) - Date.parse(b.due_at));
-  if (!entries.length) {
+  const externals = eventsOn(externalCalendars.visible(), calvSelected);
+  for (const event of externals) list.append(externalRow(event));
+  if (!entries.length && !externals.length) {
     const empty = document.createElement('div'); empty.className = 'calv-day-empty';
     const text = document.createElement('p'); text.textContent = 'Nada agendado para este día.';
     const add = document.createElement('button'); add.type = 'button'; add.className = 'button quiet'; add.innerHTML = `${icon('plus')}Agregar`;
@@ -2021,6 +2125,23 @@ function renderDayPanel() {
   }
 }
 
+function externalRow(event: ExternalEvent): HTMLElement {
+  const row = document.createElement('article'); row.className = 'calv-item is-external'; row.dataset.eventColor = event.proveedor;
+  const mark = document.createElement('span'); mark.className = 'calv-item-source'; mark.innerHTML = icon('calendar'); mark.setAttribute('aria-hidden', 'true');
+  const body = document.createElement('div'); body.className = 'calv-item-open';
+  body.innerHTML = '<span class="calv-item-kind"><span></span></span><strong></strong><span class="calv-item-meta"><span class="calv-item-project"></span></span>';
+  body.querySelector('.calv-item-kind span')!.textContent = externalTime(event);
+  body.querySelector('strong')!.textContent = event.titulo;
+  body.querySelector('.calv-item-project')!.textContent = `${providerNames[event.proveedor]} · solo lectura`;
+  row.append(mark, body);
+  if (event.enlace) {
+    const open = document.createElement('a'); open.className = 'calv-item-link'; open.href = event.enlace; open.target = '_blank'; open.rel = 'noopener noreferrer';
+    open.textContent = 'Abrir'; open.setAttribute('aria-label', `Abrir «${event.titulo}» en ${providerNames[event.proveedor]}`);
+    row.append(open);
+  }
+  return row;
+}
+
 function renderFilters() {
   const kindBox = el('calv-kind-filters'); kindBox.replaceChildren();
   for (const kind of Object.keys(kindLabels) as EntryKind[]) {
@@ -2038,6 +2159,14 @@ function renderFilters() {
     box.addEventListener('change', () => { if (box.checked) calvHiddenProjects.delete(key); else calvHiddenProjects.add(key); renderCalendarView(); });
     const dot = document.createElement('i'); dot.dataset.eventColor = color; dot.setAttribute('aria-hidden', 'true');
     const text = document.createElement('span'); text.textContent = name; text.title = name;
+    label.append(box, dot, text); projectBox.append(label);
+  }
+  for (const provider of externalCalendars.providers) {
+    const label = document.createElement('label'); label.className = 'calv-project-filter';
+    const box = document.createElement('input'); box.type = 'checkbox'; box.checked = !externalCalendars.hidden.has(provider);
+    box.addEventListener('change', () => { if (box.checked) externalCalendars.hidden.delete(provider); else externalCalendars.hidden.add(provider); renderCalendarView(); });
+    const dot = document.createElement('i'); dot.dataset.eventColor = provider; dot.setAttribute('aria-hidden', 'true');
+    const text = document.createElement('span'); text.textContent = providerNames[provider];
     label.append(box, dot, text); projectBox.append(label);
   }
 }
@@ -2112,6 +2241,7 @@ function tasksChanged() {
   renderCalendar(); renderTasks(); renderCalendarView(); renderNotifications(); renderHero();
 }
 
+// ============================================================ Invitaciones y notificaciones
 async function loadInvitations() {
   invitations = await api<Invitation[]>('/sharing/invitations');
   renderNotifications();
@@ -2238,6 +2368,7 @@ el('calv-form').addEventListener('submit', async event => {
 // La hora avanza: vencidas y la linea de "ahora" se recalculan cada minuto.
 setInterval(() => { renderNotifications(); if (currentView === 'calendar' && !calvSaving && !el('calendar-view').contains(document.activeElement)) renderCalendarView(); }, 60000);
 
+// ============================================================ Inicio: herramientas destacadas
 function featuredTools(): Tool[] {
   // Criterio real y comprobable: son las unicas fichas que alimentan la memoria
   // verificada. El prototipo no registra uso, asi que no hay "mas usadas".
@@ -2324,6 +2455,7 @@ el('cal-prev').addEventListener('click', () => shiftMonth(-1));
 el('cal-next').addEventListener('click', () => shiftMonth(1));
 el('home-tools-link').addEventListener('click', () => { if (!busy && !loadingNotebook) showTools(); });
 
+// ============================================================ Acceso e inicio de la página
 function renderAuthLanguage() {
   const view = el('auth-view');
   view.lang = authLanguage;
@@ -2412,6 +2544,19 @@ el('auth-form').addEventListener('submit', async event => {
   } catch (caught) { error.textContent = translateAuthError((caught as Error).message, authLanguage); error.hidden = false; submit.disabled = false; submit.textContent = authT(authMode === 'register' ? 'register' : 'login'); modeControls.forEach(control => { control.disabled = false; }); }
 });
 
+/** Al volver de Google o Microsoft: aviso del resultado y la dirección queda limpia. */
+function announceCalendarReturn() {
+  const params = new URLSearchParams(location.search);
+  const provider = params.get('calendario') as keyof typeof providerNames | null;
+  const result = params.get('resultado');
+  if (!result) return;
+  history.replaceState(null, '', `${location.pathname}${location.hash}`);
+  const name = provider && providerNames[provider] ? providerNames[provider] : 'El calendario';
+  if (result === 'ok') showToast('success', `${name} conectado`, 'Sus eventos aparecen en el calendario de Hilo, en modo solo lectura.');
+  else if (result === 'cancelado') showToast('warning', 'Conexión cancelada', `No se conectó ${name}.`);
+  else showToast('error', `No se pudo conectar ${name}`, params.get('motivo') || 'Inténtalo de nuevo desde Ajustes → Preferencias.');
+}
+
 async function init() {
   renderAuthLanguage();
   try {
@@ -2432,6 +2577,7 @@ async function init() {
     stages = catalog.stages; tools = catalog.tools; graphData = catalog.graph; buildGraph(); renderTools(); renderHomeTools();
     for (const stage of stages) { const option = document.createElement('option'); option.value = String(stage.id); option.textContent = `${stage.id}. ${stage.name}`; el<HTMLSelectElement>('initial-stage').append(option); }
     renderNotebooks(); await followLocation(); updateHeader();
+    announceCalendarReturn(); void externalCalendars.refresh();
   } catch (error) { showError(`${(error as Error).message} Recarga la página cuando el servidor esté disponible.`); }
   setInterval(() => { if (!busy) void refreshStatus(); }, 20000);
 }

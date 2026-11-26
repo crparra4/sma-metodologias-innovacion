@@ -1,3 +1,10 @@
+"""Registro de auditoría: guarda cada revisión del Verificador para poder estudiarla después.
+
+`JsonlVerificationRecorder` escribe una línea por intento con lo que decidió el Orquestador,
+lo que propuso el Metodólogo y el veredicto del Verificador. `NullRecorder` no guarda nada y
+es el valor por defecto cuando no se pide registro.
+"""
+
 from __future__ import annotations
 
 import json

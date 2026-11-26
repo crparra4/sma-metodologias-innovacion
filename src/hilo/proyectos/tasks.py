@@ -1,3 +1,5 @@
+"""Forma de una entrada del calendario, tal como la envía la interfaz."""
+
 from datetime import UTC, datetime
 from typing import Literal
 

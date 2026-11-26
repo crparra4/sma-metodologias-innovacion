@@ -1,3 +1,11 @@
+"""Configuración de Hilo: se lee una sola vez desde las variables de entorno (archivo `.env`).
+
+`Settings.from_env()` reúne el modelo, las carpetas de los datos y las opciones del agente.
+Estas variables empiezan por `RUTA_DIA_`, el nombre que tuvo el proyecto al comienzo; las más
+nuevas empiezan por `HILO_` y se leen en el módulo que las usa. Todas están explicadas en
+`.env.example`.
+"""
+
 from __future__ import annotations
 
 import os
@@ -57,6 +65,10 @@ class Settings:
     # Respaldo con Claude cuando el modelo local no responde (`respaldo_claude.py`). Apagado por
     # defecto: solo se enciende en el servidor de las pruebas, que tiene la clave de la API.
     respaldo_claude: bool = False
+    # Claude como modelo principal (`RUTA_DIA_CLAUDE_PRIMERO`): con el respaldo encendido, cada
+    # turno va primero a Claude y el modelo local queda como alternativa (si se llega al tope de
+    # gasto o la API no está). Apagado por defecto: el orden documentado es local y luego Claude.
+    claude_primero: bool = False
     claude_metodologo: str = "claude-opus-5-5"
     claude_modelo: str = "claude-sonnet-5-5"  # Orquestador, Cliente simulado y auxiliares
     claude_tope_usd: float = 24.0
@@ -88,6 +100,7 @@ class Settings:
             parallel=max(1, int(os.getenv("RUTA_DIA_PARALLEL", "6"))),
             variant=os.getenv("RUTA_DIA_VARIANTE", "g").strip().lower(),
             respaldo_claude=_as_bool(os.getenv("RUTA_DIA_RESPALDO_CLAUDE")),
+            claude_primero=_as_bool(os.getenv("RUTA_DIA_CLAUDE_PRIMERO")),
             claude_metodologo=os.getenv("RUTA_DIA_CLAUDE_METODOLOGO", "claude-opus-5-5"),
             claude_modelo=os.getenv("RUTA_DIA_CLAUDE_MODELO", "claude-sonnet-5-5"),
             claude_tope_usd=float(os.getenv("RUTA_DIA_CLAUDE_TOPE_USD", "24")),

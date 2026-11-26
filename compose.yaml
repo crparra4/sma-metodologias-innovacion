@@ -17,7 +17,9 @@ services:
       args:
         UID: ${HILO_UID:-1000}
         GID: ${HILO_GID:-1000}
-    image: hilo:${HILO_VERSION:-local}
+    # Sin variables, la imagen construida aquí (hilo:local). El despliegue automático usa la
+    # publicada por GitHub Actions: HILO_IMAGEN=ghcr.io/... y HILO_VERSION=sha-xxxxxxx.
+    image: ${HILO_IMAGEN:-hilo}:${HILO_VERSION:-local}
     container_name: hilo
     # El mismo usuario dueño de las carpetas montadas (en el servidor actual, 1001: `id -u`).
     user: "${HILO_UID:-1000}:${HILO_GID:-1000}"

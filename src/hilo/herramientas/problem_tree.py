@@ -1,3 +1,9 @@
+"""Árbol de problemas del tablero: la forma de los datos que guarda el equipo.
+
+Un problema central con causas y efectos, en dos niveles como máximo. El diagnóstico del
+árbol está en `tree_diagnosis.py`.
+"""
+
 from __future__ import annotations
 
 from pydantic import BaseModel, ConfigDict, Field, model_validator

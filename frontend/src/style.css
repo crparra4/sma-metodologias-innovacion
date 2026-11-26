@@ -720,6 +720,19 @@
 [data-event-color="purple"]{--ev-bg:#ebe2f8;--ev-ink:#4a2d83;--ev-dot:#7a55c2}
 [data-event-color="gray"]{--ev-bg:#e8ecf2;--ev-ink:#334155;--ev-dot:#7b8799}
 [data-event-color="personal"]{--ev-bg:#fbe3ee;--ev-ink:#7a234f;--ev-dot:#c73f80}
+/* Eventos de Google y Outlook: solo lectura, con borde punteado para distinguirlos. */
+[data-event-color="google"]{--ev-bg:#e3f4f1;--ev-ink:#0f5a4f;--ev-dot:#1a8f7e}
+[data-event-color="microsoft"]{--ev-bg:#e3effb;--ev-ink:#0b4a7a;--ev-dot:#0f6cbd}
+.calv-chip.is-external,.calv-block.is-external{box-shadow:inset 0 0 0 1px var(--ev-dot);border-style:dashed}
+.calv-week-allday{display:grid;grid-template-columns:56px repeat(7,minmax(0,1fr));border-bottom:1px solid #e6ebf3}
+.calv-week-allday>span{align-self:center;padding:4px 6px;font-size:10px;color:#5f6d82;text-align:right}
+.calv-week-allday>div{display:flex;flex-direction:column;gap:2px;min-width:0;padding:3px 2px;border-left:1px solid #eef1f6}
+.calv-item.is-external{align-items:center;border-style:dashed}
+.calv-item-source{display:grid;place-items:center;width:22px;height:22px;color:var(--ev-dot)}
+.calv-item-source .icon{width:16px;height:16px}
+.calv-item.is-external .calv-item-open{cursor:default}
+.calv-item-link{align-self:center;padding:4px 8px;border-radius:6px;font-size:12px;font-weight:600;color:var(--ev-ink);text-decoration:none}
+.calv-item-link:hover{background:var(--ev-bg)}
 
 .calendar-view{flex:1;min-height:0;display:grid;grid-template-columns:minmax(0,1fr) 300px;background:#f5f7fb}
 .calv-main{display:flex;flex-direction:column;min-width:0;min-height:0;padding:18px 20px 20px}

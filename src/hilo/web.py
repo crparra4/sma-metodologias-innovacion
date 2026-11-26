@@ -1,3 +1,18 @@
+"""API HTTP de Hilo: todo lo que la interfaz web le pide al servicio.
+
+`create_app` arma la aplicación FastAPI. Sus rutas están agrupadas en secciones, cada una
+con un título que se puede buscar (`# --- Cuentas`, `# --- Chat`…):
+
+    Datos de cada cuenta · Seguridad · Cuentas · Estado · Calendario · Enlace .ics ·
+    Calendarios de Google y Outlook · Catálogo · Cuadernos · Proyectos compartidos ·
+    Tableros del equipo · Práctica · Cinco porqués · Avances · Chat · Interfaz web
+
+Este archivo solo traduce entre HTTP y los contextos: revisa la sesión y el permiso, llama al
+contexto que corresponde y devuelve su respuesta. Las reglas viven en cada contexto, no aquí.
+
+La ruta central es `POST /api/chat`: corre un turno del agente y va enviando su avance.
+"""
+
 from __future__ import annotations
 
 import asyncio
@@ -10,12 +25,13 @@ import sqlite3
 import time
 from contextlib import closing
 from contextvars import ContextVar
+from datetime import datetime
 from pathlib import Path
 from typing import Literal
-from urllib.parse import urlparse
+from urllib.parse import urlencode, urlparse
 
 from fastapi import FastAPI, HTTPException, Request
-from fastapi.responses import JSONResponse, Response, StreamingResponse
+from fastapi.responses import JSONResponse, RedirectResponse, Response, StreamingResponse
 from fastapi.staticfiles import StaticFiles
 from langgraph.checkpoint.serde.jsonplus import JsonPlusSerializer
 from langgraph.checkpoint.sqlite import SqliteSaver
@@ -65,6 +81,12 @@ from .identidad.auth import (
 )
 from .inferencia.respaldo_claude import ModeloNoDisponible, Respaldo
 from .inferencia.turnos import ModelQueue, ProjectLocks
+from .integraciones.calendarios import (
+    CalendariosExternos,
+    ErrorCalendario,
+    clave_de_cifrado,
+    proveedores_desde_entorno,
+)
 from .practica.cliente_simulado import AVISO as AVISO_PRACTICA
 from .practica.cliente_simulado import (
     mensajes_entrevista,
@@ -73,6 +95,7 @@ from .practica.cliente_simulado import (
 )
 from .practica.cliente_simulado import responder as responder_cliente
 from .practica.registro import RegistroPracticas
+from .proyectos.calendario_ics import generar_ics
 from .proyectos.memory import EditConflict, NotebookMemory
 from .proyectos.notes import NoteRequest
 from .proyectos.sharing import SharingStore
@@ -330,6 +353,8 @@ def create_app(
     model_probe=model_available,
     frontend_path: Path | None = None,
     require_auth: bool = True,
+    calendar_providers=None,
+    calendar_transport=None,
 ) -> FastAPI:
     settings = settings or Settings.from_env()
     if runtime_factory is None:
@@ -346,8 +371,13 @@ def create_app(
     respaldo = Respaldo(settings) if settings.respaldo_claude else None
     sonda = SondaModelo(model_probe, settings)
 
+    claude_primero = respaldo is not None and settings.claude_primero
+
     def nuevo_runtime():
-        """Runtime del turno: el modelo local si responde; si no, el respaldo con Claude."""
+        """Runtime del turno: el modelo local si responde; si no, el respaldo con Claude.
+        Con `claude_primero`, al revés: Claude mientras haya presupuesto y, si no, el local."""
+        if claude_primero and respaldo.disponible():
+            return respaldo.runtime(runtime_factory, settings)
         if respaldo is None or sonda.local():
             return runtime_factory(settings)
         if not respaldo.disponible():
@@ -378,11 +408,18 @@ def create_app(
     app.state.jobs = set()
     auth = AuthStore(settings.memory_path.parent / "auth.sqlite3")
     sharing = SharingStore(settings.memory_path.parent / "auth.sqlite3")
+    calendarios = CalendariosExternos(
+        settings.memory_path.parent / "auth.sqlite3",
+        clave_de_cifrado(settings.memory_path.parent),
+        calendar_providers or proveedores_desde_entorno(),
+        transporte=calendar_transport,
+    )
     # Registro e inicio de sesión cuestan un hash cada uno: comparten el cupo por origen.
     access_attempts = AttemptLimiter(ACCESS_ATTEMPTS_PER_MINUTE)
     login_attempts = AttemptLimiter(LOGIN_ATTEMPTS_PER_MINUTE)
     current_account: ContextVar[User | None] = ContextVar("hilo_account", default=None)
 
+    # --- Datos de cada cuenta y permisos sobre los proyectos --------------------------------------
     def memory_path() -> Path:
         user = current_account.get()
         return auth.memory_path(user, settings.memory_path) if user else settings.memory_path
@@ -499,6 +536,7 @@ def create_app(
             items.append(context_text(analysis))
         return items[-40:]
 
+    # --- Seguridad: mismo origen y sesión en cada petición ----------------------------------------
     @app.middleware("http")
     async def same_origin(request: Request, call_next):
         origin = request.headers.get("origin")
@@ -534,6 +572,7 @@ def create_app(
     def remote(request: Request) -> bool:
         return (request.url.hostname or "") not in LOCAL_HOSTS
 
+    # --- Cuentas: registro, inicio de sesión, perfil y foto ---------------------------------------
     @app.get("/api/auth/registration")
     def registration(request: Request):
         # La pantalla de acceso pregunta si debe pedir el código antes de mostrar el formulario.
@@ -659,14 +698,18 @@ def create_app(
         response.delete_cookie(COOKIE_NAME, path="/")
         return response
 
+    # --- Estado: si la interfaz y el modelo responden ---------------------------------------------
     @app.get("/api/status")
     def status(project: str | None = None):
+        con_claude = bool(respaldo and respaldo.disponible())
+        claude_ahora = claude_primero and con_claude
         return {
             "app_id": "ruta-dia-local",
-            "model": settings.model,
-            "available": sonda.local() or bool(respaldo and respaldo.disponible()),
-            "modelo": ("local" if sonda.local() else
-                       "claude" if respaldo and respaldo.disponible() else None),
+            # Lo que muestra la interfaz: el modelo que atiende ahora el Metodólogo.
+            "model": settings.claude_metodologo if claude_ahora else settings.model,
+            "available": claude_ahora or sonda.local() or con_claude,
+            "modelo": ("claude" if claude_ahora else "local" if sonda.local() else
+                       "claude" if con_claude else None),
             # Ocupado es por proyecto: otra persona en otro proyecto no bloquea a nadie.
             "busy": project_locks.busy(project) if project else project_locks.any_busy(),
             "queue": model_queue.snapshot(),
@@ -675,12 +718,17 @@ def create_app(
             "memory": "SQLite local",
         }
 
+    # --- Calendario: tareas, recordatorios y reuniones --------------------------------------------
     @app.get("/api/tasks")
     def list_tasks():
         user = current_user()
         if not user:
             with NotebookMemory(memory_path()) as memory:
                 return memory.list_tasks()
+        return tasks_for(user)
+
+    def tasks_for(user: User) -> list[dict]:
+        """Las entradas propias y las de los proyectos a los que la cuenta tiene acceso."""
         sync_owned_projects(user)
         results: list[dict] = []
         with NotebookMemory(auth.memory_path(user, settings.memory_path)) as personal:
@@ -778,6 +826,103 @@ def create_app(
                 return {"deleted": task_id}
         raise HTTPException(404, "La tarea no existe.")
 
+    # --- Enlace .ics para ver el calendario de Hilo en Google u Outlook ---------------------------
+    def feed_answer(feed: dict | None) -> dict:
+        return {"path": f"/calendario/{feed['token']}.ics" if feed else None,
+                "created_at": feed["created_at"] if feed else None}
+
+    def feed_owner() -> User:
+        user = current_user()
+        if not user:
+            raise HTTPException(400, "El enlace del calendario necesita una cuenta de Hilo.")
+        return user
+
+    @app.get("/api/calendar-feed")
+    def get_calendar_feed():
+        return feed_answer(auth.calendar_feed(feed_owner()))
+
+    @app.post("/api/calendar-feed")
+    def create_calendar_feed():
+        return feed_answer(auth.create_calendar_feed(feed_owner()))
+
+    @app.delete("/api/calendar-feed")
+    def delete_calendar_feed():
+        auth.delete_calendar_feed(feed_owner())
+        return feed_answer(None)
+
+    # Público a propósito: Google y Outlook lo leen sin sesión. El token largo hace de llave.
+    @app.get("/calendario/{token}.ics")
+    def calendar_feed(token: str):
+        user = auth.calendar_feed_user(token) if len(token) <= 64 else None
+        if not user:
+            raise HTTPException(404, "Este enlace de calendario no existe o fue cambiado.")
+        return Response(generar_ics(tasks_for(user)), media_type="text/calendar; charset=utf-8",
+                        headers={"Cache-Control": "private, no-cache",
+                                 "Content-Disposition": 'inline; filename="hilo.ics"',
+                                 "X-Robots-Tag": "noindex", "Referrer-Policy": "no-referrer"})
+
+    # --- Calendarios de Google y Outlook (solo lectura) -------------------------------------------
+    CALENDAR_COOKIE = "hilo_calendario"
+
+    def calendar_owner() -> User:
+        user = current_user()
+        if not user:
+            raise HTTPException(400, "Conectar un calendario necesita una cuenta de Hilo.")
+        return user
+
+    def calendar_redirect(request: Request, provider: str) -> str:
+        # Debe coincidir letra por letra con la dirección registrada en Google o Microsoft.
+        base = os.getenv("HILO_URL_PUBLICA", "").strip() or str(request.base_url)
+        return f"{base.rstrip('/')}/calendarios/{provider}/vuelta"
+
+    @app.get("/api/calendarios")
+    def calendar_status():
+        return {"proveedores": calendarios.estado(calendar_owner().id)}
+
+    @app.post("/api/calendarios/{provider}/conectar")
+    def calendar_connect(provider: str, request: Request):
+        url, browser = calendarios.iniciar(calendar_owner().id, provider,
+                                           calendar_redirect(request, provider))
+        response = JSONResponse({"url": url})
+        # Lax (no Strict): tiene que llegar en la vuelta, que es una navegación desde Google.
+        response.set_cookie(CALENDAR_COOKIE, browser, max_age=600, httponly=True,
+                            samesite="lax", secure=request.url.scheme == "https",
+                            path="/calendarios/")
+        return response
+
+    @app.get("/calendarios/{provider}/vuelta")
+    def calendar_callback(provider: str, request: Request, code: str = "", state: str = "",
+                          error: str = ""):
+        result, reason = "ok", ""
+        if error or not code or not state:
+            result = "cancelado" if error == "access_denied" else "error"
+            reason = "" if result == "cancelado" else "El proveedor no devolvió la autorización."
+        else:
+            try:
+                calendarios.completar(provider, state[:200], request.cookies.get(CALENDAR_COOKIE),
+                                      code[:4096], calendar_redirect(request, provider))
+            except ErrorCalendario as exc:
+                result, reason = "error", exc.mensaje
+        query = {"calendario": provider if provider in {"google", "microsoft"} else "",
+                 "resultado": result, **({"motivo": reason} if reason else {})}
+        response = RedirectResponse(f"/?{urlencode(query)}#calendario", status_code=303)
+        response.delete_cookie(CALENDAR_COOKIE, path="/calendarios/")
+        response.headers["Referrer-Policy"] = "no-referrer"
+        return response
+
+    @app.delete("/api/calendarios/{provider}")
+    def calendar_disconnect(provider: str):
+        user = calendar_owner()
+        calendarios.desconectar(user.id, provider)
+        return {"proveedores": calendarios.estado(user.id)}
+
+    @app.get("/api/calendario-externo")
+    def calendar_events(desde: datetime, hasta: datetime):
+        if desde.tzinfo is None or hasta.tzinfo is None:
+            raise HTTPException(400, "Las fechas deben incluir zona horaria.")
+        return calendarios.eventos(calendar_owner().id, desde, hasta)
+
+    # --- Catálogo: la ruta, sus etapas y las fichas -----------------------------------------------
     @app.get("/api/catalog")
     def get_catalog():
         runtime = runtime_factory(settings)
@@ -806,6 +951,7 @@ def create_app(
         except KeyError as exc:
             raise HTTPException(404, "La ficha no existe.") from exc
 
+    # --- Cuadernos (proyectos) y sus post-its -----------------------------------------------------
     @app.get("/api/notebooks")
     def list_notebooks():
         user = current_user()
@@ -952,6 +1098,7 @@ def create_app(
         finally:
             project_locks.release(access["project_id"])
 
+    # --- Proyectos compartidos: invitaciones recibidas y miembros ---------------------------------
     @app.get("/api/sharing/invitations")
     def list_invitations(request: Request):
         return sharing.invitations(request.state.user.id)
@@ -966,6 +1113,7 @@ def create_app(
         project_access(project_id)
         return sharing.members(project_id, request.state.user.id)
 
+    # --- Tableros del equipo: árbol de problemas, PESTEL y recorrido ------------------------------
     @app.get("/api/projects/{project_id}/problem-tree")
     def get_problem_tree(project_id: str):
         access = project_access(project_id)
@@ -1055,7 +1203,7 @@ def create_app(
             "elapsed_ms": round((time.perf_counter() - started) * 1000),
         }
 
-    # ---------------------------------------------------- práctica con el cliente simulado
+    # --- Práctica de entrevista con el cliente simulado -------------------------------------------
 
     def _practica(access: dict, practica_id: str, request: Request, memory) -> dict:
         user = request.state.user
@@ -1131,6 +1279,7 @@ def create_app(
             "aviso": AVISO_PRACTICA,
         }
 
+    # --- Tableros del equipo: mapa de empatía y diagnóstico del árbol -----------------------------
     @app.get("/api/projects/{project_id}/empathy-map")
     def get_empathy_map(project_id: str):
         access = project_access(project_id)
@@ -1188,6 +1337,7 @@ def create_app(
             "elapsed_ms": round((time.perf_counter() - started) * 1000),
         }
 
+    # --- Cinco porqués: análisis guiado de una causa del árbol ------------------------------------
     def why_access(project_id: str, request: Request) -> dict:
         access = project_access(project_id)
         require_edit(access)
@@ -1245,6 +1395,7 @@ def create_app(
             access["project_id"], analysis_id, request.state.user.id,
         )
 
+    # --- Proyectos compartidos: invitar, cambiar roles y salir ------------------------------------
     @app.post("/api/projects/{project_id}/invitations", status_code=201)
     def invite_to_project(project_id: str, body: InvitationRequest, request: Request):
         access = project_access(project_id)
@@ -1275,6 +1426,7 @@ def create_app(
         sharing.leave(project_id, request.state.user.id)
         return {"left": project_id}
 
+    # --- Avances que el equipo deja como contexto común -------------------------------------------
     @app.post("/api/projects/{project_id}/advances", status_code=201)
     def save_project_advance(project_id: str, body: AdvanceRequest, request: Request):
         access = project_access(project_id)
@@ -1298,8 +1450,17 @@ def create_app(
         sharing.retire_advance(access["project_id"], advance_id)
         return {"retired": advance_id}
 
+    # --- Chat: un turno del agente ----------------------------------------------------------------
     @app.post("/api/chat")
     async def chat(body: ChatRequest, request: Request):
+        """Corre un turno del agente y envía su avance en vivo (Server-Sent Events).
+
+        Pasos: (1) revisa el acceso y aparta el proyecto, porque cada proyecto genera una sola
+        respuesta a la vez; (2) espera cupo en la fila del modelo y le muestra a la persona su
+        lugar; (3) carga el cuaderno y corre el grafo de LangGraph; (4) vuelve a revisar el
+        permiso y guarda el turno. El trabajo corre en otro hilo y termina de guardar aunque
+        la persona cierre el navegador.
+        """
         access = project_access(body.project_id or body.notebook_id)
         user = request.state.user
         project_id = access["project_id"]
@@ -1460,6 +1621,7 @@ def create_app(
             headers={"Cache-Control": "no-cache", "X-Accel-Buffering": "no"},
         )
 
+    # --- Interfaz web ya compilada (frontend/dist) ------------------------------------------------
     dist = frontend_path or PROJECT_ROOT / "frontend" / "dist"
     if dist.is_dir():
         app.mount("/", StaticFiles(directory=dist, html=True), name="interface")

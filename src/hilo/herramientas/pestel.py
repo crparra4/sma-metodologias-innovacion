@@ -1,3 +1,8 @@
+"""PESTEL del tablero: la forma de los datos que guarda el equipo.
+
+Valida lo que envía la interfaz y lo convierte en frases para el contexto del agente.
+"""
+
 from __future__ import annotations
 
 from typing import Literal

@@ -72,7 +72,7 @@ poder volver a la anterior.
 
 ## Lo que queda para después
 
-- Publicar la imagen en un registro (por ejemplo, GitHub Container Registry) y construirla con
-  integración continua en lugar de en el servidor.
+- ~~Publicar la imagen en un registro y construirla con integración continua~~: hecho el
+  9 nov 2026 con despliegue automático desde `main`; ver `docs/despliegue-automatico.md`.
 - Si algún día se separan servicios (Anexo G de la tesis), cada contexto delimitado tendría su
   propio contenedor y el `compose.yaml` crecería con ellos.

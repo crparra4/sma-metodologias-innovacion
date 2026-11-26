@@ -1154,7 +1154,9 @@ source = { editable = "." }
 dependencies = [
     { name = "anthropic" },
     { name = "crewai", extra = ["google-genai"] },
+    { name = "cryptography" },
     { name = "fastapi" },
+    { name = "httpx" },
     { name = "langgraph" },
     { name = "langgraph-checkpoint-sqlite" },
     { name = "openai" },
@@ -1174,7 +1176,9 @@ dev = [
 requires-dist = [
     { name = "anthropic", specifier = ">=1,<2" },
     { name = "crewai", extras = ["google-genai"], specifier = "==1.15.20" },
+    { name = "cryptography", specifier = ">=44" },
     { name = "fastapi", specifier = ">=0.115,<1" },
+    { name = "httpx", specifier = ">=0.27,<1" },
     { name = "langgraph", specifier = ">=1.0,<2" },
     { name = "langgraph-checkpoint-sqlite", specifier = ">=3,<4" },
     { name = "openai", specifier = ">=2,<3" },

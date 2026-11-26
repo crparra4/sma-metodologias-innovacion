@@ -1,3 +1,5 @@
+"""Forma de un post-it del tablero, tal como lo envía la interfaz."""
+
 from typing import Literal
 
 from pydantic import BaseModel, ConfigDict, Field
