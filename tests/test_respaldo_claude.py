@@ -168,6 +168,38 @@ def test_a_chat_turn_with_the_local_model_off_is_answered_and_recorded_as_claude
     assert Gasto(settings.claude_gasto_path, 1.0).total > 0
 
 
+def test_claude_first_answers_even_when_the_local_model_is_on(settings, monkeypatch):
+    primero = replace(settings, claude_primero=True)
+    with TestClient(_app(primero, monkeypatch, ClaudeFalso("{}"), local=True)) as client:
+        estado = client.get("/api/status").json()
+    assert estado["available"] and estado["modelo"] == "claude"
+    assert estado["model"] == "claude-opus-5-5"
+    claude = ClaudePorRol("")
+    mensaje = ("Quiero aplicar los cinco porqués. En mi tienda de barrio las ventas bajaron "
+               "este semestre y todavía no he investigado por qué. Ayúdame con el primer paso.")
+    with TestClient(_app(primero, monkeypatch, claude, local=True)) as client:
+        respuesta = client.post("/api/chat", json={"notebook_id": "tienda", "message": mensaje})
+    final = [json.loads(linea[6:]) for linea in respuesta.text.splitlines()
+             if linea.startswith("data: ")][-1]
+    assert final["type"] == "result" and final["result"]["modelo"] == "claude"
+
+
+def test_claude_first_falls_back_to_the_local_model_at_the_spending_cap(settings, monkeypatch):
+    primero = replace(settings, claude_primero=True)
+    Gasto(primero.claude_gasto_path, 1.0).registrar(
+        "orchestrator", "claude-opus-5-5", SimpleNamespace(input_tokens=300_000, output_tokens=0))
+    with TestClient(_app(primero, monkeypatch, ClaudeFalso("{}"), local=True)) as client:
+        estado = client.get("/api/status").json()
+    assert estado["available"] and estado["modelo"] == "local"
+    assert estado["model"] == primero.model
+
+
+def test_claude_first_needs_the_backup_switched_on(settings, monkeypatch):
+    solo_local = replace(settings, claude_primero=True, respaldo_claude=False)
+    with TestClient(_app(solo_local, monkeypatch, ClaudeFalso("{}"), local=True)) as client:
+        assert client.get("/api/status").json()["modelo"] == "local"
+
+
 def test_only_the_capable_model_gets_the_conversational_style(settings):
     claude = ClaudeFalso(json.dumps({"message": "¿Qué más?"}))
     con_claude = Respaldo(settings, cliente=claude).runtime(PlanificadorConControles, settings)

@@ -293,10 +293,15 @@ async function refreshStatus() {
     available = status.available;
     serverBusy = status.busy;
     el('model-dot').className = `status-dot ${available ? 'online' : 'offline'}`;
-    el('profile').title = `${status.model} · ${available ? 'disponible' : 'sin conexión'}`;
+    // «claude-opus-5-5» se muestra como «Claude Opus 5.5»; el modelo local, con su nombre.
+    const claude = status.model.match(/^claude-([a-z]+)-(\d+)(?:-(\d+))?/);
+    const nombreModelo = claude
+      ? `Claude ${claude[1][0].toUpperCase()}${claude[1].slice(1)} ${claude[2]}${claude[3] ? `.${claude[3]}` : ''}`
+      : status.model;
+    el('profile').title = `${nombreModelo} · ${available ? 'disponible' : 'sin conexión'}`;
     if (!busy) el('run-status').firstElementChild!.textContent = available
       ? (serverBusy ? 'Hay una respuesta en curso. Se guardará al terminar; recarga el cuaderno después.' : 'Una pregunta a la vez, con respaldo metodológico.')
-      : 'Inicia Qwen para conversar. La conexión se comprueba automáticamente.';
+      : 'El modelo no está disponible en este momento. La conexión se comprueba automáticamente.';
   } catch {
     available = false;
     el('profile').title = 'Sin conexión al servidor';

@@ -371,8 +371,13 @@ def create_app(
     respaldo = Respaldo(settings) if settings.respaldo_claude else None
     sonda = SondaModelo(model_probe, settings)
 
+    claude_primero = respaldo is not None and settings.claude_primero
+
     def nuevo_runtime():
-        """Runtime del turno: el modelo local si responde; si no, el respaldo con Claude."""
+        """Runtime del turno: el modelo local si responde; si no, el respaldo con Claude.
+        Con `claude_primero`, al revés: Claude mientras haya presupuesto y, si no, el local."""
+        if claude_primero and respaldo.disponible():
+            return respaldo.runtime(runtime_factory, settings)
         if respaldo is None or sonda.local():
             return runtime_factory(settings)
         if not respaldo.disponible():
@@ -696,12 +701,15 @@ def create_app(
     # --- Estado: si la interfaz y el modelo responden ---------------------------------------------
     @app.get("/api/status")
     def status(project: str | None = None):
+        con_claude = bool(respaldo and respaldo.disponible())
+        claude_ahora = claude_primero and con_claude
         return {
             "app_id": "ruta-dia-local",
-            "model": settings.model,
-            "available": sonda.local() or bool(respaldo and respaldo.disponible()),
-            "modelo": ("local" if sonda.local() else
-                       "claude" if respaldo and respaldo.disponible() else None),
+            # Lo que muestra la interfaz: el modelo que atiende ahora el Metodólogo.
+            "model": settings.claude_metodologo if claude_ahora else settings.model,
+            "available": claude_ahora or sonda.local() or con_claude,
+            "modelo": ("claude" if claude_ahora else "local" if sonda.local() else
+                       "claude" if con_claude else None),
             # Ocupado es por proyecto: otra persona en otro proyecto no bloquea a nadie.
             "busy": project_locks.busy(project) if project else project_locks.any_busy(),
             "queue": model_queue.snapshot(),
