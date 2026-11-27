@@ -255,7 +255,9 @@ flowchart LR
 5. SQLite conserva cuentas, permisos, proyectos, chat, avances y checkpoints.
    El catálogo metodológico permanece en JSON y Markdown versionados.
 
-La arquitectura detallada está en
+La arquitectura completa está documentada con el modelo C4 en
+[`arquitectura-c4.md`](docs/arquitectura-c4.md) y con la plantilla arc42 en
+[`arquitectura-arc42.md`](docs/arquitectura-arc42.md). El flujo del grafo se detalla en
 [`arquitectura-langgraph.md`](docs/arquitectura-langgraph.md).
 
 ## Datos y configuración
@@ -335,6 +337,8 @@ solo use los contextos que le corresponden. El detalle está en
 | [`docs/interfaz-local.md`](docs/interfaz-local.md) | Interfaz, cuentas, proyectos, Post-its, agenda y árbol |
 | [`docs/guia-de-pruebas.md`](docs/guia-de-pruebas.md) | Pruebas manuales del árbol, el diagnóstico y los cinco porqués |
 | [`docs/recuperacion-qwen-2026-09-29.md`](docs/recuperacion-qwen-2026-09-29.md) | Diagnóstico y arreglo del motor de llama.cpp |
+| [`docs/arquitectura-c4.md`](docs/arquitectura-c4.md) | Modelo C4: contexto, contenedores, componentes, código, despliegue y un turno |
+| [`docs/arquitectura-arc42.md`](docs/arquitectura-arc42.md) | arc42: objetivos, restricciones, decisiones, escenarios de calidad, riesgos y deuda |
 | [`docs/arquitectura-langgraph.md`](docs/arquitectura-langgraph.md) | Flujo LangGraph, responsabilidades y persistencia |
 | [`docs/arquitectura.md`](docs/arquitectura.md) | Decisión inicial con CrewAI; documento histórico |
 | [`docs/plan-compartir-proyectos.md`](docs/plan-compartir-proyectos.md) | Primera versión local y ampliaciones de colaboración pendientes |
